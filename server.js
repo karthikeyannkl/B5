@@ -7,7 +7,14 @@ app.use(express.json({limit:'2mb'}));
 app.use(express.static(__dirname));
 
 const DB_FILE=path.join(__dirname,'db.json');
-function freshDB(){return {adminPassword:'ADMIN',members:[],pins:[],messages:[]};}
+function freshDB(){
+  return {
+    adminPassword:'ADMIN',
+    members:[],
+    pins:[{pin:'B5-000001',assignedTo:null,status:'AVAILABLE',usedBy:null,createdAt:new Date().toISOString()}],
+    messages:[]
+  };
+}
 function load(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch(e){const d=freshDB();save(d);return d}}
 function save(d){fs.writeFileSync(DB_FILE,JSON.stringify(d,null,2))}
 let db=load();
