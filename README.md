@@ -1,0 +1,1 @@
+BORNTOWIN5 Dynamic Correction V1\n\nDatabase file is intentionally NOT included in this correction package. Keep the existing db.json on the server/repository so existing members, PINs, messages and statuses are preserved. Replace only admin.html, member.html and server.js.\n
