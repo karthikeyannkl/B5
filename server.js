@@ -50,11 +50,22 @@ app.get('/admin.html',(req,res)=>res.sendFile(path.join(__dirname,'admin.html'))
 app.post('/api/admin/login',(req,res)=>{if(req.body.password!==db.adminPassword)return res.status(401).json({error:'Incorrect password'});res.json({ok:true})});
 app.post('/api/admin/password',(req,res)=>{if(req.body.oldPassword!==db.adminPassword)return res.status(401).json({error:'Current password is incorrect'});db.adminPassword=String(req.body.newPassword||'');save(db);res.json({ok:true})});
 app.get('/api/admin/dashboard',(req,res)=>{
+ const today=new Date().toISOString().slice(0,10);
  const total=db.members.length,pending=db.members.filter(m=>m.status==='Pending').length,verified=db.members.filter(m=>m.status==='Verified').length;
+ const todayMembers=db.members.filter(m=>String(m.registeredAt||m.joinedAt||'').slice(0,10)===today).map(memberPublic);
  const report=db.members.map(m=>{const w=wallet(m.memberId);return {name:m.name,memberId:m.memberId,received:w.received,used:w.used,available:w.available}});
- res.json({total,pending,verified,members:db.members.map(memberPublic),pinReport:report});
+ const sent=db.pins.filter(p=>p.assignedTo).length;
+ const used=db.pins.filter(p=>p.status==='USED').length;
+ const leaders=new Set(db.pins.filter(p=>p.assignedTo).map(p=>p.assignedTo)).size;
+ res.json({total,pending,verified,todayRegistrations:todayMembers.length,todayMembers,members:db.members.map(memberPublic),pinSummary:{sent,used,leaders},pinReport:report});
 });
 app.get('/api/admin/members',(req,res)=>res.json({members:findMember(req.query.q).map(memberPublic)}));
+app.get('/api/admin/member-details/:id',(req,res)=>{
+ const m=db.members.find(x=>x.memberId===req.params.id);
+ if(!m)return res.status(404).json({error:'Member not found'});
+ const kids=(id)=>db.members.filter(x=>x.referral===id).map(x=>({memberId:x.memberId,name:x.name,mobile:x.mobile,status:x.status,level:Number(x.level||1),levelMemberId:x.levelMemberId||null,children:kids(x.memberId)}));
+ res.json({member:memberPublic(m),details:m,referralTree:{memberId:m.memberId,name:m.name,mobile:m.mobile,status:m.status,level:Number(m.level||1),levelMemberId:m.levelMemberId||null,children:kids(m.memberId)},directReferrals:db.members.filter(x=>x.referral===m.memberId).length,totalDownline:downlineCount(m.memberId)});
+});
 app.post('/api/admin/member-status',(req,res)=>{
  const m=db.members.find(x=>x.memberId===req.body.memberId);
  if(!m)return res.status(404).json({error:'Member not found'});
@@ -139,7 +150,7 @@ function ltDashboard(memberId){
   const m=ltMember(memberId); if(!m)return null;
   if(!m.level)m.level=1;
   if(m.status==='Verified'&&!m.levelMemberId)m.levelMemberId=nextLevelMemberId(m.level);
-  const upgrade=ltStatusUpgrade(memberId);
+  const upgrade=ltStatusUpgrade(memberId) || db.leveltrackUpgrades.filter(u=>u.memberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))[0]||null;
   const requests=db.leveltrackRequests.filter(r=>r.memberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
   const payments=db.leveltrackPayments.filter(p=>p.receiverMemberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
   return {member:memberPublic(m),directReferrals:direct(memberId).length,totalDownline:downlineCount(memberId),tree:ltTree(memberId),upgrade,requests,incomingPayments:payments,history:ltHistory(memberId)};
@@ -148,7 +159,7 @@ app.get('/leveltrack-admin.html',(req,res)=>res.sendFile(path.join(__dirname,'le
 app.get('/leveltrack-member.html',(req,res)=>res.sendFile(path.join(__dirname,'leveltrack-member.html')));
 app.get('/api/leveltrack/admin/dashboard',(req,res)=>{
   const levels={1:0,2:0,3:0,4:0,5:0,6:0,7:0};
-  db.members.forEach(m=>{if(m.status==='Verified'){const l=Math.min(7,Math.max(1,Number(m.level||1)));levels[l]++}});
+  db.members.forEach(m=>{const l=Math.min(7,Math.max(1,Number(m.level||1)));levels[l]++});
   res.json({levels,members:db.members.map(memberPublic),requests:db.leveltrackRequests.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),upgrades:db.leveltrackUpgrades.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),payments:db.leveltrackPayments.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))});
 });
 app.get('/api/leveltrack/admin/members',(req,res)=>res.json({members:findMember(req.query.q).map(memberPublic)}));
