@@ -52,12 +52,12 @@ app.post('/api/admin/password',(req,res)=>{if(req.body.oldPassword!==db.adminPas
 app.get('/api/admin/dashboard',(req,res)=>{
  const today=new Date().toISOString().slice(0,10);
  const total=db.members.length,pending=db.members.filter(m=>m.status==='Pending').length,verified=db.members.filter(m=>m.status==='Verified').length;
- const todayMembers=db.members.filter(m=>String(m.registeredAt||m.joinedAt||'').slice(0,10)===today).map(memberPublic);
+ const todayMembers=db.members.filter(m=>String(m.registeredAt||m.joinedAt||'').slice(0,10)===today);
  const report=db.members.map(m=>{const w=wallet(m.memberId);return {name:m.name,memberId:m.memberId,received:w.received,used:w.used,available:w.available}});
  const sent=db.pins.filter(p=>p.assignedTo).length;
  const used=db.pins.filter(p=>p.status==='USED').length;
  const leaders=new Set(db.pins.filter(p=>p.assignedTo).map(p=>p.assignedTo)).size;
- res.json({total,pending,verified,todayRegistrations:todayMembers.length,todayMembers,members:db.members.map(memberPublic),pinSummary:{sent,used,leaders},pinReport:report});
+ res.json({total,pending,verified,todayRegistrations:todayMembers.length,members:db.members.map(memberPublic),pinSummary:{sent,used,leaders},pinReport:report});
 });
 app.get('/api/admin/members',(req,res)=>res.json({members:findMember(req.query.q).map(memberPublic)}));
 app.get('/api/admin/member-details/:id',(req,res)=>{
@@ -172,9 +172,9 @@ app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
   if(r.status!=='Requested')return res.status(400).json({error:'Request is not pending'});
   const m=ltMember(r.memberId);if(!m)return res.status(404).json({error:'Member not found'});
   const amount=Number(req.body.amount||LEVEL_RULES[r.from]?.upgrade||0);if(!amount)return res.status(400).json({error:'Upgrade amount required'});
-  Object.assign(r,{status:'Assigned',assignedAt:new Date().toISOString(),payee:req.body.payee||'',payeeId:req.body.payeeId||'',accountHolder:req.body.accountHolder||'',amount,account:req.body.account||'',bank:req.body.bank||'',ifsc:req.body.ifsc||'',upi:req.body.upi||'',adminMessage:req.body.adminMessage||''});
+  Object.assign(r,{status:'Assigned',assignedAt:new Date().toISOString(),payee:req.body.payee||'',payeeId:req.body.payeeId||'',amount,account:req.body.account||'',bank:req.body.bank||'',ifsc:req.body.ifsc||'',upi:req.body.upi||'',adminMessage:req.body.adminMessage||''});
   let u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);if(!u){u={id:'LTU-'+crypto.randomBytes(4).toString('hex').toUpperCase(),requestId:r.id,memberId:m.memberId,from:r.from,to:r.to,createdAt:new Date().toISOString()};db.leveltrackUpgrades.push(u)}
-  Object.assign(u,{amount,payee:r.payee,payeeId:r.payeeId,accountHolder:r.accountHolder||'',account:r.account,bank:r.bank,ifsc:r.ifsc,upi:r.upi,adminMessage:r.adminMessage||'',detailsSent:true,detailsSentAt:new Date().toISOString()});
+  Object.assign(u,{amount,payee:r.payee,payeeId:r.payeeId,account:r.account,bank:r.bank,ifsc:r.ifsc,upi:r.upi,adminMessage:r.adminMessage||'',detailsSent:true,detailsSentAt:new Date().toISOString()});
   db.leveltrackMessages.push({to:m.memberId,message:`LevelTrack payment details sent for L${r.from} → L${r.to}. Amount ₹${amount.toLocaleString()}.`,at:new Date().toISOString()});save(db);res.json({ok:true,request:r,upgrade:u});
 });
 app.post('/api/leveltrack/admin/payments/:id/verify',(req,res)=>{
@@ -221,7 +221,7 @@ app.post('/api/leveltrack/member/incoming/:id/accept',(req,res)=>{
   p.memberAccepted=true;p.acceptedAt=new Date().toISOString();const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);if(u)u.receiverApproved=true;save(db);res.json({ok:true,payment:p});
 });
 app.get('/api/leveltrack/member/messages/:id',(req,res)=>{
-  const member=db.members.find(x=>x.memberId===req.params.id); const msgs=[...db.messages.filter(x=>x.to===req.params.id||x.to==='ALL'||(member&&x.to===member.mobile)).map(x=>({message:x.message,at:x.at})),...db.leveltrackMessages.filter(x=>x.to===req.params.id).map(x=>({message:x.message,at:x.at}))].sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+  const msgs=[...db.messages.filter(x=>x.to===req.params.id||x.to==='ALL').map(x=>({message:x.message,at:x.at})),...db.leveltrackMessages.filter(x=>x.to===req.params.id).map(x=>({message:x.message,at:x.at}))].sort((a,b)=>String(b.at).localeCompare(String(a.at)));
   res.json({messages:msgs});
 });
 
