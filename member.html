@@ -204,7 +204,8 @@ async function useWalletPin(){
    b5SharePin(p.pin);
  }catch(e){alert('Wallet load failed')}
 }
-async function b5LoadMessages(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID'),el=document.getElementById('memberMessageList');if(!id||!el)return;try{const d=await b5api('/api/member/messages/'+encodeURIComponent(id));el.innerHTML=d.messages.length?d.messages.map(x=>`<div class="msgbox" style="margin-top:8px"><b>${x.to==='ALL'?'Admin':'Admin Message'}</b><div style="margin-top:5px">${String(x.message).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`).join(''):'<div class="small">இன்னும் messages இல்லை.</div>'}catch(e){}}
+async function b5LoadMessages(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID'),el=document.getElementById('memberMessageList');if(!id)return;try{const d=await b5api('/api/member/messages/'+encodeURIComponent(id));if(el)el.innerHTML=d.messages.length?d.messages.map(x=>`<div class="msgbox" style="margin-top:8px"><b>Admin</b><div style="margin-top:5px">${String(x.message).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">இன்னும் messages இல்லை.</div>';const dash=document.getElementById('dashboardAdminMessageList');if(dash)dash.innerHTML=d.messages.length?d.messages.map(x=>`<div class="msgbox" style="margin-top:8px;font-size:15px"><b>Admin</b><div style="margin-top:7px">${String(x.message).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">Admin message இல்லை.</div>'}catch(e){}}
+setInterval(()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER_ID'))b5LoadMessages()},5000);
 function initMember(){const ref=new URLSearchParams(location.search).get('ref');document.getElementById('B5_MEMBER_GATE').style.display='block';if(ref){b5Tab('register');document.getElementById('rReferral').value=ref;}else{b5Tab('login');}document.getElementById('b5LoginMobile').value='';document.getElementById('b5LoginOtp').value='';}
 window.addEventListener('load',initMember);
 </script>
@@ -238,7 +239,7 @@ window.addEventListener('load',initMember);
  function close(){side.classList.remove('open');ov.classList.remove('show')}
  window.memberShowOriginal=function(b){frame.classList.remove('show');document.querySelectorAll('#memberSidebar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();window.scrollTo({top:0,behavior:'smooth'});}
  window.memberShowPortal=function(b){frame.classList.add('show');document.querySelectorAll('#memberSidebar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();}
- frame.src="/leveltrack-member.html";
+ frame.src="/leveltrack-member.html?v=13";
  ready();new MutationObserver(ready).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['style','class']});setInterval(ready,1000);
 })();
 </script>
@@ -327,7 +328,7 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
  }
  window.uMemberLevelTrack=function(section,b){document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');close();hideMemberContent();frame.classList.add('show');
    const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section},location.origin);
-   if(frame.src.indexOf('/leveltrack-member.html')<0){frame.src='/leveltrack-member.html?v=8';frame.addEventListener('load',send,{once:true});} else send();
+   if(frame.src.indexOf('/leveltrack-member.html')<0){frame.src='/leveltrack-member.html?v=13';frame.addEventListener('load',send,{once:true});} else send();
  }
  const style=document.createElement('style');style.textContent='.u-hidden{display:none!important}';document.head.appendChild(style);
  showMemberContent([memberProfile,memberStats]);
