@@ -209,40 +209,6 @@ setInterval(()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER_ID'))b5LoadMessages(
 function initMember(){const ref=new URLSearchParams(location.search).get('ref');document.getElementById('B5_MEMBER_GATE').style.display='block';if(ref){b5Tab('register');document.getElementById('rReferral').value=ref;}else{b5Tab('login');}document.getElementById('b5LoginMobile').value='';document.getElementById('b5LoginOtp').value='';}
 window.addEventListener('load',initMember);
 </script>
-<style id="integrated-member-menu-style">
-#memberMenuBtn{display:none;position:fixed;top:12px;left:12px;z-index:2147483000;width:44px;height:44px;border:0;border-radius:10px;background:#fff;color:#17372c;font-size:24px;box-shadow:0 2px 10px #0003;cursor:pointer}
-#memberMenuBtn.ready{display:block}
-#memberOverlay{display:none;position:fixed;inset:0;background:#0007;z-index:2147482998}
-#memberOverlay.ready.show{display:block}
-#memberSidebar{display:none;position:fixed;top:0;left:-292px;width:280px;max-width:86vw;height:100vh;background:#fff;z-index:2147482999;box-shadow:3px 0 18px #0004;transition:left .25s ease;padding:72px 14px 20px;overflow:auto}
-#memberSidebar.ready{display:block}
-#memberSidebar.open{left:0}
-#memberSidebar .istitle{font-size:12px;color:#667085;padding:0 10px 8px;font-weight:800;text-transform:uppercase}
-#memberSidebar button{width:100%;text-align:left;background:#f7faf8;color:#17372c;border:0;padding:13px 14px;margin:5px 0;border-radius:10px;font-weight:700;font-size:14px}
-#memberSidebar button.active{background:#073b2a;color:#fff}
-#memberPortalFrame{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147482997;background:#fff}
-#memberPortalFrame.show{display:block}
-</style>
-<button id="memberMenuBtn" onclick="memberToggleMenu()" aria-label="Open menu">☰</button>
-<div id="memberOverlay" onclick="memberToggleMenu()"></div>
-<aside id="memberSidebar">
-<div class="istitle">Member Menu</div>
-<button class="active" onclick="memberShowOriginal(this)">🏠 BORNTOWIN5 Member</button>
-<button onclick="memberShowPortal(this)">🔗 LevelTrack Member Portal</button>
-</aside>
-<iframe id="memberPortalFrame" title="LevelTrack Member Portal"></iframe>
-<script>
-(function(){
- const btn=document.getElementById('memberMenuBtn'),side=document.getElementById('memberSidebar'),ov=document.getElementById('memberOverlay'),frame=document.getElementById('memberPortalFrame');
- function ready(){const g=document.getElementById('B5_MEMBER_GATE');const logged=!!localStorage.getItem('BORNTOWIN5_MEMBER_ID') && !!g && getComputedStyle(g).display==='none';[btn,side,ov].forEach(x=>x&&x.classList.toggle('ready',logged));if(!logged){frame.classList.remove('show');side.classList.remove('open');ov.classList.remove('show');}}
- window.memberToggleMenu=function(){if(!btn.classList.contains('ready'))return;side.classList.toggle('open');ov.classList.toggle('show');}
- function close(){side.classList.remove('open');ov.classList.remove('show')}
- window.memberShowOriginal=function(b){frame.classList.remove('show');document.querySelectorAll('#memberSidebar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();window.scrollTo({top:0,behavior:'smooth'});}
- window.memberShowPortal=function(b){frame.classList.add('show');document.querySelectorAll('#memberSidebar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();}
- frame.src="/leveltrack-member.html?v=13";
- ready();new MutationObserver(ready).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['style','class']});setInterval(ready,1000);
-})();
-</script>
 </body>
 </html><style>
 .pin button{border:0;border-radius:8px;padding:6px 9px;background:#075B35;color:#fff;font-weight:700;font-size:11px}
@@ -278,10 +244,13 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
 #unifiedMemberSidebar .uitem.active{background:#075B35;color:#fff}
 #unifiedMemberFrame{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147482997;background:#fff}
 #unifiedMemberFrame.show{display:block}
+#unifiedMemberLevelTrackFrame{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147482997;background:#fff}
+#unifiedMemberLevelTrackFrame.show{display:block}
 @media(max-width:520px){#unifiedMemberMenuBtn{top:9px;left:9px}.top{padding-left:66px}}
 </style>
 <button id="unifiedMemberMenuBtn" onclick="uMemberToggle()" aria-label="Open Member menu">☰</button>
 <div id="unifiedMemberOverlay" onclick="uMemberToggle()"></div>
+<iframe id="unifiedMemberLevelTrackFrame" title="Level Tracking Member"></iframe>
 <aside id="unifiedMemberSidebar">
   <div class="ustitle">Member Menu</div>
   <button class="uitem active" onclick="uMemberMain('dashboard',this)">🏠 Dashboard</button>
@@ -292,18 +261,17 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
   <button class="uitem" onclick="uMemberMain('messages',this)">📢 My Messages</button>
   <button class="uitem" onclick="uMemberMain('pinwallet',this)">🔐 My PIN Wallet</button>
   <div class="ustitle" style="margin-top:12px">Level Tracking</div>
-  <button class="uitem" onclick="uMemberLevelTrack('dashboard',this)">📊 LevelTrack Dashboard</button>
-  <button class="uitem" onclick="uMemberLevelTrack('membership',this)">👤 LevelTrack My Membership</button>
-  <button class="uitem" onclick="uMemberLevelTrack('upgrade',this)">🚀 Level Upgrade</button>
-  <button class="uitem" onclick="uMemberLevelTrack('payments',this)">💰 My Payments</button>
-  <button class="uitem" onclick="uMemberLevelTrack('history',this)">📜 Upgrade History</button>
+  <button class="uitem" data-lt="dashboard" onclick="uMemberLevelTrack('dashboard',this)">📊 LevelTrack Dashboard</button>
+  <button class="uitem" data-lt="membership" onclick="uMemberLevelTrack('membership',this)">👤 LevelTrack My Membership</button>
+  <button class="uitem" data-lt="upgrade" onclick="uMemberLevelTrack('upgrade',this)">🚀 Level Upgrade</button>
+  <button class="uitem" data-lt="payments" onclick="uMemberLevelTrack('payments',this)">💰 My Payments</button>
+  <button class="uitem" data-lt="history" onclick="uMemberLevelTrack('history',this)">📜 Upgrade History</button>
 </aside>
-<iframe id="unifiedMemberFrame" title="LevelTrack Member Portal"></iframe>
 <script id="unified-member-menu-script">
 (function(){
  const btn=document.getElementById('unifiedMemberMenuBtn'),side=document.getElementById('unifiedMemberSidebar'),ov=document.getElementById('unifiedMemberOverlay'),frame=document.getElementById('unifiedMemberFrame');
  function logged(){const g=document.getElementById('B5_MEMBER_GATE');return !!localStorage.getItem('BORNTOWIN5_MEMBER_ID') && g && getComputedStyle(g).display==='none'}
- function ready(){const ok=logged();[btn,side].forEach(x=>x&&x.classList.toggle('ready',ok));if(!ok){frame.classList.remove('show');side.classList.remove('open');ov.classList.remove('show');}}
+ function ready(){const ok=logged();[btn,side].forEach(x=>x&&x.classList.toggle('ready',ok));if(!ok){frame.classList.remove('show');document.getElementById('unifiedMemberLevelTrackFrame')?.classList.remove('show');side.classList.remove('open');ov.classList.remove('show');}}
  window.uMemberToggle=function(){if(!btn.classList.contains('ready'))return;side.classList.toggle('open');ov.classList.toggle('show')}
  function close(){side.classList.remove('open');ov.classList.remove('show')}
  const memberProfile=document.querySelector('main > .profile');
@@ -313,7 +281,15 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
  const memberSections=[memberProfile,memberStats,memberDetail,document.getElementById('referralCard'),memberTree,document.getElementById('memberMessages'),document.getElementById('leaderWallet')].filter(Boolean);
  function hideMemberContent(){memberSections.forEach(x=>x.classList.add('u-hidden'))}
  function showMemberContent(items){hideMemberContent();items.forEach(x=>x.classList.remove('u-hidden'))}
- window.uMemberMain=function(id,b){frame.classList.remove('show');document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();
+ window.uMemberLevelTrack=function(view,b){
+   document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));
+   b.classList.add('active'); close();
+   const lt=document.getElementById('unifiedMemberLevelTrackFrame');
+   lt.src='/leveltrack-member.html?view='+encodeURIComponent(view)+'&v=30';
+   lt.classList.add('show');
+   window.scrollTo({top:0,behavior:'smooth'});
+ }
+ window.uMemberMain=function(id,b){frame.classList.remove('show');document.getElementById('unifiedMemberLevelTrackFrame')?.classList.remove('show');document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();
    const map={
      dashboard:[memberProfile,memberStats,document.getElementById('dashboardAdminMessages')],
      membership:[memberProfile,memberDetail],
@@ -325,10 +301,6 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
    };
    showMemberContent((map[id]||[]).filter(Boolean));
    window.scrollTo({top:0,behavior:'smooth'});
- }
- window.uMemberLevelTrack=function(section,b){document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');close();hideMemberContent();frame.classList.add('show');
-   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section},location.origin);
-   if(frame.src.indexOf('/leveltrack-member.html')<0){frame.src='/leveltrack-member.html?v=13';frame.addEventListener('load',send,{once:true});} else send();
  }
  const style=document.createElement('style');style.textContent='.u-hidden{display:none!important}';document.head.appendChild(style);
  showMemberContent([memberProfile,memberStats]);

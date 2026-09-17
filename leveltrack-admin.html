@@ -1,172 +1,33 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LevelTrack Admin Final</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#eef1f3;color:#17372c;font-family:Arial,sans-serif;overflow-x:hidden}
-.head{background:#073b2a;color:#fff;padding:18px;text-align:center;position:sticky;top:0;z-index:5}
-.head h2{margin:0}.head div{font-size:12px;margin-top:4px;opacity:.85}
-.wrap{max-width:1150px;margin:auto;padding:70px 14px 20px}
-.cards{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}.card{background:#fff;border-radius:16px;padding:15px;margin:11px 0;box-shadow:0 2px 10px #0001}
-.stat{text-align:center}.num{font-size:22px;font-weight:800;margin-top:5px}
-input,select,button{padding:11px;border-radius:10px;border:1px solid #ccd;width:100%;box-sizing:border-box;margin:4px 0}button{background:#087f4f;color:#fff;border:0;font-weight:700;cursor:pointer}
-.gray{background:#475467}.red{background:#b42318}.search{display:grid;grid-template-columns:1fr auto;gap:7px}
-.scroll{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #eee;text-align:left;font-size:13px;vertical-align:top}
-.badge{padding:5px 8px;border-radius:20px;font-size:11px;font-weight:700;display:inline-block}.ok{background:#d9f8e8;color:#087f4f}.pending{background:#fff1c2;color:#765000}.wait{background:#edf0f5;color:#475467}.reject{background:#fbe5e5;color:#b42318}
-.detail{background:#f7faf8;padding:12px;border-radius:10px;margin:7px 0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.modal{display:none;position:fixed;inset:0;background:#0008;z-index:20;padding:20px;overflow:auto}.modalbox{max-width:850px;margin:30px auto;background:#fff;border-radius:16px;padding:16px}.close{background:#475467;width:auto;float:right;padding:7px 12px}
-.tree{margin-top:12px}.node{border-left:3px solid #087f4f;background:#f8faf9;border-radius:9px;padding:10px;margin:7px 0}.children{margin-left:18px;border-left:1px dashed #aaa;padding-left:10px}
-.small{font-size:12px;color:#667085}.actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.formrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-h3{margin-top:0}
-@media(max-width:700px){.wrap{padding:68px 10px 18px}.cards{grid-template-columns:repeat(2,1fr)}.search,.grid,.formrow{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.modal{padding:8px}}
-
-.sidebarBtn{position:fixed;top:12px;left:12px;z-index:30;width:44px;height:44px;border:0;border-radius:10px;background:#fff;color:#075B35;font-size:24px;border:1px solid #D9A441;box-shadow:0 2px 10px #0003;cursor:pointer}
-.sidebar{position:fixed;top:0;left:-285px;width:270px;height:100vh;background:#FFFDF7;z-index:25;box-shadow:3px 0 15px #0003;transition:left .25s ease;padding:72px 14px 20px;overflow:auto}
-.sidebar.open{left:0}.sideOverlay{display:none;position:fixed;inset:0;background:#0006;z-index:24}.sideOverlay.show{display:block}
-.sideItem{width:100%;text-align:left;background:#EAF4EE;color:#17372c;border:0;padding:13px 14px;margin:5px 0;border-radius:10px;font-weight:700;cursor:pointer}
-.sideItem.active{background:#075B35;color:#fff}.adminPanel{display:none}.adminPanel.show{display:block}.sideTitle{font-size:12px;color:#667085;padding:0 10px 7px;font-weight:700;text-transform:uppercase}
-.sectionPanelTitle{font-size:12px;font-weight:800;color:#075B35;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-@media(max-width:520px){.wrap{padding-left:10px;padding-right:10px}.cards{grid-template-columns:repeat(2,1fr)}.sidebarBtn{top:10px;left:10px}}
-</style>
-
-<style id="b5-logo-theme">
-:root{
- --b5-green:#075B35;--b5-green-dark:#034A2B;--b5-green-soft:#EAF4EE;
- --b5-gold:#D9A441;--b5-gold-light:#F5D98A;--b5-cream:#F1F3F5;
- --b5-ink:#17372C;--b5-border:#DDE7E1;
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Level Tracking — Admin</title><style>
+*{box-sizing:border-box}body{margin:0;background:#eef1f3;color:#17372c;font-family:Arial,sans-serif}.app{max-width:1000px;margin:auto}.head{background:#075B35;color:#fff;padding:18px;text-align:center;position:sticky;top:0;z-index:5}.head h2{margin:0 0 4px}.tabs{display:none}.tabs button{border:0;border-radius:9px;padding:10px 5px;background:#e8eeeb;color:#17372c;font-weight:700;font-size:11px}.tabs button.active{background:#075B35;color:#fff}.page{padding:12px}.card{background:#fff;border:1px solid #DDE7E1;border-radius:14px;padding:14px;margin-bottom:12px}.title{font-weight:800;font-size:16px;margin-bottom:10px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.stat{text-align:center;border:1px solid #DDE7E1;border-radius:11px;padding:11px}.stat b{display:block;font-size:22px;color:#075B35}.small{font-size:11px;color:#667085}.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #edf1ef;font-size:12px}.badge{display:inline-block;padding:5px 8px;border-radius:20px;font-size:10px;font-weight:800}.ok{background:#d9f8e8;color:#087f4f}.pending{background:#fff1c2;color:#765000}.wait{background:#edf0f5;color:#475467}.reject{background:#fde5e5;color:#b42318}.success,.warn,.info{padding:10px;border-radius:9px;margin:7px 0;font-size:12px;line-height:1.5}.success{background:#eaf8ed;color:#146b22}.warn{background:#fff6df;color:#765000}.info{background:#eef5ff;color:#174a83}button,input,textarea{width:100%;padding:10px;border-radius:9px;border:1px solid #ccd7d1;font:inherit}button{background:#075B35;color:#fff;border:0;font-weight:750;cursor:pointer;margin-top:6px}.secondary{background:#fff;color:#075B35;border:1px solid #075B35}.danger{background:#b42318}.search{display:grid;grid-template-columns:1fr 120px;gap:7px}.member{border:1px solid #DDE7E1;border-radius:11px;padding:11px;margin-top:8px}.tree{margin-top:8px}.node{border-left:3px solid #075B35;background:#f8faf9;border-radius:9px;padding:9px;margin:6px 0;font-size:11px}.children{margin-left:14px;border-left:1px dashed #aaa;padding-left:9px}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #eee;text-align:left;font-size:11px;vertical-align:top}.hidden{display:none}@media(max-width:600px){.tabs{grid-template-columns:repeat(2,1fr)}.grid,.search{grid-template-columns:1fr}}
+</style></head><body><div class="app"><div class="head"><h2>LEVEL TRACKING — ADMIN</h2><small>Members • Upgrade • Payments • Final Approval</small></div><div class="tabs"><button id="tDashboard" onclick="showTab('dashboard')">📊 Dashboard</button><button id="tMembers" onclick="showTab('members')">👥 Members</button><button id="tUpgrade" onclick="showTab('upgrade')">🚀 Level Upgrade</button><button id="tPayments" onclick="showTab('payments')">💳 Payments</button></div><section id="dashboard" class="page"><div class="card"><div class="title">Level Counts</div><div class="grid" id="stats"></div></div><div class="card"><div class="title">Daily Upgrade Report</div><input id="reportDate" type="date" onchange="dailyReport()"><div id="daily"></div></div></section><section id="members" class="page hidden"><div class="card"><div class="title">Search Member</div><div class="search"><input id="q" placeholder="Name / Mobile / Member ID"><button onclick="searchMembers()">SEARCH</button></div><div id="results"></div><div id="memberView"></div></div></section><section id="upgrade" class="page hidden"><div class="card"><div class="title">Upgrade Requests</div><div id="requests"></div></div><div class="card"><div class="title">Payment Assignment</div><div id="assignState"></div><div id="assignForm" class="hidden"><input id="receiverName" placeholder="Receiver / Payee Name"><input id="receiverId" placeholder="Receiver Member ID"><input id="receiverPhone" placeholder="Receiver Phone"><input id="accountHolder" placeholder="Account Holder"><input id="bank" placeholder="Bank Name"><input id="account" placeholder="Account Number"><input id="ifsc" placeholder="IFSC"><input id="upi" placeholder="UPI"><input id="amount" type="number" placeholder="Amount"><textarea id="message" rows="3" placeholder="Admin Message"></textarea><button onclick="sendDetails()">SEND PAYMENT DETAILS TO MEMBER</button></div></div><div class="card"><div class="title">Final Approval</div><div id="finalList"></div></div></section><section id="payments" class="page hidden"><div class="card"><div class="title">Incoming Payment Approval</div><div id="incoming"></div></div></section></div><script>
+let state={};let selectedRequest=null;const $=x=>document.getElementById(x);const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));async function api(u,o={}){const r=await fetch(u,{headers:{'Content-Type':'application/json'},...o});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Request failed');return d}
+function currentView(){return new URLSearchParams(location.search).get('view')||'dashboard'}
+function showView(view){
+  const all=document.querySelectorAll('.page');
+  all.forEach(x=>x.classList.add('hidden'));
+  document.querySelectorAll('.page .card').forEach(x=>x.style.display='');
+  if(view==='members'){document.getElementById('members')?.classList.remove('hidden');return}
+  if(view==='incoming'){document.getElementById('payments')?.classList.remove('hidden');return}
+  const dash=document.getElementById('dashboard'), up=document.getElementById('upgrade');
+  if(view==='dashboard'){dash?.classList.remove('hidden'); const cs=dash?.querySelectorAll('.card')||[]; cs.forEach((c,i)=>c.style.display=i===0?'':'none'); return}
+  if(view==='daily'){dash?.classList.remove('hidden'); const cs=dash?.querySelectorAll('.card')||[]; cs.forEach((c,i)=>c.style.display=i===1?'':'none'); return}
+  if(['requests','assignment','final'].includes(view)){up?.classList.remove('hidden'); const cs=up?.querySelectorAll('.card')||[]; cs.forEach((c,i)=>c.style.display=(view==='requests'&&i===0)||(view==='assignment'&&i===1)||(view==='final'&&i===2)?'':'none'); return}
+  dash?.classList.remove('hidden');
 }
-body{background:#EEF1F3!important;color:var(--b5-ink)!important;overflow-x:hidden}
-header,.head{background:var(--b5-green)!important;color:#fff!important}
-.hero{background:linear-gradient(135deg,var(--b5-green-dark),var(--b5-green),#147A49)!important}
-button,.b5-primary{background:var(--b5-green)!important;color:#fff!important}
-button:hover,.b5-primary:hover{background:var(--b5-green-dark)!important}
-.tag,.pill:not(.whitepill),.section-title,.badge{border-color:var(--b5-gold)!important}
-.whitepill{color:var(--b5-green)!important}
-.card,.gate,.panel,.stat{border-color:var(--b5-border)!important;background:#FFFFFF!important}
-.stat b,.gold,.amount{color:var(--b5-gold)!important}
-input:focus,select:focus,textarea:focus{border-color:var(--b5-gold)!important;outline-color:var(--b5-gold)!important}
-#integratedSidebar,#memberSidebar{background:var(--b5-cream)!important}
-#integratedSidebar button,#memberSidebar button{background:var(--b5-green-soft)!important;color:var(--b5-ink)!important}
-#integratedSidebar button.active,#memberSidebar button.active{background:var(--b5-green)!important;color:#fff!important}
-#integratedMenuBtn,#memberMenuBtn{background:#fff!important;color:var(--b5-green)!important;border:1px solid var(--b5-gold)!important}
-.logo img{object-fit:contain!important;background:#fff!important;border-radius:50%!important}
-
-<style id="embedded-leveltrack-style">
-/* When embedded in BORNTOWIN5, the parent unified menu controls navigation. */
-body.embedded .sidebarBtn, body.embedded .sidebar { display:none!important; }
-body.embedded .wrap { padding-top:18px; }
-</style>
-</head>
-<body>
-<button class="sidebarBtn" onclick="toggleMenu()" aria-label="Open menu">☰</button>
-<div id="sideOverlay" class="sideOverlay" onclick="toggleMenu()"></div>
-<aside id="sidebar" class="sidebar">
-<div class="sideTitle">Admin Menu</div>
-<button class="sideItem active" onclick="go('dashboard',this)">📊 Dashboard</button>
-<button class="sideItem" onclick="go('searchMember',this)">🔎 Search Member</button>
-<button class="sideItem" onclick="go('upgradeRequests',this)">🚀 Upgrade Requests & Approval</button>
-<button class="sideItem" onclick="go('assignment',this)">💳 New Upgrade Assignment</button>
-<button class="sideItem" onclick="go('incomingPayments',this)">💰 Incoming Payment Approval</button>
-<button class="sideItem" onclick="go('upgradePayments',this)">💳 Upgrade Payment & Final Approval</button>
-<button class="sideItem" onclick="go('dailyReport',this)">📅 Daily Upgrade Report</button>
-</aside>
-
-<div class="head"><h2>LEVELTRACK ADMIN FINAL</h2><div>Members • Upgrade • Payment • Approval • Referral Tree • Daily Upgrades</div></div>
-<div class="wrap">
-
-<div id="dashboard" class="adminPanel show"><div class="cards" id="stats"></div></div>
-
-<div class="card adminPanel" id="searchMember">
-<h3>🔎 Search Member</h3>
-<div class="search"><input id="q" placeholder="Name / Mobile / Member ID" oninput="searchMembers()"><button onclick="searchMembers()">SEARCH</button></div>
-<div id="results"></div>
-</div>
-
-<div class="card adminPanel" id="upgradeRequests">
-<h3>🚀 Upgrade Requests & Approval</h3>
-<div class="small">Member upgrade request வந்தவுடன் இங்கே வரும். முதலில் VIEW MEMBER செய்து details/referral tree check செய்யலாம்.</div>
-<div class="scroll"><table><thead><tr><th>Member</th><th>Request</th><th>Status</th><th>Action</th></tr></thead><tbody id="upgradeRequestsBody"></tbody></table></div>
-</div>
-
-<div class="card adminPanel" id="assignment">
-<h3>💳 New Upgrade Assignment</h3>
-<div class="small">Member Name / Mobile Number / Member ID மூலம் search செய்து member-ஐ தேர்வு செய்த பிறகே payment details உள்ளிடலாம்.</div>
-<div class="search">
-<input id="assignmentSearch" placeholder="Search Name / Mobile / Member ID" oninput="searchAssignment()">
-<button onclick="searchAssignment()">SEARCH</button>
-</div>
-<div id="assignmentResults"></div>
-<div id="assignmentForm" style="display:none">
-<div class="detail"><b>Selected Member:</b> <span id="selectedMember"></span></div>
-<div class="grid">
-<div><input id="toName" placeholder="Receiver / Payee Name"><input id="accountHolder" placeholder="Account Holder Name"><input id="toId" placeholder="Payee Member ID"><input id="amt" placeholder="Upgrade Amount"></div>
-<div><input id="acc" placeholder="Account Number"><input id="bank" placeholder="Bank Name"><input id="ifsc" placeholder="IFSC"><input id="upi" placeholder="UPI ID"></div><div><input id="adminMessage" placeholder="Admin Message to Member"></div>
-</div>
-<button onclick="assignDetails()">APPROVE REQUEST & SEND PAYMENT DETAILS</button>
-</div>
-<div class="detail">Account / Bank / IFSC / UPI details are transaction-specific. ஒவ்வொரு upgrade-க்கும் புதிய details கொடுக்கலாம்.</div>
-</div>
-
-<div class="card adminPanel" id="incomingPayments">
-<h3>💰 Incoming Payment Approval</h3>
-<div class="small">ஒரு member-க்கு யாராவது payment போட்டால், முதலில் receiver/member confirmation. அதற்குப் பிறகு Admin final verification.</div>
-<div class="scroll"><table><thead><tr><th>Receiver / Member</th><th>From</th><th>Amount</th><th>Member Accept</th><th>Admin</th></tr></thead><tbody id="payments"></tbody></table></div>
-</div>
-
-<div class="card adminPanel" id="upgradePayments">
-<h3>💳 Upgrade Payment & Final Approval</h3>
-<div class="scroll"><table><thead><tr><th>Member</th><th>Upgrade</th><th>Payment</th><th>UTR</th><th>Receiver</th><th>Admin</th></tr></thead><tbody id="upgradePaymentsBody"></tbody></table></div>
-</div>
-
-<div class="card adminPanel" id="dailyReport">
-<h3>📅 Daily Upgrade Report</h3>
-<div class="formrow">
-<div><label class="small">Select Date</label><input id="reportDate" type="date" onchange="dailyReport()"></div>
-<div><div class="detail"><b id="dailyCount">0</b> upgrades on selected date</div></div>
-</div>
-<div id="daily"></div>
-</div>
-
-</div>
-
-<div class="modal" id="modal">
-<div class="modalbox">
-<button class="close" onclick="closeModal()">CLOSE</button>
-<h3 id="modalTitle">Member View</h3>
-<div id="modalBody"></div>
-</div>
-</div>
-
-<script>
-const $=id=>document.getElementById(id);
-const api=async(u,o={})=>{const r=await fetch(u,{headers:{'Content-Type':'application/json'},...o});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Request failed');return d};
-let state={members:[],requests:[],upgrades:[],payments:[],levels:{}};
-function member(id){return state.members.find(m=>m.memberId===id)||{}};
-function treeNode(x){const kids=(state.members||[]).filter(m=>m.referral===x.memberId);return `<div class="node"><b>${x.name}</b> <span class="badge ${x.status==='Verified'?'ok':x.status==='Pending'?'pending':'reject'}">${x.status}</span><div class="small">${x.levelMemberId||x.memberId} • ${x.mobile} • Level ${x.level||1}</div><div class="small">Direct Referrals: ${kids.length}</div>${kids.length?`<div class="children">${kids.map(treeNode).join('')}</div>`:''}</div>`}
-async function load(){try{const d=await api('/api/leveltrack/admin/dashboard');state=d;render();dailyReport()}catch(e){alert('LevelTrack server connection failed: '+e.message)}}
-function render(){
- $('stats').innerHTML=[1,2,3,4,5,6,7].map(l=>`<div class="card stat">LEVEL ${l}<div class="num">${state.levels?.[l]||0}</div></div>`).join('');
- $('upgradeRequestsBody').innerHTML=(state.requests||[]).map(r=>{const m=member(r.memberId);return `<tr><td><b>${m.name||r.memberId}</b><br>${m.levelMemberId||m.memberId||r.memberId}<br><span class="small">${m.mobile||''}</span></td><td>L${r.from} → L${r.to}<br><span class="small">${r.date||''}</span></td><td><span class="badge ${r.status==='Requested'?'pending':r.status==='Completed'?'ok':'wait'}">${r.status}</span></td><td><button onclick="viewMember('${r.memberId}')">VIEW MEMBER</button>${r.status==='Requested'?`<button onclick="prepareRequest('${r.id}')">CHECK & APPROVE</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="4">No upgrade requests</td></tr>';
- $('payments').innerHTML=(state.payments||[]).map(p=>`<tr><td><b>${p.to||p.receiverMemberId||''}</b><br>${p.receiverMemberId||''}</td><td>${p.from||p.fromMemberId||''}</td><td>₹${Number(p.amount||0).toLocaleString()}</td><td>${p.memberAccepted?'<span class="badge ok">ACCEPTED</span>':'<span class="badge wait">WAIT RECEIVER</span>'}</td><td>${p.adminApproved?'<span class="badge ok">VERIFIED</span>':p.memberAccepted?`<button onclick="verifyPayment('${p.id}')">ADMIN VERIFY</button>`:'<span class="badge wait">WAIT</span>'}</td></tr>`).join('')||'<tr><td colspan="5">No incoming payments</td></tr>';
- $('upgradePaymentsBody').innerHTML=(state.upgrades||[]).filter(u=>u.detailsSent).map(u=>`<tr><td><b>${member(u.memberId).name||u.memberId}</b><br>${u.memberId}</td><td>L${u.from} → L${u.to}<br>₹${Number(u.amount).toLocaleString()}</td><td>${u.memberPaid?'<span class="badge ok">PAID</span>':'<span class="badge pending">WAITING</span>'}</td><td>${u.utr||'—'}</td><td>${u.receiverApproved?'<span class="badge ok">APPROVED</span>':'<span class="badge wait">WAIT RECEIVER</span>'}</td><td>${u.adminApproved?'<span class="badge ok">ACTIVATED</span>':u.memberPaid&&u.receiverApproved?`<button onclick="finalApprove('${u.id}')">ADMIN APPROVE</button>`:'<span class="badge wait">WAIT</span>'}</td></tr>`).join('')||'<tr><td colspan="6">No upgrade payments</td></tr>';
-}
-async function searchMembers(){try{const d=await api('/api/leveltrack/admin/members?q='+encodeURIComponent($('q').value));state.members=d.members; $('results').innerHTML=d.members.map(m=>`<div class="detail"><b>${m.name}</b> — ${m.mobile} — Level ${m.level}<br><span class="small">${m.levelMemberId||m.memberId} • Direct Referrals: ${(state.members||[]).filter(x=>x.referral===m.memberId).length}</span><button onclick="viewMember('${m.memberId}')">VIEW MEMBER + REFERRAL TREE</button></div>`).join('')||'No member found'}catch(e){alert(e.message)}}
-async function viewMember(id){try{const d=await api('/api/leveltrack/admin/member-details/'+encodeURIComponent(id));$('modalTitle').textContent=d.member.name+' — Member View';$('modalBody').innerHTML=`<div class="grid"><div class="detail"><b>Member ID</b><br>${d.member.memberId}</div><div class="detail"><b>Level Member ID</b><br>${d.member.levelMemberId||'—'}</div><div class="detail"><b>Mobile</b><br>${d.member.mobile}</div><div class="detail"><b>Current Level</b><br>Level ${d.member.level}</div><div class="detail"><b>Status</b><br>${d.member.status}</div><div class="detail"><b>Joined Date</b><br>${d.member.joinedAt||'—'}</div><div class="detail"><b>Upgrade Date</b><br>${d.member.upgradeDate||'—'}</div></div><div class="detail"><b>Direct Referrals: ${d.directReferrals}</b> &nbsp; | &nbsp; <b>Total Downline: ${d.totalDownline}</b></div><h3>🔗 Referral Tree</h3><div class="tree">${treeNode(d.member)}</div>`;$('modal').style.display='block'}catch(e){alert(e.message)}}
-function closeModal(){$('modal').style.display='none'}
-async function prepareRequest(id){const r=state.requests.find(x=>x.id===id);if(!r)return;const m=member(r.memberId);$('assignmentSearch').value=m.name||m.mobile||m.memberId;await searchAssignment();selectAssignmentMember(m.memberId);go('assignment',document.querySelectorAll('.sideItem')[3]);}
-let selectedAssignmentId='';
-async function searchAssignment(){try{const d=await api('/api/leveltrack/admin/members?q='+encodeURIComponent($('assignmentSearch').value));$('assignmentResults').innerHTML=d.members.map(m=>`<div class="detail"><b>${m.name}</b> — ${m.mobile} — Level ${m.level} — ${m.memberId}<button onclick="selectAssignmentMember('${m.memberId}')">SELECT MEMBER</button></div>`).join('')||'No member found'}catch(e){alert(e.message)}}
-function selectAssignmentMember(id){selectedAssignmentId=id;const m=member(id);$('selectedMember').textContent=`${m.name} — ${m.mobile} — ${m.memberId} — Level ${m.level}`;$('assignmentForm').style.display='block';$('amt').value={1:1000,2:3000,3:20000,4:100000,5:200000,6:500000}[m.level]||'';$('assignmentResults').innerHTML=`<div class="detail"><b>Selected:</b> ${m.name} — ${m.mobile} — ${m.memberId}</div>`}
-async function assignDetails(){if(!selectedAssignmentId)return alert('முதலில் member-ஐ search செய்து select செய்யவும்.');const body={payee:$('toName').value.trim(),accountHolder:$('accountHolder').value.trim(),payeeId:$('toId').value.trim(),amount:Number($('amt').value),account:$('acc').value.trim(),bank:$('bank').value.trim(),ifsc:$('ifsc').value.trim(),upi:$('upi').value.trim(),adminMessage:$('adminMessage').value.trim()};const r=state.requests.find(x=>x.memberId===selectedAssignmentId&&x.status==='Requested');if(!r)return alert('இந்த member-க்கு pending upgrade request இல்லை.');try{await api('/api/leveltrack/admin/requests/'+encodeURIComponent(r.id)+'/assign',{method:'POST',body:JSON.stringify(body)});await load();alert('Request approved. Payment details sent to member.')}catch(e){alert(e.message)}}
-async function verifyPayment(id){try{await api('/api/leveltrack/admin/payments/'+encodeURIComponent(id)+'/verify',{method:'POST'});await load();alert('Incoming payment verified.')}catch(e){alert(e.message)}}
-async function finalApprove(id){try{const d=await api('/api/leveltrack/admin/upgrades/'+encodeURIComponent(id)+'/final-approve',{method:'POST'});await load();alert(d.member.name+' upgraded to Level '+d.member.level+'.')}catch(e){alert(e.message)}}
-async function dailyReport(){try{const d=await api('/api/leveltrack/admin/daily-report?date='+encodeURIComponent($('reportDate').value||new Date().toISOString().slice(0,10)));$('reportDate').value=d.date;$('dailyCount').textContent=d.count;$('daily').innerHTML=d.upgrades.map(u=>`<div class="detail"><b>${u.member.name}</b> — ${u.member.levelMemberId||u.member.memberId} — <b>L${u.from} → L${u.to}</b> — ₹${Number(u.amount).toLocaleString()} — ${u.date}</div>`).join('')||`<div class="detail">No completed upgrades on ${d.date}</div>`}catch(e){}}
-function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sideOverlay').classList.toggle('show')}
-function go(id,btn){document.querySelectorAll('.sideItem').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');document.querySelectorAll('.adminPanel').forEach(x=>x.classList.remove('show'));const el=$(id);if(el)el.classList.add('show');toggleMenu();window.scrollTo({top:0,behavior:'smooth'})}
-window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;document.body.classList.add('embedded');document.querySelectorAll('.adminPanel').forEach(x=>x.classList.remove('show'));$(e.data.section)?.classList.add('show');window.scrollTo({top:0,behavior:'smooth'});});
-load();
-</script>
-</body>
-</html>
+function showTab(t){showView(t)}
+function treeNode(x){return `<div class="node"><b>${esc(x.name)}</b> <span class="badge ${x.status==='Verified'?'ok':'pending'}">${esc(x.status||'')}</span><div class="small">${esc(x.levelMemberId||x.memberId)} • ${esc(x.mobile||'')} • Level ${Number(x.level||1)}</div>${x.children?.length?`<div class="children">${x.children.map(treeNode).join('')}</div>`:''}</div>`}
+async function load(){try{state=await api('/api/leveltrack/admin/dashboard');render();dailyReport()}catch(e){document.body.innerHTML='<div class="page"><div class="warn">Server connection failed: '+esc(e.message)+'</div></div>'}}
+function render(){const lv=state.levels||{};$('stats').innerHTML=[1,2,3,4,5,6,7].map(l=>`<div class="stat"><b>${lv[l]||0}</b><span>LEVEL ${l}</span></div>`).join('');renderRequests();renderFinal();renderIncoming()}
+function renderRequests(){const a=(state.requests||[]).filter(r=>r.status!=='Completed');$('requests').innerHTML=a.length?a.map(r=>`<div class="member"><b>${esc(r.memberName||r.memberId)}</b><div class="small">Member ID: ${esc(r.memberId)} • L${r.from} → L${r.to} • Direct referrals checked by server</div><span class="badge ${r.status==='Assigned'?'ok':'pending'}">${esc(r.status)}</span>${r.status==='Requested'?`<button onclick="prepare('${esc(r.id)}')">VIEW / SET PAYMENT DETAILS</button>`:''}</div>`).join(''):'<div class="info">No pending upgrade requests.</div>'}
+async function prepare(rid){selectedRequest=(state.requests||[]).find(x=>x.id===rid);if(!selectedRequest)return;const d=await api('/api/leveltrack/admin/member-details/'+encodeURIComponent(selectedRequest.memberId));$('assignState').innerHTML=`<div class="success"><b>${esc(d.member.name)}</b><br>Member ID: ${esc(d.member.memberId)}<br>Current Level: ${d.member.level}<br>Direct Referrals: ${d.directReferrals}<br>Total Downline: ${d.totalDownline}<div class="tree">${treeNode(d.tree)}</div></div>`;$('assignForm').classList.remove('hidden');$('amount').value=selectedRequest.amount||''}
+async function sendDetails(){if(!selectedRequest)return;const body={payee:$('receiverName').value.trim(),payeeId:$('receiverId').value.trim(),payeePhone:$('receiverPhone').value.trim(),accountHolder:$('accountHolder').value.trim(),bank:$('bank').value.trim(),account:$('account').value.trim(),ifsc:$('ifsc').value.trim(),upi:$('upi').value.trim(),amount:Number($('amount').value),adminMessage:$('message').value.trim()};try{await api('/api/leveltrack/admin/requests/'+encodeURIComponent(selectedRequest.id)+'/assign',{method:'POST',body:JSON.stringify(body)});selectedRequest=null;$('assignForm').classList.add('hidden');await load();alert('Payment details sent to member.')}catch(e){alert(e.message)}}
+function renderFinal(){const a=state.upgrades||[];$('finalList').innerHTML=a.length?a.map(u=>{const can=u.memberPaid&&u.receiverApproved&&!u.adminApproved;return `<div class="member"><b>L${u.from} → L${u.to}</b><div class="small">Payer Member ID: ${esc(u.memberId)} • Receiver Member ID: ${esc(u.payeeId||'-')}<br>Amount: ₹${Number(u.amount||0).toLocaleString()} • UTR: ${esc(u.utr||'-')}</div><span class="badge ${u.adminApproved?'ok':can?'pending':'wait'}">${u.adminApproved?'APPROVED':can?'READY FOR FINAL APPROVAL':'WAITING'}</span>${can?`<button onclick="finalApprove('${esc(u.id)}')">FINAL APPROVE → ACTIVATE L${u.to}</button>`:''}</div>`}).join(''):'<div class="info">No upgrade records.</div>'}
+async function finalApprove(id){try{await api('/api/leveltrack/admin/upgrades/'+encodeURIComponent(id)+'/final-approve',{method:'POST'});await load();alert('Upgrade approved and next level activated.')}catch(e){alert(e.message)}}
+function renderIncoming(){const a=state.payments||[];$('incoming').innerHTML=a.length?a.map(p=>`<div class="member"><b>Receiver: ${esc(p.receiverMemberId)}</b><div class="small">From: ${esc(p.fromMemberId)} • Amount ₹${Number(p.amount||0).toLocaleString()} • UTR ${esc(p.utr||'-')}</div><span class="badge ${p.adminApproved?'ok':p.memberAccepted?'pending':'wait'}">${p.adminApproved?'ADMIN VERIFIED':p.memberAccepted?'RECEIVER CONFIRMED':'WAITING RECEIVER'}</span>${p.memberAccepted&&!p.adminApproved?`<button onclick="verify('${esc(p.id)}')">VERIFY PAYMENT</button>`:''}</div>`).join(''):'<div class="info">No incoming payments.</div>'}
+async function verify(id){try{await api('/api/leveltrack/admin/payments/'+encodeURIComponent(id)+'/verify',{method:'POST'});await load();}catch(e){alert(e.message)}}
+async function searchMembers(){const q=$('q').value.trim();if(!q)return;$('results').innerHTML='<div class="info">Searching...</div>';try{const d=await api('/api/leveltrack/admin/members?q='+encodeURIComponent(q));$('results').innerHTML=d.members.length?d.members.map(m=>`<div class="member"><b>${esc(m.name)}</b><div class="small">${esc(m.memberId)} • ${esc(m.mobile)} • Level ${m.level}</div><button onclick="viewMember('${esc(m.memberId)}')">VIEW MEMBER / REFERRAL TREE</button></div>`).join(''):'<div class="info">No member found.</div>'}catch(e){alert(e.message)}}
+async function viewMember(id){try{const d=await api('/api/leveltrack/admin/member-details/'+encodeURIComponent(id));$('memberView').innerHTML=`<div class="card"><div class="title">Member Details</div>${Object.entries({Name:d.member.name,'Member ID':d.member.memberId,Mobile:d.member.mobile,Level:d.member.level,Status:d.member.status,'Direct Referrals':d.directReferrals,'Total Downline':d.totalDownline}).map(([k,v])=>`<div class="row"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}<div class="title" style="margin-top:10px">Referral Tree</div><div class="tree">${treeNode(d.tree)}</div></div>`}catch(e){alert(e.message)}}
+async function dailyReport(){try{const date=$('reportDate').value||new Date().toISOString().slice(0,10);const d=await api('/api/leveltrack/admin/daily-report?date='+encodeURIComponent(date));$('reportDate').value=d.date;$('daily').innerHTML=`<div class="success"><b>${d.count}</b> approved upgrade(s) on ${esc(d.date)}</div>`+(d.upgrades||[]).map(u=>`<div class="row"><span>L${u.from} → L${u.to}<br>${esc(u.member?.name||'')}</span><b>₹${Number(u.amount||0).toLocaleString()}</b></div>`).join('')}catch(e){}}
+window.addEventListener('message',e=>{if(e.origin!==location.origin||e.data?.type!=='LEVELTRACK_NAV')return;showView(e.data.section||'dashboard')});load();showView(currentView());setInterval(load,5000);
+</script></body></html>
