@@ -52,7 +52,7 @@ app.post('/api/admin/password',(req,res)=>{if(req.body.oldPassword!==db.adminPas
 app.get('/api/admin/dashboard',(req,res)=>{
  const today=new Date().toISOString().slice(0,10);
  const total=db.members.length,pending=db.members.filter(m=>m.status==='Pending').length,verified=db.members.filter(m=>m.status==='Verified').length;
- const todayMembers=db.members.filter(m=>String(m.registeredAt||m.joinedAt||'').slice(0,10)===today);
+ const todayMembers=db.members.filter(m=>String(m.registeredAt||m.joinedAt||'').slice(0,10)===today).map(memberPublic);
  const report=db.members.map(m=>{const w=wallet(m.memberId);return {name:m.name,memberId:m.memberId,received:w.received,used:w.used,available:w.available}});
  const sent=db.pins.filter(p=>p.assignedTo).length;
  const used=db.pins.filter(p=>p.status==='USED').length;
@@ -85,6 +85,13 @@ app.post('/api/admin/pins/generate',(req,res)=>{
  save(db);const w=wallet(m.memberId);res.json({pins:out,member:memberPublic(m),available:w.available,used:w.used});
 });
 
+app.get('/api/member/referral-info/:id',(req,res)=>{
+ const id=String(req.params.id||'').trim();
+ if(!id||id==='FIRST MEMBER')return res.json({valid:id==='FIRST MEMBER',member:null});
+ const m=db.members.find(x=>x.memberId===id);
+ if(!m)return res.status(404).json({valid:false,error:'Referral ID not found'});
+ res.json({valid:true,member:{memberId:m.memberId,name:m.name,mobile:m.mobile,level:Number(m.level||1)}});
+});
 app.post('/api/member/send-otp',(req,res)=>{if(!/^\d{10}$/.test(String(req.body.mobile||'')))return res.status(400).json({error:'Invalid mobile number'});res.json({ok:true,otp:'123456'})});
 app.post('/api/member/login',(req,res)=>{const m=db.members.find(x=>x.mobile===req.body.mobile);if(req.body.otp!=='123456')return res.status(401).json({error:'OTP சரியாக இல்லை'});if(!m)return res.status(404).json({error:'Member not found. Please register first.'});res.json({member:memberPublic(m)})});
 app.post('/api/member/check-pin',(req,res)=>{const p=String(req.body.pin||'').toUpperCase();if(!db.pins.some(x=>x.pin===p&&x.status==='AVAILABLE'))return res.status(400).json({error:'Invalid or unavailable Joining PIN'});res.json({ok:true})});
@@ -116,12 +123,12 @@ app.post('/api/member/use-pin',(req,res)=>{
 // ---------------- LEVELTRACK SERVER API ----------------
 const LEVEL_RULES={
   1:{provide:500,upgrade:1000,self:500,trust:0,required:3},
-  2:{provide:1000,upgrade:3000,self:2000,trust:0,required:5},
-  3:{provide:3000,upgrade:20000,self:10000,trust:0,required:10},
-  4:{provide:20000,upgrade:100000,self:70000,trust:30000,required:10},
-  5:{provide:100000,upgrade:200000,self:200000,trust:100000,required:5},
-  6:{provide:200000,upgrade:500000,self:300000,trust:200000,required:5},
-  7:{provide:500000,upgrade:0,self:1500000,trust:1000000,required:5}
+  2:{provide:1000,upgrade:3000,self:2000,trust:0,required:6},
+  3:{provide:3000,upgrade:20000,self:10000,trust:0,required:9},
+  4:{provide:20000,upgrade:100000,self:70000,trust:30000,required:12},
+  5:{provide:100000,upgrade:200000,self:200000,trust:100000,required:15},
+  6:{provide:200000,upgrade:500000,self:300000,trust:200000,required:18},
+  7:{provide:500000,upgrade:0,self:1500000,trust:1000000,required:18}
 };
 function nextLevelMemberId(level){
   const prefix='L'+level+'-';
@@ -150,10 +157,15 @@ function ltDashboard(memberId){
   const m=ltMember(memberId); if(!m)return null;
   if(!m.level)m.level=1;
   if(m.status==='Verified'&&!m.levelMemberId)m.levelMemberId=nextLevelMemberId(m.level);
-  const upgrade=ltStatusUpgrade(memberId) || db.leveltrackUpgrades.filter(u=>u.memberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))[0]||null;
   const requests=db.leveltrackRequests.filter(r=>r.memberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+  const latestRequest=requests[0]||null;
+  const relatedUpgrades=db.leveltrackUpgrades.filter(u=>u.memberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+  const upgrade=(latestRequest && db.leveltrackUpgrades.find(u=>u.requestId===latestRequest.id)) || relatedUpgrades[0] || null;
   const payments=db.leveltrackPayments.filter(p=>p.receiverMemberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
-  return {member:memberPublic(m),directReferrals:direct(memberId).length,totalDownline:downlineCount(memberId),tree:ltTree(memberId),upgrade,requests,incomingPayments:payments,history:ltHistory(memberId)};
+  const directReferrals=direct(memberId).length;
+  const requiredDirectReferrals={1:3,2:6,3:9,4:12,5:15,6:18}[Number(m.level||1)]||0;
+  const msgs=[...db.messages.filter(x=>x.to===memberId||x.to==='ALL'),...db.leveltrackMessages.filter(x=>x.to===memberId)].sort((a,b)=>String(b.at).localeCompare(String(a.at))).map(x=>({message:x.message,at:x.at}));
+  return {member:memberPublic(m),directReferrals,totalDownline:downlineCount(memberId),tree:ltTree(memberId),upgrade,requests,incomingPayments:payments,history:ltHistory(memberId),requiredDirectReferrals,messages:msgs};
 }
 app.get('/leveltrack-admin.html',(req,res)=>res.sendFile(path.join(__dirname,'leveltrack-admin.html')));
 app.get('/leveltrack-member.html',(req,res)=>res.sendFile(path.join(__dirname,'leveltrack-member.html')));
@@ -172,9 +184,9 @@ app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
   if(r.status!=='Requested')return res.status(400).json({error:'Request is not pending'});
   const m=ltMember(r.memberId);if(!m)return res.status(404).json({error:'Member not found'});
   const amount=Number(req.body.amount||LEVEL_RULES[r.from]?.upgrade||0);if(!amount)return res.status(400).json({error:'Upgrade amount required'});
-  Object.assign(r,{status:'Assigned',assignedAt:new Date().toISOString(),payee:req.body.payee||'',payeeId:req.body.payeeId||'',amount,account:req.body.account||'',bank:req.body.bank||'',ifsc:req.body.ifsc||'',upi:req.body.upi||'',adminMessage:req.body.adminMessage||''});
+  Object.assign(r,{status:'Assigned',assignedAt:new Date().toISOString(),payee:req.body.payee||'',accountHolder:req.body.accountHolder||'',payeeId:req.body.payeeId||'',amount,account:req.body.account||'',bank:req.body.bank||'',ifsc:req.body.ifsc||'',upi:req.body.upi||'',adminMessage:req.body.adminMessage||''});
   let u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);if(!u){u={id:'LTU-'+crypto.randomBytes(4).toString('hex').toUpperCase(),requestId:r.id,memberId:m.memberId,from:r.from,to:r.to,createdAt:new Date().toISOString()};db.leveltrackUpgrades.push(u)}
-  Object.assign(u,{amount,payee:r.payee,payeeId:r.payeeId,account:r.account,bank:r.bank,ifsc:r.ifsc,upi:r.upi,adminMessage:r.adminMessage||'',detailsSent:true,detailsSentAt:new Date().toISOString()});
+  Object.assign(u,{amount,payee:r.payee,accountHolder:r.accountHolder||'',payeeId:r.payeeId,account:r.account,bank:r.bank,ifsc:r.ifsc,upi:r.upi,adminMessage:r.adminMessage||'',detailsSent:true,detailsSentAt:new Date().toISOString()});
   db.leveltrackMessages.push({to:m.memberId,message:`LevelTrack payment details sent for L${r.from} → L${r.to}. Amount ₹${amount.toLocaleString()}.`,at:new Date().toISOString()});save(db);res.json({ok:true,request:r,upgrade:u});
 });
 app.post('/api/leveltrack/admin/payments/:id/verify',(req,res)=>{
