@@ -187,9 +187,9 @@ app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
   if(r.status!=='Requested')return res.status(400).json({error:'Request is not pending'});
   const m=ltMember(r.memberId);if(!m)return res.status(404).json({error:'Member not found'});
   const amount=Number(req.body.amount||LEVEL_RULES[r.from]?.upgrade||0);if(!amount)return res.status(400).json({error:'Upgrade amount required'});
-  Object.assign(r,{status:'Assigned',assignedAt:new Date().toISOString(),payee:req.body.payee||'',payeePhone:req.body.payeePhone||'',accountHolder:req.body.accountHolder||'',payeeId:req.body.payeeId||'',amount,account:req.body.account||'',bank:req.body.bank||'',ifsc:req.body.ifsc||'',upi:req.body.upi||'',adminMessage:req.body.adminMessage||''});
+  Object.assign(r,{status:'Assigned',assignedAt:new Date().toISOString(),payee:req.body.payee||'',accountHolder:req.body.accountHolder||'',payeeId:req.body.payeeId||'',amount,account:req.body.account||'',bank:req.body.bank||'',ifsc:req.body.ifsc||'',upi:req.body.upi||'',adminMessage:req.body.adminMessage||''});
   let u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);if(!u){u={id:'LTU-'+crypto.randomBytes(4).toString('hex').toUpperCase(),requestId:r.id,memberId:m.memberId,from:r.from,to:r.to,createdAt:new Date().toISOString()};db.leveltrackUpgrades.push(u)}
-  Object.assign(u,{amount,payee:r.payee,payeePhone:r.payeePhone||'',accountHolder:r.accountHolder||'',payeeId:r.payeeId,account:r.account,bank:r.bank,ifsc:r.ifsc,upi:r.upi,adminMessage:r.adminMessage||'',detailsSent:true,detailsSentAt:new Date().toISOString()});
+  Object.assign(u,{amount,payee:r.payee,accountHolder:r.accountHolder||'',payeeId:r.payeeId,account:r.account,bank:r.bank,ifsc:r.ifsc,upi:r.upi,adminMessage:r.adminMessage||'',detailsSent:true,detailsSentAt:new Date().toISOString()});
   db.leveltrackMessages.push({to:m.memberId,message:`LevelTrack payment details sent for L${r.from} → L${r.to}. Amount ₹${amount.toLocaleString()}.`,at:new Date().toISOString()});save(db);res.json({ok:true,request:r,upgrade:{...r,...u}});
 });
 app.post('/api/leveltrack/admin/payments/:id/verify',(req,res)=>{
@@ -219,9 +219,6 @@ app.get('/api/leveltrack/member/dashboard/:id',(req,res)=>{
 app.post('/api/leveltrack/member/upgrade-request',(req,res)=>{
   const m=ltMember(req.body.memberId);if(!m)return res.status(404).json({error:'Member not found'});
   const from=Number(m.level||1),to=from+1;if(from>=7)return res.status(400).json({error:'Level 7 is the final level'});
-  const required={1:3,2:6,3:9,4:12,5:15,6:18}[from]||0;
-  const actual=direct(m.memberId).length;
-  if(actual<required)return res.status(400).json({error:`Need ${required} direct referrals. You currently have ${actual}.`});
   const pending=db.leveltrackRequests.find(r=>r.memberId===m.memberId&&r.status!=='Completed');if(pending)return res.status(400).json({error:'Upgrade request already pending'});
   const r={id:'LTR-'+crypto.randomBytes(4).toString('hex').toUpperCase(),memberId:m.memberId,from,to,status:'Requested',date:new Date().toISOString().slice(0,10),createdAt:new Date().toISOString()};db.leveltrackRequests.push(r);db.leveltrackMessages.push({to:'ADMIN',message:`New LevelTrack upgrade request: ${m.name} — L${from} → L${to}.`,at:new Date().toISOString()});save(db);res.json({ok:true,request:r});
 });

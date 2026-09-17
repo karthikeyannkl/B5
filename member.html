@@ -9,44 +9,72 @@
 body{margin:0;background:#f5f7fb;color:#172033;font-family:system-ui,-apple-system,"Noto Sans Tamil",sans-serif}
 .demo{background:#171c2b;color:white;text-align:center;padding:7px;font-size:11px}
 header{height:64px;background:white;border-bottom:1px solid #e6e9ef;display:flex;align-items:center;padding:0 14px;gap:10px}
-.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#7e1839,#d39a42);color:#fff;display:grid;place-items:center;font-size:24px;font-weight:800}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#034A2B,#d39a42);color:#fff;display:grid;place-items:center;font-size:24px;font-weight:800}
 .brand b{display:block;font-size:15px}.brand small{color:#7b8496;font-size:10px}
 main{max-width:720px;margin:auto;padding:16px 12px 40px}
 .card{background:#fff;border:1px solid #e4e8ef;border-radius:18px;padding:17px;margin-bottom:14px;box-shadow:0 5px 20px #00000008}
-.profile{display:flex;gap:12px;align-items:center}.avatar{width:55px;height:55px;border-radius:50%;background:#eee1e6;color:#8b1e3f;display:grid;place-items:center;font-size:23px;font-weight:800}
+.profile{display:flex;gap:12px;align-items:center}.avatar{width:55px;height:55px;border-radius:50%;background:#eee1e6;color:#075B35;display:grid;place-items:center;font-size:23px;font-weight:800}
 .profile h2{margin:0 0 3px}.small{font-size:11px;color:#7b8496}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
 .stat{background:#fff;border:1px solid #e4e8ef;border-radius:14px;padding:11px 4px;text-align:center;cursor:pointer}
-.stat:active{transform:scale(.97)}.stat b{display:block;font-size:24px;color:#8b1e3f}.stat span{font-size:10px;color:#737d91}.stat small{display:block;color:#a06b7e;font-size:8px;margin-top:3px}
+.stat:active{transform:scale(.97)}.stat b{display:block;font-size:24px;color:#075B35}.stat span{font-size:10px;color:#737d91}.stat small{display:block;color:#a06b7e;font-size:8px;margin-top:3px}
 .detail{display:none;background:#fff;border:2px solid #eee1e6;border-radius:16px;padding:15px;margin-bottom:14px}
 .member{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fafbfe;border:1px solid #e4e8ef;border-radius:12px;padding:11px;margin-top:8px}
-.member b{display:block}.member small{display:block;color:#7b8496;font-size:10px}.tag{background:#eee1e6;color:#8b1e3f;padding:5px 7px;border-radius:8px;font-size:9px}
+.member b{display:block}.member small{display:block;color:#7b8496;font-size:10px}.tag{background:#eee1e6;color:#075B35;padding:5px 7px;border-radius:8px;font-size:9px}
 .tree{border-top:1px solid #eee;margin-top:10px;padding-top:10px}.node{padding:9px;background:#fafbfe;border:1px solid #e4e8ef;border-radius:10px;margin:7px 0}.children{margin-left:17px;border-left:2px solid #eee1e6;padding-left:10px}
-button{border:0;border-radius:10px;padding:11px 14px;background:#8b1e3f;color:white;font-weight:700;cursor:pointer}
+button{border:0;border-radius:10px;padding:11px 14px;background:#075B35;color:white;font-weight:700;cursor:pointer}
 @media(max-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
 
-.leadercard{border:2px solid #eee1e6}.balance{font-size:30px;font-weight:800;color:#8b1e3f}.progress{height:9px;background:#e9ebf0;border-radius:99px;overflow:hidden;margin:8px 0}.bar{height:100%;background:#8b1e3f}.pinbox{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.pin{border:1px solid #e4e8ef;border-radius:9px;padding:9px}.pin b{color:#8b1e3f;font-size:12px}.pin small{display:block;color:#788196;font-size:9px}.success{background:#eef7f0;color:#277642;border-radius:10px;padding:10px;font-size:11px;margin-top:10px}
+.leadercard{border:2px solid #eee1e6}.balance{font-size:30px;font-weight:800;color:#075B35}.progress{height:9px;background:#e9ebf0;border-radius:99px;overflow:hidden;margin:8px 0}.bar{height:100%;background:#075B35}.pinbox{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.pin{border:1px solid #e4e8ef;border-radius:9px;padding:9px}.pin b{color:#075B35;font-size:12px}.pin small{display:block;color:#788196;font-size:9px}.success{background:#eef7f0;color:#277642;border-radius:10px;padding:10px;font-size:11px;margin-top:10px}
 @media(max-width:520px){.pinbox{grid-template-columns:1fr}}
 </style>
 <style>
 .logo img,.gatelogo img{width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block}
 #B5_MEMBER_GATE{position:fixed;inset:0;background:#f5f7fb;z-index:99999;overflow:auto;padding:20px 14px}
 #B5_MEMBER_GATE .gatebox{width:100%;max-width:520px;margin:18px auto;background:#fff;border:1px solid #e3e7ef;border-radius:20px;padding:20px;box-shadow:0 8px 28px #00000012}
-#B5_MEMBER_GATE .gatelogo{width:60px;height:60px;border-radius:14px;background:linear-gradient(135deg,#7e1839,#d39a42);color:#fff;display:grid;place-items:center;font-size:28px;font-weight:800;margin:0 auto 10px}
+#B5_MEMBER_GATE .gatelogo{width:60px;height:60px;border-radius:14px;background:linear-gradient(135deg,#034A2B,#d39a42);color:#fff;display:grid;place-items:center;font-size:28px;font-weight:800;margin:0 auto 10px}
 #B5_MEMBER_GATE h2{text-align:center;margin:5px 0}.gate-sub{text-align:center;color:#7b8496;font-size:12px}
 .b5-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}
 .b5-tabs button{border:0;border-radius:10px;padding:11px;font-weight:800;background:#f0f1f6;color:#30384d}
-.b5-tabs button.on{background:#8b1e3f;color:#fff}
+.b5-tabs button.on{background:#075B35;color:#fff}
 .b5-step{display:none}.b5-step.on{display:block}
 .b5-step label{display:block;font-size:11px;color:#7b8496;margin-top:9px}
 .b5-step input,.b5-step select,.b5-step textarea{width:100%;padding:11px;border:1px solid #dfe3ec;border-radius:10px;font:inherit;background:#fff;margin-top:5px}
-.b5-primary{width:100%;border:0;border-radius:10px;padding:11px;background:#8b1e3f;color:#fff;font-weight:800;margin-top:10px}
+.b5-primary{width:100%;border:0;border-radius:10px;padding:11px;background:#075B35;color:#fff;font-weight:800;margin-top:10px}
 .b5-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .b5-full{grid-column:1/-1}.b5-msg{text-align:center;font-size:11px;margin-top:9px}.b5-err{color:#ae2929}.b5-ok{color:#227442}
 @media(max-width:520px){.b5-grid{grid-template-columns:1fr}}
 </style><style>.top-actions{margin-left:auto;display:flex;gap:6px}.top-actions button{border:1px solid #e1e4ea;background:#fff;border-radius:9px;padding:7px 9px;font-weight:700;font-size:11px;color:#172033}.member-detail{background:#fafbfe;border:1px solid #e4e8ef;border-radius:12px;padding:12px;margin-top:10px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.detail-grid div{background:#fff;border:1px solid #eee;padding:8px;border-radius:8px}.detail-grid small{display:block;color:#7b8496;font-size:10px}.detail-grid b{font-size:12px;word-break:break-word}@media(max-width:520px){.top-actions button{padding:6px 7px;font-size:10px}.detail-grid{grid-template-columns:1fr}}</style>
-<style id="b5-leveltracking-integrated-style">
-.b5-lt-launch{width:100%;margin-top:10px;background:#075B35;color:#fff;border:0;border-radius:10px;padding:12px;font-weight:800}.b5-lt-panel{display:none;margin-top:12px}.b5-lt-panel.on{display:block}.b5-lt-tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.b5-lt-tabs button{border:1px solid #D9A441;background:#EAF4EE;color:#17372C;border-radius:10px;padding:11px;font-weight:800}.b5-lt-tabs button.on{background:#075B35;color:#fff}.b5-lt-card{background:#fff;border:1px solid #DDE7E1;border-radius:14px;padding:13px;margin:9px 0}.b5-lt-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #eef1f3;font-size:13px}.b5-lt-row:last-child{border-bottom:0}.b5-lt-badge{display:inline-block;padding:5px 8px;border-radius:18px;font-size:11px;font-weight:800;background:#edf0f5;color:#475467}.b5-lt-ok{background:#d9f8e8;color:#087f4f}.b5-lt-warn{background:#fff1c2;color:#765000}.b5-lt-info{background:#eef5ff;color:#174a83;padding:10px;border-radius:10px;font-size:12px;line-height:1.5}.b5-lt-success{background:#eaf8ed;border:1px solid #b8e0bf;color:#146b22;padding:10px;border-radius:10px;font-size:13px;line-height:1.5}.b5-lt-danger{background:#fbe5e5;color:#b42318;padding:10px;border-radius:10px}.b5-lt-level{border:1px solid #dde7e1;border-radius:10px;margin:8px 0;overflow:hidden}.b5-lt-level-head{display:flex;justify-content:space-between;padding:11px;background:#f7faf8;font-weight:800;font-size:13px}.b5-lt-pay{padding:9px;border-top:1px solid #eee;font-size:12px}.b5-lt-panel input,.b5-lt-panel textarea{width:100%;padding:10px;margin:5px 0 9px;border:1px solid #ccd6d0;border-radius:9px}.b5-lt-panel button{font-family:inherit}
+<style id="mobile-fix-v2">
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+#B5_MEMBER_GATE{width:100vw;max-width:100vw;box-sizing:border-box;padding:14px 12px}
+#B5_MEMBER_GATE .gatebox{width:100%;max-width:520px;box-sizing:border-box;margin:8px auto;padding:16px}
+#B5_MEMBER_GATE h2{font-size:clamp(20px,6vw,28px);white-space:normal;overflow-wrap:anywhere}
+main{width:100%;max-width:720px;box-sizing:border-box}
+.card,.search,input,select,textarea,button{max-width:100%}
+</style>
+
+<style id="b5-logo-theme">
+:root{
+ --b5-green:#075B35;--b5-green-dark:#034A2B;--b5-green-soft:#EAF4EE;
+ --b5-gold:#D9A441;--b5-gold-light:#F5D98A;--b5-cream:#FFFDF7;
+ --b5-ink:#17372C;--b5-border:#DDE7E1;
+}
+body{background:var(--b5-cream)!important;color:var(--b5-ink)!important;overflow-x:hidden}
+header,.head{background:var(--b5-green)!important;color:#fff!important}
+.hero{background:linear-gradient(135deg,var(--b5-green-dark),var(--b5-green),#147A49)!important}
+button,.b5-primary{background:var(--b5-green)!important;color:#fff!important}
+button:hover,.b5-primary:hover{background:var(--b5-green-dark)!important}
+.tag,.pill:not(.whitepill),.section-title,.badge{border-color:var(--b5-gold)!important}
+.whitepill{color:var(--b5-green)!important}
+.card,.gate,.panel,.stat{border-color:var(--b5-border)!important}
+.stat b,.gold,.amount{color:var(--b5-gold)!important}
+input:focus,select:focus,textarea:focus{border-color:var(--b5-gold)!important;outline-color:var(--b5-gold)!important}
+#integratedSidebar,#memberSidebar{background:var(--b5-cream)!important}
+#integratedSidebar button,#memberSidebar button{background:var(--b5-green-soft)!important;color:var(--b5-ink)!important}
+#integratedSidebar button.active,#memberSidebar button.active{background:var(--b5-green)!important;color:#fff!important}
+#integratedMenuBtn,#memberMenuBtn{background:#fff!important;color:var(--b5-green)!important;border:1px solid var(--b5-gold)!important}
+.logo img{object-fit:contain!important;background:#fff!important;border-radius:50%!important}
 </style>
 </head>
 <body><div id="B5_MEMBER_GATE"><div class="gatebox">
@@ -73,13 +101,13 @@ button{border:0;border-radius:10px;padding:11px 14px;background:#8b1e3f;color:wh
 <div class="b5-full"><label>Address</label><textarea id="rAddress" rows="2"></textarea></div>
 <div><label>Heir / Nominee</label><input id="rNominee"></div>
 <div><label>Mobile Number</label><input id="rMobile" type="tel" inputmode="numeric" maxlength="10" minlength="10" pattern="[0-9]{10}" placeholder="10 digit Mobile Number"></div>
-<div><label>Referral ID</label><input id="rReferral"></div>
+<div><label>Referral ID</label><input id="rReferral" autocomplete="off" oninput="checkReferralId()"><div id="referralConfirm" class="small" style="margin-top:5px"></div></div>
 <div><label>Bank Account Number</label><input id="rAccount"></div>
 <div><label>IFSC</label><input id="rIfsc"></div>
 <div><label>Bank Name</label><input id="rBank"></div>
 <div><label>Branch</label><input id="rBranch"></div>
 <div class="b5-full"><label>Declaration</label><label style="color:#172033"><input id="rDeclaration" type="checkbox" style="width:auto;margin-right:6px"> I confirm that the details provided are correct.</label></div>
-<div class="b5-full"><label>Joining PIN</label><input id="b5JoinPin" maxlength="9" placeholder="Enter Joining PIN"></div>
+<div class="b5-full"><label>Joining PIN</label><input id="b5JoinPin" maxlength="9" placeholder="Enter Joining PIN"><div style="font-size:12px;color:#667085;margin-top:5px">First Registration PIN: <b>B5-FMUXNF</b></div></div>
 </div>
 <button class="b5-primary" onclick="b5Register()">Submit Registration</button>
 <div id="b5RegMsg" class="b5-msg"></div>
@@ -91,24 +119,13 @@ button{border:0;border-radius:10px;padding:11px 14px;background:#8b1e3f;color:wh
 <main>
 <section class="card profile">
 <div class="avatar" id="memberAvatar">B5</div>
-<div><h2 id="memberName">Member</h2><div class="small">Member ID: <b id="memberId">Not Registered</b></div><div class="small">Mobile: <span id="memberMobile">Not Registered</span></div><div class="small">Status: <b id="memberStatus">Pending</b></div></div>
+<div><h2 id="memberName">Member</h2><div class="small">Member ID: <b id="memberId">Not Registered</b></div><div class="small">Mobile: <span id="memberMobile">Not Registered</span></div><div class="small">Status: <b id="memberStatus">ACTIVE</b></div></div>
 </section>
-
-<section class="card" id="b5LevelTrackingCard">
-  <span class="tag">LEVEL TRACKING</span>
-  <h3 style="margin:10px 0 4px">📊 Level Tracking</h3>
-  <div class="small">Level progress, upgrade process, incoming payments and earnings — all inside this option.</div>
-  <button class="b5-lt-launch" onclick="b5LTShow()">OPEN LEVEL TRACKING</button>
-  <div id="b5LTPanel" class="b5-lt-panel">
-    <div class="b5-lt-tabs">
-      <button id="b5LTUpgradeTab" class="on" onclick="b5LTTab('upgrade')">🚀 Level Upgrade</button>
-      <button id="b5LTEarningsTab" onclick="b5LTTab('earnings')">💰 My Earnings</button>
-    </div>
-    <div id="b5LTUpgradePane"></div>
-    <div id="b5LTEarningsPane" style="display:none"></div>
-  </div>
+<section class="card" id="dashboardAdminMessages">
+<span class="tag">ADMIN MESSAGE</span>
+<h3 style="margin:10px 0 4px">Admin Message</h3>
+<div id="dashboardAdminMessageList"><div class="small">Admin message இங்கே வரும்.</div></div>
 </section>
-
 <section class="card" id="referralCard"><span class="tag">MY REFERRAL LINK</span><h3 style="margin:10px 0 4px">Share & Invite</h3><div class="small">இந்த link மூலம் புதிய Member உங்கள் Referral ID-யுடன் Registration செய்யலாம்.</div><input id="myReferralLink" readonly style="margin-top:9px;width:100%;padding:10px;border:1px solid #ddd;border-radius:10px"><button onclick="copyReferralLink()" style="width:100%;margin-top:8px">Copy Referral Link</button></section>
 
 <section class="stats">
@@ -152,7 +169,7 @@ button{border:0;border-radius:10px;padding:11px 14px;background:#8b1e3f;color:wh
     <div class="box"><b>0</b><small>Expired / Cancelled</small></div>
   </div>
   <div class="pinbox" id="walletPins"></div>
-  <button onclick="useWalletPin()" style="width:100%;margin-top:10px">Use 1 PIN → Activate Member</button>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button onclick="useWalletPin()">Use 1 PIN → Activate Member</button><button onclick="shareFirstAvailablePin()">Share PIN</button></div>
   <div id="walletAct" class="success" style="display:none"></div>
 </section>
 </main>
@@ -164,12 +181,15 @@ button{border:0;border-radius:10px;padding:11px 14px;background:#8b1e3f;color:wh
 
 <script>
 async function b5api(u,o={}){const r=await fetch(u,{headers:{'Content-Type':'application/json'},...o});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Request failed');return d}
-function b5Tab(x){document.getElementById('b5LoginTab')?.classList.toggle('on',x==='login');document.getElementById('b5RegTab')?.classList.toggle('on',x==='register');document.getElementById('b5LoginStep').style.display=x==='login'?'block':'none';document.getElementById('b5RegStep').style.display=x==='register'?'block':'none';if(x==='register'){const ref=new URLSearchParams(location.search).get('ref');document.getElementById('rReferral').value=ref||'FIRST MEMBER'}}
+function b5Tab(x){document.getElementById('b5LoginTab')?.classList.toggle('on',x==='login');document.getElementById('b5RegTab')?.classList.toggle('on',x==='register');document.getElementById('b5LoginStep').style.display=x==='login'?'block':'none';document.getElementById('b5RegStep').style.display=x==='register'?'block':'none';if(x==='register'){const ref=new URLSearchParams(location.search).get('ref');document.getElementById('rReferral').value=ref||'FIRST MEMBER';checkReferralId()}}
 async function b5SendOtp(){const m=document.getElementById('b5LoginMobile').value.trim();if(!/^\d{10}$/.test(m))return document.getElementById('b5LoginMsg').textContent='Mobile Number must be exactly 10 digits';try{await b5api('/api/member/send-otp',{method:'POST',body:JSON.stringify({mobile:m})});document.getElementById('b5LoginMsg').textContent='OTP sent. Test OTP: 123456'}catch(e){document.getElementById('b5LoginMsg').textContent=e.message}}
 async function b5Login(){const m=document.getElementById('b5LoginMobile').value.trim(),o=document.getElementById('b5LoginOtp').value.trim();try{const d=await b5api('/api/member/login',{method:'POST',body:JSON.stringify({mobile:m,otp:o})});localStorage.setItem('BORNTOWIN5_MEMBER_ID',d.member.memberId);document.getElementById('B5_MEMBER_GATE').style.display='none';b5Fill(d.member);await b5Refresh();await b5LoadMessages()}catch(e){document.getElementById('b5LoginMsg').textContent=e.message}}
-function b5Fill(m){document.getElementById('memberName').textContent=m.name;document.getElementById('memberId').textContent=m.memberId;document.getElementById('memberMobile').textContent=m.mobile;document.getElementById('memberStatus').textContent=m.status||'Pending';document.getElementById('memberAvatar').textContent=(m.name||'B5').charAt(0).toUpperCase()}
+function b5Fill(m){document.getElementById('memberName').textContent=m.name;document.getElementById('memberId').textContent=m.memberId;document.getElementById('memberMobile').textContent=m.mobile;document.getElementById('memberStatus').textContent=(m.status==='Rejected'?'REJECTED':'ACTIVE');document.getElementById('memberAvatar').textContent=(m.name||'B5').charAt(0).toUpperCase()}
+let referralTimer;
+async function checkReferralId(){const el=document.getElementById('referralConfirm');const id=document.getElementById('rReferral')?.value.trim();if(!el)return;if(!id||id==='FIRST MEMBER'){el.textContent=id==='FIRST MEMBER'?'✓ First Member registration':'Enter Referral ID';el.style.color='#667085';return}clearTimeout(referralTimer);referralTimer=setTimeout(async()=>{try{const d=await b5api('/api/member/referral-info/'+encodeURIComponent(id));el.innerHTML=`✓ Referral confirmed: <b>${String(d.member.name).replace(/</g,'&lt;')}</b> (${d.member.memberId})`;el.style.color='#087f4f'}catch(e){el.textContent='✕ Referral ID not found';el.style.color='#b42318'}},250)}
+async function shareFirstAvailablePin(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID');if(!id)return;try{const d=await b5api('/api/member/dashboard/'+encodeURIComponent(id));const p=(d.wallet.pins||[]).find(x=>x.status==='AVAILABLE');if(!p)return alert('Available PIN இல்லை');b5SharePin(p.pin)}catch(e){alert('Wallet load failed')}}
 async function b5Register(){const ids=['rName','rGender','rAge','rEducation','rCategory','rSkill','rAddress','rNominee','rMobile','rReferral','rAccount','rIfsc','rBank','rBranch','b5JoinPin'];for(const id of ids){const e=document.getElementById(id);if(!e.value.trim())return document.getElementById('b5RegMsg').textContent='அனைத்து விவரங்களையும் நிரப்பவும்'}const mobile=document.getElementById('rMobile').value.trim();if(!/^\d{10}$/.test(mobile))return document.getElementById('b5RegMsg').textContent='Mobile Number must be exactly 10 digits';if(!document.getElementById('rDeclaration').checked)return document.getElementById('b5RegMsg').textContent='Declaration accept செய்யவும்';const b={name:document.getElementById('rName').value.trim(),gender:document.getElementById('rGender').value,age:document.getElementById('rAge').value,education:document.getElementById('rEducation').value.trim(),category:document.getElementById('rCategory').value.trim(),skill:document.getElementById('rSkill').value.trim(),address:document.getElementById('rAddress').value.trim(),nominee:document.getElementById('rNominee').value.trim(),mobile,referral:document.getElementById('rReferral').value.trim()||'FIRST MEMBER',account:document.getElementById('rAccount').value.trim(),ifsc:document.getElementById('rIfsc').value.trim(),bank:document.getElementById('rBank').value.trim(),branch:document.getElementById('rBranch').value.trim(),pin:document.getElementById('b5JoinPin').value.trim().toUpperCase()};try{const d=await b5api('/api/member/register',{method:'POST',body:JSON.stringify(b)});document.getElementById('b5RegMsg').textContent='✓ Registration successful. Member ID: '+d.member.memberId+' — Login செய்யவும்.';document.getElementById('b5LoginMobile').value=mobile;b5Tab('login');document.getElementById('b5LoginMsg').textContent='Registration successful. இப்போது OTP மூலம் Login செய்யலாம்.';document.getElementById('B5_MEMBER_GATE').style.display='block'}catch(e){document.getElementById('b5RegMsg').textContent=e.message}}
-async function b5Refresh(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID');if(!id)return;try{const d=await b5api('/api/member/dashboard/'+encodeURIComponent(id));b5Fill(d.member);for(let i=1;i<=7;i++)document.getElementById('lv'+i).textContent=d.levels[i]?.length||0;document.getElementById('tree').innerHTML=makeTree(d.tree,0);document.getElementById('walletBalance').textContent=d.wallet.available+' PINs';document.getElementById('walletReceived').textContent=d.wallet.received;document.getElementById('walletUsed').textContent=d.wallet.used;document.getElementById('walletAvailable').textContent=d.wallet.available;document.getElementById('walletBar').style.width=(d.wallet.received?d.wallet.available/d.wallet.received*100:0)+'%';document.getElementById('walletPins').innerHTML=d.wallet.pins.map(x=>`<div class="pin"><b>${x.pin}</b><small>AVAILABLE</small></div>`).join('');const base=location.origin+location.pathname;document.getElementById('myReferralLink').value=base+'?ref='+encodeURIComponent(d.member.memberId)}catch(e){}}
+async function b5Refresh(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID');if(!id)return;try{const d=await b5api('/api/member/dashboard/'+encodeURIComponent(id));b5Fill(d.member);for(let i=1;i<=7;i++)document.getElementById('lv'+i).textContent=d.levels[i]?.length||0;document.getElementById('tree').innerHTML=makeTree(d.tree,0);document.getElementById('walletBalance').textContent=d.wallet.available+' PINs';document.getElementById('walletReceived').textContent=d.wallet.received;document.getElementById('walletUsed').textContent=d.wallet.used;document.getElementById('walletAvailable').textContent=d.wallet.available;document.getElementById('walletBar').style.width=(d.wallet.received?d.wallet.available/d.wallet.received*100:0)+'%';b5RenderWalletPins(d.wallet.pins||[]);const base=location.origin+location.pathname;document.getElementById('myReferralLink').value=base+'?ref='+encodeURIComponent(d.member.memberId);const msgs=d.messages||[];document.getElementById('dashboardAdminMessageList').innerHTML=msgs.length?msgs.map(x=>`<div class="msgbox" style="margin-top:8px;font-size:15px"><b>Admin</b><div style="margin-top:7px">${String(x.message).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">Admin message இல்லை.</div>'}catch(e){}}
 async function memberRefresh(){await b5Refresh();await b5LoadMessages()}
 function memberLogout(){localStorage.removeItem('BORNTOWIN5_MEMBER_ID');location.reload()}
 function copyReferralLink(){const e=document.getElementById('myReferralLink');e.select();navigator.clipboard?.writeText(e.value);alert('Referral link copied')}
@@ -184,12 +204,48 @@ async function useWalletPin(){
    b5SharePin(p.pin);
  }catch(e){alert('Wallet load failed')}
 }
-async function b5LoadMessages(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID'),el=document.getElementById('memberMessageList');if(!id||!el)return;try{const d=await b5api('/api/member/messages/'+encodeURIComponent(id));el.innerHTML=d.messages.length?d.messages.map(x=>`<div class="msgbox" style="margin-top:8px"><b>${x.to==='ALL'?'Admin':'Admin Message'}</b><div style="margin-top:5px">${String(x.message).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`).join(''):'<div class="small">இன்னும் messages இல்லை.</div>'}catch(e){}}
-function initMember(){const ref=new URLSearchParams(location.search).get('ref');if(ref){localStorage.removeItem('BORNTOWIN5_MEMBER_ID');document.getElementById('B5_MEMBER_GATE').style.display='block';b5Tab('register');document.getElementById('rReferral').value=ref;return}const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID');if(id){document.getElementById('B5_MEMBER_GATE').style.display='none';b5Refresh();b5LoadMessages()}else{document.getElementById('B5_MEMBER_GATE').style.display='block';b5Tab('login')}}
+async function b5LoadMessages(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID'),el=document.getElementById('memberMessageList');if(!id)return;try{const d=await b5api('/api/member/messages/'+encodeURIComponent(id));if(el)el.innerHTML=d.messages.length?d.messages.map(x=>`<div class="msgbox" style="margin-top:8px"><b>Admin</b><div style="margin-top:5px">${String(x.message).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">இன்னும் messages இல்லை.</div>';const dash=document.getElementById('dashboardAdminMessageList');if(dash)dash.innerHTML=d.messages.length?d.messages.map(x=>`<div class="msgbox" style="margin-top:8px;font-size:15px"><b>Admin</b><div style="margin-top:7px">${String(x.message).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">Admin message இல்லை.</div>'}catch(e){}}
+setInterval(()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER_ID'))b5LoadMessages()},5000);
+function initMember(){const ref=new URLSearchParams(location.search).get('ref');document.getElementById('B5_MEMBER_GATE').style.display='block';if(ref){b5Tab('register');document.getElementById('rReferral').value=ref;}else{b5Tab('login');}document.getElementById('b5LoginMobile').value='';document.getElementById('b5LoginOtp').value='';}
 window.addEventListener('load',initMember);
-</script>\n<script id="b5-leveltracking-integrated-script">\nlet b5LTState={};\nfunction b5LTShow(){const p=document.getElementById('b5LTPanel');if(!p)return;p.classList.toggle('on');if(p.classList.contains('on')){b5LTLoad();p.scrollIntoView({behavior:'smooth',block:'start'})}}\nfunction b5LTTab(t){document.getElementById('b5LTUpgradePane').style.display=t==='upgrade'?'block':'none';document.getElementById('b5LTEarningsPane').style.display=t==='earnings'?'block':'none';document.getElementById('b5LTUpgradeTab').classList.toggle('on',t==='upgrade');document.getElementById('b5LTEarningsTab').classList.toggle('on',t==='earnings');if(t==='earnings')b5LTRenderEarnings();}\nfunction b5LTEsc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}\nasync function b5LTLoad(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID');if(!id)return;try{b5LTState=await b5api('/api/leveltrack/member/dashboard/'+encodeURIComponent(id));b5LTRenderUpgrade();b5LTRenderEarnings()}catch(e){const x=document.getElementById('b5LTUpgradePane');if(x)x.innerHTML='<div class="b5-lt-danger">Level Tracking server connection failed: '+b5LTEsc(e.message)+'</div>'}}\nasync function b5LTRequest(){try{await b5api('/api/leveltrack/member/upgrade-request',{method:'POST',body:JSON.stringify({memberId:localStorage.getItem('BORNTOWIN5_MEMBER_ID')})});await b5LTLoad();alert('Upgrade request sent to Admin.')}catch(e){alert(e.message)}}\nasync function b5LTPay(){const u=b5LTState.upgrade;if(!u)return;const el=document.getElementById('b5LTUtr');const utr=el?.value.trim();if(!utr)return alert('UTR / Transaction Number enter செய்யவும்');try{await b5api('/api/leveltrack/member/upgrade/'+encodeURIComponent(u.id)+'/pay',{method:'POST',body:JSON.stringify({memberId:localStorage.getItem('BORNTOWIN5_MEMBER_ID'),utr})});await b5LTLoad();alert('Payment submitted. Receiver confirmation + Admin verification pending.')}catch(e){alert(e.message)}}\nfunction b5LTRenderUpgrade(){const el=document.getElementById('b5LTUpgradePane');if(!el)return;const s=b5LTState,m=s.member||{},level=Number(m.level||1),got=Number(s.directReferrals||0),req=Number(s.requiredDirectReferrals||0),u=s.upgrade;let h='<div class="b5-lt-card">'+b5LTEsc(m.name||'Member')+' • <b>'+b5LTEsc(m.levelMemberId||m.memberId)+'</b><div class="b5-lt-row"><span>Current Level</span><b>LEVEL '+level+'</b></div><div class="b5-lt-row"><span>Direct Referrals</span><b>'+got+' / '+(req||'-')+'</b></div></div>';\nif(level>=7){h+='<div class="b5-lt-success"><b>✓ LEVEL 7 COMPLETED</b><br>This is the final level. No further upgrade.</div>';el.innerHTML=h;return}\nif(u?.adminApproved){h+='<div class="b5-lt-success"><b>✓ UPGRADE COMPLETED</b><br>You are now active in Level '+level+'.</div>';el.innerHTML=h;return}\nif(u?.memberPaid){h+='<div class="b5-lt-success"><b>UTR SUBMITTED ✓</b><br>UTR: '+b5LTEsc(u.utr||'')+'<br>Waiting for Receiver Acceptance and Admin Verification.</div>';el.innerHTML=h;return}\nif(u?.detailsSent||u?.status==='Assigned'||(u?.account&&u?.bank&&u?.amount)){h+='<div class="b5-lt-success"><b>ADMIN SENT PAYMENT DETAILS ✓</b><br>L'+u.from+' → L'+u.to+'</div><div class="b5-lt-card">'+b5LTrow('Receiver Name',u.payee)+b5LTrow('Receiver Member ID',u.payeeId)+b5LTrow('Receiver Phone',u.payeePhone)+b5LTrow('Account Holder',u.accountHolder)+b5LTrow('Bank Name',u.bank)+b5LTrow('Account Number',u.account)+b5LTrow('IFSC',u.ifsc)+b5LTrow('UPI',u.upi)+b5LTrow('Amount','₹'+Number(u.amount||0).toLocaleString())+b5LTrow('Admin Message',u.adminMessage||'-')+'</div><label>UTR / Transaction Number</label><input id="b5LTUtr" placeholder="Enter UTR"><button class="b5-lt-launch" onclick="b5LTPay()">I HAVE PAID — SUBMIT UTR</button>';el.innerHTML=h;return}\nif(u){h+='<div class="b5-lt-warn" style="padding:10px;border-radius:10px">✓ L'+u.from+' → L'+u.to+' request is waiting for Admin payment details.</div>';el.innerHTML=h;return}\nif(got<req){h+='<div class="b5-lt-warn" style="padding:10px;border-radius:10px">Need '+(req-got)+' more direct referral'+(req-got===1?'':'s')+' to unlock L'+level+' → L'+(level+1)+'.</div>'}else{h+='<div class="b5-lt-success"><b>'+got+' DIRECT REFERRALS COMPLETE ✓</b><br>Next upgrade is available.</div><button class="b5-lt-launch" onclick="b5LTRequest()">L'+level+' → L'+(level+1)+' UPGRADE</button>'}el.innerHTML=h}\nfunction b5LTrow(k,v){return '<div class="b5-lt-row"><span>'+b5LTEsc(k)+'</span><b>'+b5LTEsc(v||'-')+'</b></div>'}\nfunction b5LTRenderEarnings(){const el=document.getElementById('b5LTEarningsPane');if(!el)return;const arr=b5LTState.incomingPayments||[];let h='<div class="b5-lt-info">Only verified/actual server transactions are shown here. Each incoming payment can be accepted by the receiver before Admin final verification.</div>';if(!arr.length){h+='<div class="b5-lt-card">No incoming payment records yet.</div>'}else{h+=arr.map((p,i)=>'<div class="b5-lt-card"><b>Payment '+(i+1)+'</b>'+b5LTrow('From',p.from||p.fromMemberId)+b5LTrow('Amount','₹'+Number(p.amount||0).toLocaleString())+b5LTrow('UTR',p.utr||'-')+(p.memberAccepted?'<span class="b5-lt-badge b5-lt-ok">RECEIVED & ACCEPTED</span>':'<button class="b5-lt-launch" onclick="b5LTAccept(\''+b5LTEsc(p.id)+'\')">I RECEIVED THIS PAYMENT</button>')+(p.adminApproved?'<div style="margin-top:7px"><span class="b5-lt-badge b5-lt-ok">ADMIN VERIFIED</span></div>':'')+'</div>').join('')}el.innerHTML=h}\nasync function b5LTAccept(id){try{await b5api('/api/leveltrack/member/incoming/'+encodeURIComponent(id)+'/accept',{method:'POST',body:JSON.stringify({memberId:localStorage.getItem('BORNTOWIN5_MEMBER_ID')})});await b5LTLoad()}catch(e){alert(e.message)}}\nconst b5LTOldRefresh=window.memberRefresh;window.memberRefresh=async function(){if(b5LTOldRefresh)await b5LTOldRefresh();if(document.getElementById('b5LTPanel')?.classList.contains('on'))await b5LTLoad()};\n</script>\n</body>
+</script>
+<style id="integrated-member-menu-style">
+#memberMenuBtn{display:none;position:fixed;top:12px;left:12px;z-index:2147483000;width:44px;height:44px;border:0;border-radius:10px;background:#fff;color:#17372c;font-size:24px;box-shadow:0 2px 10px #0003;cursor:pointer}
+#memberMenuBtn.ready{display:block}
+#memberOverlay{display:none;position:fixed;inset:0;background:#0007;z-index:2147482998}
+#memberOverlay.ready.show{display:block}
+#memberSidebar{display:none;position:fixed;top:0;left:-292px;width:280px;max-width:86vw;height:100vh;background:#fff;z-index:2147482999;box-shadow:3px 0 18px #0004;transition:left .25s ease;padding:72px 14px 20px;overflow:auto}
+#memberSidebar.ready{display:block}
+#memberSidebar.open{left:0}
+#memberSidebar .istitle{font-size:12px;color:#667085;padding:0 10px 8px;font-weight:800;text-transform:uppercase}
+#memberSidebar button{width:100%;text-align:left;background:#f7faf8;color:#17372c;border:0;padding:13px 14px;margin:5px 0;border-radius:10px;font-weight:700;font-size:14px}
+#memberSidebar button.active{background:#073b2a;color:#fff}
+#memberPortalFrame{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147482997;background:#fff}
+#memberPortalFrame.show{display:block}
+</style>
+<button id="memberMenuBtn" onclick="memberToggleMenu()" aria-label="Open menu">☰</button>
+<div id="memberOverlay" onclick="memberToggleMenu()"></div>
+<aside id="memberSidebar">
+<div class="istitle">Member Menu</div>
+<button class="active" onclick="memberShowOriginal(this)">🏠 BORNTOWIN5 Member</button>
+<button onclick="memberShowPortal(this)">🔗 LevelTrack Member Portal</button>
+</aside>
+<iframe id="memberPortalFrame" title="LevelTrack Member Portal"></iframe>
+<script>
+(function(){
+ const btn=document.getElementById('memberMenuBtn'),side=document.getElementById('memberSidebar'),ov=document.getElementById('memberOverlay'),frame=document.getElementById('memberPortalFrame');
+ function ready(){const g=document.getElementById('B5_MEMBER_GATE');const logged=!!localStorage.getItem('BORNTOWIN5_MEMBER_ID') && !!g && getComputedStyle(g).display==='none';[btn,side,ov].forEach(x=>x&&x.classList.toggle('ready',logged));if(!logged){frame.classList.remove('show');side.classList.remove('open');ov.classList.remove('show');}}
+ window.memberToggleMenu=function(){if(!btn.classList.contains('ready'))return;side.classList.toggle('open');ov.classList.toggle('show');}
+ function close(){side.classList.remove('open');ov.classList.remove('show')}
+ window.memberShowOriginal=function(b){frame.classList.remove('show');document.querySelectorAll('#memberSidebar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();window.scrollTo({top:0,behavior:'smooth'});}
+ window.memberShowPortal=function(b){frame.classList.add('show');document.querySelectorAll('#memberSidebar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();}
+ frame.src="/leveltrack-member.html?v=13";
+ ready();new MutationObserver(ready).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['style','class']});setInterval(ready,1000);
+})();
+</script>
+</body>
 </html><style>
-.pin button{border:0;border-radius:8px;padding:6px 9px;background:#8b1e3f;color:#fff;font-weight:700;font-size:11px}
+.pin button{border:0;border-radius:8px;padding:6px 9px;background:#075B35;color:#fff;font-weight:700;font-size:11px}
 </style>
 <script>
 async function b5SharePin(pin){
@@ -207,4 +263,75 @@ function b5RenderWalletPins(pins){
 </script><script>
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&localStorage.getItem('BORNTOWIN5_MEMBER_ID')){b5Refresh();b5LoadMessages()}});
 window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER_ID')){b5Refresh();b5LoadMessages()}});
+</script>
+<style id="unified-member-menu-style">
+#memberMenuBtn,#memberOverlay,#memberSidebar,#memberPortalFrame{display:none!important}
+#unifiedMemberMenuBtn{display:none;position:fixed;top:10px;left:10px;z-index:2147483000;width:46px;height:46px;border:0;border-radius:12px;background:#fff;color:#075B35;font-size:25px;box-shadow:0 3px 14px #0003;cursor:pointer}
+#unifiedMemberMenuBtn.ready{display:block}
+#unifiedMemberOverlay{display:none;position:fixed;inset:0;background:#0007;z-index:2147482998}
+#unifiedMemberOverlay.show{display:block}
+#unifiedMemberSidebar{display:none;position:fixed;top:0;left:-300px;width:286px;max-width:88vw;height:100vh;background:#fff;z-index:2147482999;box-shadow:4px 0 20px #0004;transition:left .25s ease;padding:72px 14px 20px;overflow:auto}
+#unifiedMemberSidebar.ready{display:block}
+#unifiedMemberSidebar.open{left:0}
+#unifiedMemberSidebar .ustitle{font-size:12px;color:#667085;padding:0 10px 7px;font-weight:800;text-transform:uppercase}
+#unifiedMemberSidebar .uitem{width:100%;text-align:left;background:#f4f5f8;color:#273043;border:0;padding:13px 14px;margin:5px 0;border-radius:10px;font-weight:750;cursor:pointer;font-size:14px}
+#unifiedMemberSidebar .uitem.active{background:#075B35;color:#fff}
+#unifiedMemberFrame{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147482997;background:#fff}
+#unifiedMemberFrame.show{display:block}
+@media(max-width:520px){#unifiedMemberMenuBtn{top:9px;left:9px}.top{padding-left:66px}}
+</style>
+<button id="unifiedMemberMenuBtn" onclick="uMemberToggle()" aria-label="Open Member menu">☰</button>
+<div id="unifiedMemberOverlay" onclick="uMemberToggle()"></div>
+<aside id="unifiedMemberSidebar">
+  <div class="ustitle">Member Menu</div>
+  <button class="uitem active" onclick="uMemberMain('dashboard',this)">🏠 Dashboard</button>
+  <button class="uitem" onclick="uMemberMain('membership',this)">👤 My Membership</button>
+  <button class="uitem" onclick="uMemberMain('invite',this)">🤝 Share & Invite</button>
+  <button class="uitem" onclick="uMemberMain('downline',this)">🌳 My Downline</button>
+  <button class="uitem" onclick="uMemberMain('levels',this)">📊 My Levels</button>
+  <button class="uitem" onclick="uMemberMain('messages',this)">📢 My Messages</button>
+  <button class="uitem" onclick="uMemberMain('pinwallet',this)">🔐 My PIN Wallet</button>
+  <div class="ustitle" style="margin-top:12px">Level Tracking</div>
+  <button class="uitem" onclick="uMemberLevelTrack('dashboard',this)">📊 LevelTrack Dashboard</button>
+  <button class="uitem" onclick="uMemberLevelTrack('membership',this)">👤 LevelTrack My Membership</button>
+  <button class="uitem" onclick="uMemberLevelTrack('upgrade',this)">🚀 Level Upgrade</button>
+  <button class="uitem" onclick="uMemberLevelTrack('payments',this)">💰 My Payments</button>
+  <button class="uitem" onclick="uMemberLevelTrack('history',this)">📜 Upgrade History</button>
+</aside>
+<iframe id="unifiedMemberFrame" title="LevelTrack Member Portal"></iframe>
+<script id="unified-member-menu-script">
+(function(){
+ const btn=document.getElementById('unifiedMemberMenuBtn'),side=document.getElementById('unifiedMemberSidebar'),ov=document.getElementById('unifiedMemberOverlay'),frame=document.getElementById('unifiedMemberFrame');
+ function logged(){const g=document.getElementById('B5_MEMBER_GATE');return !!localStorage.getItem('BORNTOWIN5_MEMBER_ID') && g && getComputedStyle(g).display==='none'}
+ function ready(){const ok=logged();[btn,side].forEach(x=>x&&x.classList.toggle('ready',ok));if(!ok){frame.classList.remove('show');side.classList.remove('open');ov.classList.remove('show');}}
+ window.uMemberToggle=function(){if(!btn.classList.contains('ready'))return;side.classList.toggle('open');ov.classList.toggle('show')}
+ function close(){side.classList.remove('open');ov.classList.remove('show')}
+ const memberProfile=document.querySelector('main > .profile');
+ const memberStats=document.querySelector('main > .stats');
+ const memberDetail=document.getElementById('detail');
+ const memberTree=Array.from(document.querySelectorAll('main > section.card')).find(x=>x.querySelector('#tree'));
+ const memberSections=[memberProfile,memberStats,memberDetail,document.getElementById('referralCard'),memberTree,document.getElementById('memberMessages'),document.getElementById('leaderWallet')].filter(Boolean);
+ function hideMemberContent(){memberSections.forEach(x=>x.classList.add('u-hidden'))}
+ function showMemberContent(items){hideMemberContent();items.forEach(x=>x.classList.remove('u-hidden'))}
+ window.uMemberMain=function(id,b){frame.classList.remove('show');document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();
+   const map={
+     dashboard:[memberProfile,memberStats,document.getElementById('dashboardAdminMessages')],
+     membership:[memberProfile,memberDetail],
+     invite:[document.getElementById('referralCard')],
+     downline:[memberTree],
+     levels:[memberStats,memberDetail],
+     messages:[document.getElementById('memberMessages')],
+     pinwallet:[document.getElementById('leaderWallet')]
+   };
+   showMemberContent((map[id]||[]).filter(Boolean));
+   window.scrollTo({top:0,behavior:'smooth'});
+ }
+ window.uMemberLevelTrack=function(section,b){document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');close();hideMemberContent();frame.classList.add('show');
+   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section},location.origin);
+   if(frame.src.indexOf('/leveltrack-member.html')<0){frame.src='/leveltrack-member.html?v=13';frame.addEventListener('load',send,{once:true});} else send();
+ }
+ const style=document.createElement('style');style.textContent='.u-hidden{display:none!important}';document.head.appendChild(style);
+ showMemberContent([memberProfile,memberStats]);
+ ready();setInterval(ready,500);
+})();
 </script>
