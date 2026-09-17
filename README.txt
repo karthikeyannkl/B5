@@ -1,18 +1,12 @@
-BORNTOWIN5 + LevelTrack — CONNECTION FIX V9
+BORNTOWIN5 — V28 LEVEL TRACKING ONLY INTEGRATED
 
-Base: FINAL V8
+This build removes the old LevelTrack demo/standalone flow from the main navigation and uses only the latest sequential Level Upgrade flow inside Level Tracking.
 
-Only the requested Admin <-> Server <-> Member data-flow fixes were made:
-1. Admin dashboard now returns today registration count + member names.
-2. Admin member Full View endpoint /api/admin/member-details/:id added.
-3. Admin dashboard now returns PIN summary fields required by the existing UI, so Leader names can populate and PIN generation can work.
-4. Admin LevelTrack level counters now include registered members by their current level (Level 1 starts at 1 when a member is registered/active in the data).
-5. Existing referral/downline data is returned for Full View and existing tree rendering is preserved.
-6. Existing message storage/Member message endpoint is preserved; it now works with the corrected dashboard flow without changing the UI.
-7. Existing LevelTrack upgrade assignment/payment-detail flow is preserved; the Member dashboard receives the assigned upgrade object and its bank/payment details from the same server database.
+Member: Level Tracking contains Dashboard, Level Upgrade, My Earnings, Incoming Payments and Upgrade History.
+Admin: Level Tracking contains Dashboard, Members, Level Upgrade, Payment Verification and Daily Report.
 
-DO NOT replace an existing production data/db.json with an empty file. Keep the existing data/db.json.
+Upgrade milestones enforced by server: L1→L2 at 3 direct referrals; L2→L3 at 6; L3→L4 at 9; L4→L5 at 12; L5→L6 at 15; L6→L7 at 18.
 
-No design/menu/search workflow changes were intentionally made.
+No hardcoded demo member/payment records are used in the new Level Tracking pages. Data is loaded from the server database.
 
-Note: This package is a server-side connection/data-flow test build. Real production authentication/authorization and secure database storage should be added before live financial use.
+Keep an existing production data/db.json if one exists. This package does not intentionally erase production data. Review legal/compliance requirements before any real-money operation.
