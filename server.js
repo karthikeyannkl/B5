@@ -97,19 +97,30 @@ app.post('/api/member/login',(req,res)=>{const m=db.members.find(x=>x.mobile===r
 app.post('/api/member/check-pin',(req,res)=>{const p=String(req.body.pin||'').toUpperCase();if(!db.pins.some(x=>x.pin===p&&x.status==='AVAILABLE'))return res.status(400).json({error:'Invalid or unavailable Joining PIN'});res.json({ok:true})});
 app.post('/api/member/register',(req,res)=>{
  const b=req.body;
+ if(!String(b.name||'').trim()||!String(b.place||'').trim()||!/^[0-9]{10}$/.test(String(b.mobile||'')))return res.status(400).json({error:'Name, Place and valid 10 digit Mobile are required'});
  if(db.members.some(m=>m.mobile===b.mobile))return res.status(409).json({error:'Mobile number already registered'});
  const p=String(b.pin||'').toUpperCase(),pr=db.pins.find(x=>x.pin===p&&x.status==='AVAILABLE');
  if(!pr)return res.status(400).json({error:'Invalid or unavailable Joining PIN'});
  if(b.referral!=='FIRST MEMBER'&&!db.members.some(m=>m.memberId===b.referral))return res.status(400).json({error:'Invalid Referral ID'});
- const m={...b,memberId:id(),status:'Pending',registeredAt:new Date().toISOString()};
- delete m.pin;db.members.push(m);pr.status='USED';pr.usedBy=m.memberId;pr.usedAt=new Date().toISOString();save(db);res.json({member:memberPublic(m)});
+ const m={memberId:id(),name:String(b.name).trim(),place:String(b.place).trim(),mobile:String(b.mobile).trim(),referral:b.referral||'FIRST MEMBER',status:'Pending',registeredAt:new Date().toISOString(),accountHolder:'',account:'',ifsc:'',bank:'',branch:'',upi:'',photo:''};
+ db.members.push(m);pr.status='USED';pr.usedBy=m.memberId;pr.usedAt=new Date().toISOString();save(db);res.json({member:memberPublic(m),profile:memberProfile(m)});
+});
+function memberProfile(m){return {memberId:m.memberId,name:m.name||'',place:m.place||'',mobile:m.mobile||'',referral:m.referral||'FIRST MEMBER',accountHolder:m.accountHolder||m.name||'',account:m.account||'',ifsc:m.ifsc||'',bank:m.bank||'',branch:m.branch||'',upi:m.upi||'',photo:m.photo||''}}
+app.post('/api/member/profile/:id',(req,res)=>{
+ const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});
+ const b=req.body||{};
+ if(b.name!==undefined)m.name=String(b.name).trim();
+ if(b.place!==undefined)m.place=String(b.place).trim();
+ for(const k of ['accountHolder','account','ifsc','bank','branch','upi'])if(b[k]!==undefined)m[k]=String(b[k]).trim();
+ if(b.photo!==undefined){const photo=String(b.photo);if(photo.length>1200000)return res.status(400).json({error:'Profile photo is too large'});m.photo=photo}
+ save(db);res.json({ok:true,member:memberPublic(m),profile:memberProfile(m)});
 });
 app.get('/api/member/dashboard/:id',(req,res)=>{
  const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});
  const lv=descendants(m.memberId),w=wallet(m.memberId);
  const levels={};for(let i=1;i<=7;i++)levels[i]=lv[i].map(memberPublic);
  const messages=[...db.messages.filter(x=>x.to===m.memberId||x.to==='ALL'),...db.leveltrackMessages.filter(x=>x.to===m.memberId)].sort((a,b)=>String(b.at).localeCompare(String(a.at))).map(x=>({to:x.to,message:x.message,at:x.at}));
- res.json({member:memberPublic(m),levels,tree:tree(m.memberId),wallet:w,messages});
+ res.json({member:memberPublic(m),profile:memberProfile(m),levels,tree:tree(m.memberId),wallet:w,messages});
 });
 app.get('/api/member/level/:id/:level',(req,res)=>{
  const m=db.members.find(x=>x.memberId===req.params.id),l=Number(req.params.level);if(!m||l<1||l>7)return res.status(404).json({error:'Not found'});
@@ -180,11 +191,11 @@ app.get('/api/leveltrack/admin/dashboard',(req,res)=>{
 app.get('/api/leveltrack/admin/members',(req,res)=>res.json({members:findMember(req.query.q).map(memberPublic)}));
 app.get('/api/leveltrack/admin/member-details/:id',(req,res)=>{
   const m=ltMember(req.params.id);if(!m)return res.status(404).json({error:'Member not found'});
-  res.json({member:memberPublic(m),directReferrals:direct(m.memberId).length,totalDownline:downlineCount(m.memberId),tree:ltTree(m.memberId)});
+  res.json({member:{...memberPublic(m),accountHolder:m.accountHolder||m.name||'',account:m.account||'',ifsc:m.ifsc||'',bank:m.bank||'',branch:m.branch||'',upi:m.upi||''},directReferrals:direct(m.memberId).length,totalDownline:downlineCount(m.memberId),tree:ltTree(m.memberId)});
 });
 app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
   const r=db.leveltrackRequests.find(x=>x.id===req.params.id);if(!r)return res.status(404).json({error:'Upgrade request not found'});
-  if(r.status!=='Requested')return res.status(400).json({error:'Request is not pending'});
+  const requestStatus=String(r.status||'').trim().toLowerCase();if(requestStatus!=='requested'&&requestStatus!=='pending')return res.status(400).json({error:'Request is not pending'});
   const m=ltMember(r.memberId);if(!m)return res.status(404).json({error:'Member not found'});
   const amount=Number(req.body.amount||LEVEL_RULES[r.from]?.upgrade||0);if(!amount)return res.status(400).json({error:'Upgrade amount required'});
   Object.assign(r,{status:'Assigned',assignedAt:new Date().toISOString(),payee:req.body.payee||'',accountHolder:req.body.accountHolder||'',payeeId:req.body.payeeId||'',amount,account:req.body.account||'',bank:req.body.bank||'',ifsc:req.body.ifsc||'',upi:req.body.upi||'',adminMessage:req.body.adminMessage||''});

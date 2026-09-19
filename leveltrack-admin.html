@@ -10,13 +10,13 @@
 <label>Receiver Name</label><input id="receiverName" readonly>
 <label>Receiver Member ID</label><input id="receiverIdInput" placeholder="Receiver Member ID">
 <label>Receiver Phone</label><input id="receiverPhone" readonly>
-<label>Account Holder</label><input id="accountHolder">
-<label>Bank Name</label><input id="bankName">
-<label>Account Number</label><input id="accountNumber">
-<label>IFSC</label><input id="ifsc">
-<label>UPI</label><input id="upi">
+<label>Account Holder</label><input id="accountHolder" readonly>
+<label>Bank Name</label><input id="bankName" readonly>
+<label>Account Number</label><input id="accountNumber" readonly>
+<label>IFSC</label><input id="ifsc" readonly>
+<label>UPI</label><input id="upi" readonly>
 <label>Amount</label><input id="amount" type="number">
-<label>Admin Message</label><textarea id="adminMessage" rows="3"></textarea>
+
 <button class="primary" onclick="sendDetails()">SEND PAYMENT DETAILS TO MEMBER</button>
 </div></section>
 <section class="card"><div class="title">Upgrade History</div><div id="history"><div class="small">No upgrade history yet.</div></div></section>
@@ -48,12 +48,39 @@ function selectRequest(id){
  $('paymentForm').classList.remove('hidden');
  $('receiverName').value='';$('receiverPhone').value='';$('receiverIdInput').value='';$('accountHolder').value='';$('bankName').value='';$('accountNumber').value='';$('ifsc').value='';$('upi').value='';
  $('amount').value=({1:1000,2:3000,3:20000,4:100000,5:200000,6:500000}[r.from]||'');$('adminMessage').value='';
+ $('receiverIdInput').focus();
+}
+async function fillReceiver(){
+ const id=$('receiverIdInput').value.trim();if(!id)return;
+ try{
+  const d=await api('/api/leveltrack/admin/member-details/'+encodeURIComponent(id));
+  const m=d.member||{};
+  $('receiverName').value=m.name||'';
+  $('receiverPhone').value=m.mobile||'';
+  $('accountHolder').value=m.accountHolder||m.name||'';
+  $('bankName').value=m.bank||'';
+  $('accountNumber').value=m.account||'';
+  $('ifsc').value=m.ifsc||'';
+  $('upi').value=m.upi||'';
+ }catch(e){$('receiverName').value='';$('receiverPhone').value='';}
 }
 async function sendDetails(){
  const r=state.selectedRequest;if(!r)return alert('Select an upgrade request first.');
- const body={payee:$('receiverName').value.trim(),accountHolder:$('accountHolder').value.trim(),payeeId:$('receiverIdInput').value.trim(),amount:Number($('amount').value),account:$('accountNumber').value.trim(),bank:$('bankName').value.trim(),ifsc:$('ifsc').value.trim(),upi:$('upi').value.trim(),adminMessage:$('adminMessage').value.trim()};
+ // Refresh the request from the server so an old/stale screen state cannot block a valid request.
+ const latest=await api('/api/leveltrack/admin/dashboard');
+ const fresh=(latest.requests||[]).find(x=>x.id===r.id);
+ if(!fresh){return alert('Upgrade request not found.');}
+ if(String(fresh.status).toLowerCase()!=='requested'){
+   if(String(fresh.status).toLowerCase()==='assigned') return alert('Payment details are already sent for this request.');
+   return alert('This upgrade request is no longer pending.');
+ }
+ state.selectedRequest=fresh;
+ const body={payee:$('receiverName').value.trim(),accountHolder:$('accountHolder').value.trim(),payeeId:$('receiverIdInput').value.trim(),amount:Number($('amount').value),account:$('accountNumber').value.trim(),bank:$('bankName').value.trim(),ifsc:$('ifsc').value.trim(),upi:$('upi').value.trim() };
  if(!body.payeeId)return alert('Enter Receiver Member ID.');
- try{await api('/api/leveltrack/admin/requests/'+encodeURIComponent(r.id)+'/assign',{method:'POST',body:JSON.stringify(body)});alert('Payment details sent to member.');$('paymentForm').classList.add('hidden');state.selectedRequest=null;await load()}catch(e){alert(e.message)}
+ if(!body.amount)return alert('Enter payment amount.');
+ try{await api('/api/leveltrack/admin/requests/'+encodeURIComponent(fresh.id)+'/assign',{method:'POST',body:JSON.stringify(body)});alert('Payment details sent to member.');$('paymentForm').classList.add('hidden');state.selectedRequest=null;await load()}catch(e){alert(e.message)}
 }
+$('receiverIdInput').addEventListener('blur',fillReceiver);
+$('receiverIdInput').addEventListener('change',fillReceiver);
 setInterval(load,5000);load();
 </script></body></html>

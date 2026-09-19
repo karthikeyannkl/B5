@@ -92,20 +92,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--b5-gold)!important;ou
 <section id="b5RegStep" class="b5-step">
 <div id="b5RegForm">
 <div class="b5-grid">
-<div><label>Member Name</label><input id="rName"></div>
-<div><label>Gender</label><select id="rGender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
-<div><label>Age</label><input id="rAge" type="number"></div>
-<div><label>Education</label><input id="rEducation"></div>
-<div><label>Category</label><input id="rCategory"></div>
-<div><label>Skill</label><input id="rSkill"></div>
-<div class="b5-full"><label>Address</label><textarea id="rAddress" rows="2"></textarea></div>
-<div><label>Heir / Nominee</label><input id="rNominee"></div>
+<div class="b5-full"><label>Member Name</label><input id="rName"></div>
+<div><label>Place / City</label><input id="rPlace" placeholder="Your place"></div>
 <div><label>Mobile Number</label><input id="rMobile" type="tel" inputmode="numeric" maxlength="10" minlength="10" pattern="[0-9]{10}" placeholder="10 digit Mobile Number"></div>
-<div><label>Referral ID</label><input id="rReferral" autocomplete="off" oninput="checkReferralId()"><div id="referralConfirm" class="small" style="margin-top:5px"></div></div>
-<div><label>Bank Account Number</label><input id="rAccount"></div>
-<div><label>IFSC</label><input id="rIfsc"></div>
-<div><label>Bank Name</label><input id="rBank"></div>
-<div><label>Branch</label><input id="rBranch"></div>
+<div><label>Referral ID</label><input id="rReferral" autocomplete="off" oninput="checkReferralId()" readonly><div id="referralConfirm" class="small" style="margin-top:5px"></div></div>
+<div class="b5-full"><label>Joining PIN</label><input id="b5JoinPin" maxlength="9" placeholder="Enter Joining PIN"><div style="font-size:12px;color:#667085;margin-top:5px">First Registration PIN: <b>B5-FMUXNF</b></div></div>
+<div class="b5-full"><label style="color:#667085;font-size:12px">After registration, complete your Profile with Bank Details.</label></div>
 <div class="b5-full"><label>Declaration</label><label style="color:#172033"><input id="rDeclaration" type="checkbox" style="width:auto;margin-right:6px"> I confirm that the details provided are correct.</label></div>
 <div class="b5-full"><label>Joining PIN</label><input id="b5JoinPin" maxlength="9" placeholder="Enter Joining PIN"><div style="font-size:12px;color:#667085;margin-top:5px">First Registration PIN: <b>B5-FMUXNF</b></div></div>
 </div>
@@ -138,6 +130,15 @@ input:focus,select:focus,textarea:focus{border-color:var(--b5-gold)!important;ou
 <div class="stat" onclick="showLevel(7)"><b id="lv7">0</b><span>Level 7</span><small>Tap</small></div>
 </section>
 
+<section id="memberProfileEdit" class="card" style="display:none">
+<h3 style="margin-top:0">👤 My Profile</h3>
+<div class="member-detail">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div class="avatar" id="profileAvatar">B5</div><div><b>Profile Picture</b><input id="profilePhoto" type="file" accept="image/*" style="display:block;margin-top:6px"></div></div>
+<div class="detail-grid"><div><small>Name</small><input id="profileName"></div><div><small>Place / City</small><input id="profilePlace"></div><div><small>Mobile</small><input id="profileMobile" readonly></div><div><small>Referral ID</small><input id="profileReferral" readonly></div></div>
+<h4 style="margin:14px 0 8px">Bank Details</h4>
+<div class="detail-grid"><div><small>Account Holder</small><input id="profileAccountHolder"></div><div><small>Bank Name</small><input id="profileBank"></div><div><small>Account Number</small><input id="profileAccount"></div><div><small>IFSC</small><input id="profileIfsc"></div><div><small>Branch</small><input id="profileBranch"></div><div><small>UPI ID</small><input id="profileUpi"></div></div>
+<button class="b5-primary" style="margin-top:12px" onclick="saveMemberProfile()">SAVE PROFILE</button><div id="profileMsg" class="b5-msg"></div>
+</div></section>
 <section id="detail" class="detail"></section>
 
 <section class="card">
@@ -188,8 +189,10 @@ function b5Fill(m){document.getElementById('memberName').textContent=m.name;docu
 let referralTimer;
 async function checkReferralId(){const el=document.getElementById('referralConfirm');const id=document.getElementById('rReferral')?.value.trim();if(!el)return;if(!id||id==='FIRST MEMBER'){el.textContent=id==='FIRST MEMBER'?'✓ First Member registration':'Enter Referral ID';el.style.color='#667085';return}clearTimeout(referralTimer);referralTimer=setTimeout(async()=>{try{const d=await b5api('/api/member/referral-info/'+encodeURIComponent(id));el.innerHTML=`✓ Referral confirmed: <b>${String(d.member.name).replace(/</g,'&lt;')}</b> (${d.member.memberId})`;el.style.color='#087f4f'}catch(e){el.textContent='✕ Referral ID not found';el.style.color='#b42318'}},250)}
 async function shareFirstAvailablePin(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID');if(!id)return;try{const d=await b5api('/api/member/dashboard/'+encodeURIComponent(id));const p=(d.wallet.pins||[]).find(x=>x.status==='AVAILABLE');if(!p)return alert('Available PIN இல்லை');b5SharePin(p.pin)}catch(e){alert('Wallet load failed')}}
-async function b5Register(){const ids=['rName','rGender','rAge','rEducation','rCategory','rSkill','rAddress','rNominee','rMobile','rReferral','rAccount','rIfsc','rBank','rBranch','b5JoinPin'];for(const id of ids){const e=document.getElementById(id);if(!e.value.trim())return document.getElementById('b5RegMsg').textContent='அனைத்து விவரங்களையும் நிரப்பவும்'}const mobile=document.getElementById('rMobile').value.trim();if(!/^\d{10}$/.test(mobile))return document.getElementById('b5RegMsg').textContent='Mobile Number must be exactly 10 digits';if(!document.getElementById('rDeclaration').checked)return document.getElementById('b5RegMsg').textContent='Declaration accept செய்யவும்';const b={name:document.getElementById('rName').value.trim(),gender:document.getElementById('rGender').value,age:document.getElementById('rAge').value,education:document.getElementById('rEducation').value.trim(),category:document.getElementById('rCategory').value.trim(),skill:document.getElementById('rSkill').value.trim(),address:document.getElementById('rAddress').value.trim(),nominee:document.getElementById('rNominee').value.trim(),mobile,referral:document.getElementById('rReferral').value.trim()||'FIRST MEMBER',account:document.getElementById('rAccount').value.trim(),ifsc:document.getElementById('rIfsc').value.trim(),bank:document.getElementById('rBank').value.trim(),branch:document.getElementById('rBranch').value.trim(),pin:document.getElementById('b5JoinPin').value.trim().toUpperCase()};try{const d=await b5api('/api/member/register',{method:'POST',body:JSON.stringify(b)});document.getElementById('b5RegMsg').textContent='✓ Registration successful. Member ID: '+d.member.memberId+' — Login செய்யவும்.';document.getElementById('b5LoginMobile').value=mobile;b5Tab('login');document.getElementById('b5LoginMsg').textContent='Registration successful. இப்போது OTP மூலம் Login செய்யலாம்.';document.getElementById('B5_MEMBER_GATE').style.display='block'}catch(e){document.getElementById('b5RegMsg').textContent=e.message}}
-async function b5Refresh(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID');if(!id)return;try{const d=await b5api('/api/member/dashboard/'+encodeURIComponent(id));b5Fill(d.member);for(let i=1;i<=7;i++)document.getElementById('lv'+i).textContent=d.levels[i]?.length||0;document.getElementById('tree').innerHTML=makeTree(d.tree,0);document.getElementById('walletBalance').textContent=d.wallet.available+' PINs';document.getElementById('walletReceived').textContent=d.wallet.received;document.getElementById('walletUsed').textContent=d.wallet.used;document.getElementById('walletAvailable').textContent=d.wallet.available;document.getElementById('walletBar').style.width=(d.wallet.received?d.wallet.available/d.wallet.received*100:0)+'%';b5RenderWalletPins(d.wallet.pins||[]);const base=location.origin+location.pathname;document.getElementById('myReferralLink').value=base+'?ref='+encodeURIComponent(d.member.memberId);const msgs=d.messages||[];document.getElementById('dashboardAdminMessageList').innerHTML=msgs.length?msgs.map(x=>`<div class="msgbox" style="margin-top:8px;font-size:15px"><b>Admin</b><div style="margin-top:7px">${String(x.message).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">Admin message இல்லை.</div>'}catch(e){}}
+async function b5Register(){const ids=['rName','rPlace','rMobile','rReferral','b5JoinPin'];for(const id of ids){const e=document.getElementById(id);if(!e.value.trim())return document.getElementById('b5RegMsg').textContent='அனைத்து கட்டாய விவரங்களையும் நிரப்பவும்'}const mobile=document.getElementById('rMobile').value.trim();if(!/^\d{10}$/.test(mobile))return document.getElementById('b5RegMsg').textContent='Mobile Number must be exactly 10 digits';if(!document.getElementById('rDeclaration').checked)return document.getElementById('b5RegMsg').textContent='Declaration accept செய்யவும்';const b={name:document.getElementById('rName').value.trim(),place:document.getElementById('rPlace').value.trim(),mobile,referral:document.getElementById('rReferral').value.trim()||'FIRST MEMBER',pin:document.getElementById('b5JoinPin').value.trim().toUpperCase()};try{const d=await b5api('/api/member/register',{method:'POST',body:JSON.stringify(b)});document.getElementById('b5RegMsg').textContent='✓ Registration successful. Member ID: '+d.member.memberId+' — Login செய்யவும்.';document.getElementById('b5LoginMobile').value=mobile;b5Tab('login');document.getElementById('b5LoginMsg').textContent='Registration successful. இப்போது OTP மூலம் Login செய்யலாம்.';document.getElementById('B5_MEMBER_GATE').style.display='block'}catch(e){document.getElementById('b5RegMsg').textContent=e.message}}
+function b5FillProfile(p){const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||''};set('profileName',p.name);set('profilePlace',p.place);set('profileMobile',p.mobile);set('profileReferral',p.referral);set('profileAccountHolder',p.accountHolder);set('profileBank',p.bank);set('profileAccount',p.account);set('profileIfsc',p.ifsc);set('profileBranch',p.branch);set('profileUpi',p.upi);if(p.photo){const a=document.getElementById('profileAvatar');if(a)a.innerHTML='<img src="'+p.photo.replace(/"/g,'&quot;')+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'}}
+async function saveMemberProfile(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID');if(!id)return;const file=document.getElementById('profilePhoto')?.files?.[0];let photo='';if(file){if(file.size>900000)return document.getElementById('profileMsg').textContent='Profile photo should be below 900 KB';photo=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}const b={name:document.getElementById('profileName').value.trim(),place:document.getElementById('profilePlace').value.trim(),accountHolder:document.getElementById('profileAccountHolder').value.trim(),bank:document.getElementById('profileBank').value.trim(),account:document.getElementById('profileAccount').value.trim(),ifsc:document.getElementById('profileIfsc').value.trim(),branch:document.getElementById('profileBranch').value.trim(),upi:document.getElementById('profileUpi').value.trim()};if(photo)b.photo=photo;try{const d=await b5api('/api/member/profile/'+encodeURIComponent(id),{method:'POST',body:JSON.stringify(b)});b5Fill(d.member);b5FillProfile(d.profile);document.getElementById('profileMsg').textContent='✓ Profile saved successfully.'}catch(e){document.getElementById('profileMsg').textContent=e.message}}
+async function b5Refresh(){const id=localStorage.getItem('BORNTOWIN5_MEMBER_ID');if(!id)return;try{const d=await b5api('/api/member/dashboard/'+encodeURIComponent(id));b5Fill(d.member); if(d.profile) b5FillProfile(d.profile); for(let i=1;i<=7;i++)document.getElementById('lv'+i).textContent=d.levels[i]?.length||0;document.getElementById('tree').innerHTML=makeTree(d.tree,0);document.getElementById('walletBalance').textContent=d.wallet.available+' PINs';document.getElementById('walletReceived').textContent=d.wallet.received;document.getElementById('walletUsed').textContent=d.wallet.used;document.getElementById('walletAvailable').textContent=d.wallet.available;document.getElementById('walletBar').style.width=(d.wallet.received?d.wallet.available/d.wallet.received*100:0)+'%';b5RenderWalletPins(d.wallet.pins||[]);const base=location.origin+location.pathname;document.getElementById('myReferralLink').value=base+'?ref='+encodeURIComponent(d.member.memberId);const msgs=d.messages||[];document.getElementById('dashboardAdminMessageList').innerHTML=msgs.length?msgs.map(x=>`<div class="msgbox" style="margin-top:8px;font-size:15px"><b>Admin</b><div style="margin-top:7px">${String(x.message).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">Admin message இல்லை.</div>'}catch(e){}}
 async function memberRefresh(){await b5Refresh();await b5LoadMessages()}
 function memberLogout(){localStorage.removeItem('BORNTOWIN5_MEMBER_ID');location.reload()}
 function copyReferralLink(){const e=document.getElementById('myReferralLink');e.select();navigator.clipboard?.writeText(e.value);alert('Referral link copied')}
@@ -285,6 +288,7 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
 <aside id="unifiedMemberSidebar">
   <div class="ustitle">Member Menu</div>
   <button class="uitem active" onclick="uMemberMain('dashboard',this)">🏠 Dashboard</button>
+  <button class="uitem" onclick="uMemberMain('profile',this)">👤 Profile</button>
   <button class="uitem" onclick="uMemberMain('membership',this)">👤 My Membership</button>
   <button class="uitem" onclick="uMemberMain('invite',this)">🤝 Share & Invite</button>
   <button class="uitem" onclick="uMemberMain('downline',this)">🌳 My Downline</button>
@@ -292,7 +296,11 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
   <button class="uitem" onclick="uMemberMain('messages',this)">📢 My Messages</button>
   <button class="uitem" onclick="uMemberMain('pinwallet',this)">🔐 My PIN Wallet</button>
   <div class="ustitle" style="margin-top:12px">Level Tracking</div>
-  <button class="uitem" onclick="uMemberLevelTrack(this)">📊 Level Tracking</button>
+  <button class="uitem" onclick="uMemberLevelTrack('dashboard',this)">📊 LevelTrack Dashboard</button>
+  <button class="uitem" onclick="uMemberLevelTrack('membership',this)">👤 LevelTrack My Membership</button>
+  <button class="uitem" onclick="uMemberLevelTrack('upgrade',this)">🚀 Level Upgrade</button>
+  <button class="uitem" onclick="uMemberLevelTrack('payments',this)">💰 My Payments</button>
+  <button class="uitem" onclick="uMemberLevelTrack('history',this)">📜 Upgrade History</button>
 </aside>
 <iframe id="unifiedMemberFrame" title="LevelTrack Member Portal"></iframe>
 <script id="unified-member-menu-script">
@@ -306,13 +314,15 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
  const memberStats=document.querySelector('main > .stats');
  const memberDetail=document.getElementById('detail');
  const memberTree=Array.from(document.querySelectorAll('main > section.card')).find(x=>x.querySelector('#tree'));
- const memberSections=[memberProfile,memberStats,memberDetail,document.getElementById('referralCard'),memberTree,document.getElementById('memberMessages'),document.getElementById('leaderWallet')].filter(Boolean);
+ const memberProfileEdit=document.getElementById('memberProfileEdit');
+ const memberSections=[memberProfile,memberStats,memberDetail,memberProfileEdit,document.getElementById('referralCard'),memberTree,document.getElementById('memberMessages'),document.getElementById('leaderWallet')].filter(Boolean);
  function hideMemberContent(){memberSections.forEach(x=>x.classList.add('u-hidden'))}
  function showMemberContent(items){hideMemberContent();items.forEach(x=>x.classList.remove('u-hidden'))}
  window.uMemberMain=function(id,b){frame.classList.remove('show');document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();
    const map={
      dashboard:[memberProfile,memberStats,document.getElementById('dashboardAdminMessages')],
      membership:[memberProfile,memberDetail],
+     profile:[memberProfileEdit],
      invite:[document.getElementById('referralCard')],
      downline:[memberTree],
      levels:[memberStats,memberDetail],
@@ -322,14 +332,9 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
    showMemberContent((map[id]||[]).filter(Boolean));
    window.scrollTo({top:0,behavior:'smooth'});
  }
- window.uMemberLevelTrack=function(b){
-   document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));
-   if(b)b.classList.add('active');
-   close();
-   hideMemberContent();
-   frame.classList.add('show');
-   frame.src='/leveltrack-member.html?v=FINAL';
-   window.scrollTo({top:0,behavior:'smooth'});
+ window.uMemberLevelTrack=function(section,b){document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');close();hideMemberContent();frame.classList.add('show');
+   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section},location.origin);
+   if(frame.src.indexOf('/leveltrack-member.html')<0){frame.src='/leveltrack-member.html?v=13';frame.addEventListener('load',send,{once:true});} else send();
  }
  const style=document.createElement('style');style.textContent='.u-hidden{display:none!important}';document.head.appendChild(style);
  showMemberContent([memberProfile,memberStats]);

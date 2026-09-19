@@ -1,24 +1,37 @@
-BORNTOWIN5 FINAL — ONLY REQUESTED LEVEL TRACKING CORRECTIONS
+BORNTOWIN5 - REGISTRATION + PROFILE + LEVEL PAYMENT CORRECTION V3
 
-Base:
-- admin.html and member.html are the user's uploaded final files.
-- Existing BORNTOWIN5 UI, login, menus and other functions are preserved.
+Only the requested flow corrections were made; existing overall UI/design is preserved.
 
-Only Level Tracking changes:
-- One Level Tracking menu item remains.
-- V26 mobile Level Tracking look/flow is retained.
-- Demo/Test/sample data is removed.
-- Real server member data is loaded.
-- Real direct referrals are loaded from the real member dashboard.
-- Referral link uses the real Member ID.
-- Direct referral milestones: L1=3, L2=6, L3=9, L4=12, L5=15, L6=18.
-- Upgrade request/payment/UTR/receiver acceptance/final approval use the existing LevelTrack server APIs.
-- No LocalStorage test database is used by Level Tracking.
+1) Registration page simplified:
+- Member Name
+- Place / City
+- Mobile Number
+- Referral ID (auto-filled from referral link)
+- Joining PIN
+- Declaration
+- Bank/personal extra fields are no longer required at initial registration.
 
-Upload these four HTML files together:
-admin.html
-member.html
-leveltrack-admin.html
-leveltrack-member.html
+2) After login:
+- New Profile option in the existing member menu.
+- Profile Picture upload.
+- Personal details: Name, Place, Mobile, Referral ID.
+- Bank details: Account Holder, Bank, Account Number, IFSC, Branch, UPI.
+- SAVE PROFILE stores the data in server database.
 
-Keep your existing server.js and data/db.json unchanged.
+3) Level Tracking Admin payment assignment:
+- Select the real upgrade request.
+- Enter Receiver Member ID only.
+- Receiver Name, Phone and bank details auto-load from the real database.
+- Bank fields are read-only/auto-filled.
+- Admin only enters/confirms the Amount.
+- SEND PAYMENT DETAILS sends the real bank/payment details to the member.
+
+4) Server:
+- Added /api/member/profile/:id for saving profile and bank details.
+- Member dashboard now returns profile data.
+- LevelTrack admin member lookup returns bank fields for auto-fill.
+- Existing V2 request-status correction is preserved.
+
+Validation:
+- Node server syntax checked successfully.
+- Member and LevelTrack Admin inline JavaScript syntax checked successfully.
