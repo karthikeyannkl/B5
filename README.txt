@@ -1,15 +1,15 @@
-BORNTOWIN5 + V26 Level Tracking Integration
+BORNTOWIN5 FINAL BASE + LEVEL TRACKING — ONLY REQUESTED CORRECTIONS
 
-What changed:
-- Kept the existing BORNTOWIN5 Admin and Member UI/API code.
-- Removed the old Level Tracking submenu items from the unified Admin and Member menus.
-- Added ONE Level Tracking menu button on each side.
-- That single button opens the exact V26 Admin/User Level Tracking files supplied for this test, embedded directly in the page.
-- V26 test flow uses its shared LocalStorage key, so Admin and User V26 test pages can exchange test state when opened in the same browser origin.
+Base admin.html and member.html are the uploaded final files. Their existing BORNTOWIN5 UI/API/menu structure is preserved.
 
-Files to replace:
-- admin.html
-- member.html
+Only Level Tracking corrections were made:
+- Single Level Tracking menu opens the real-data LevelTrack pages.
+- Demo/test/sample data removed from LevelTrack pages.
+- Member data comes from /api/leveltrack/member/dashboard/:id.
+- Real direct referrals are listed individually from the server referral tree.
+- Real referral link uses /?ref=MEMBER_ID.
+- Level eligibility uses the server direct-referral milestone.
+- Upgrade request/payment/UTR/receiver confirmation/admin flow uses the existing LevelTrack APIs.
+- No Reset Test Data or Add Referral Test buttons.
 
-Important:
-This is a front-end integration test build. It keeps the existing server/API code in admin.html and member.html; the V26 module itself is the supplied front-end LocalStorage test flow.
+Keep the existing server.js and data/db.json. Upload these four HTML files together.
