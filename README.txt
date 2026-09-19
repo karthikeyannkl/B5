@@ -1,18 +1,17 @@
-BORNTOWIN5 + LevelTrack — CONNECTION FIX V9
+MAGIZH FINAL GREEN V15 + SEPARATE LEVELTRACK
 
-Base: FINAL V8
+UPLOAD THESE EXACT FILE NAMES:
+1. admin.html              -> replace existing admin.html
+2. member.html             -> replace existing member.html
+3. leveltrack-admin.html   -> add/replace
+4. leveltrack-member.html  -> add/replace
+5. server.js               -> replace existing server.js
 
-Only the requested Admin <-> Server <-> Member data-flow fixes were made:
-1. Admin dashboard now returns today registration count + member names.
-2. Admin member Full View endpoint /api/admin/member-details/:id added.
-3. Admin dashboard now returns PIN summary fields required by the existing UI, so Leader names can populate and PIN generation can work.
-4. Admin LevelTrack level counters now include registered members by their current level (Level 1 starts at 1 when a member is registered/active in the data).
-5. Existing referral/downline data is returned for Full View and existing tree rendering is preserved.
-6. Existing message storage/Member message endpoint is preserved; it now works with the corrected dashboard flow without changing the UI.
-7. Existing LevelTrack upgrade assignment/payment-detail flow is preserved; the Member dashboard receives the assigned upgrade object and its bank/payment details from the same server database.
-
-DO NOT replace an existing production data/db.json with an empty file. Keep the existing data/db.json.
-
-No design/menu/search workflow changes were intentionally made.
-
-Note: This package is a server-side connection/data-flow test build. Real production authentication/authorization and secure database storage should be added before live financial use.
+IMPORTANT:
+- Keep existing data/db.json. Do NOT delete it.
+- admin.html and member.html are the uploaded approved green V15 masters.
+- Level Tracking is kept as separate pages.
+- Admin V15 opens /leveltrack-admin.html.
+- Member V15 opens /leveltrack-member.html.
+- Cache-busting is added to the iframe links so an old cached LevelTrack page is less likely to appear.
+- Restart/redeploy the Node/Render service after replacing server.js.

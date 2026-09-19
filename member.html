@@ -239,7 +239,7 @@ window.addEventListener('load',initMember);
  function close(){side.classList.remove('open');ov.classList.remove('show')}
  window.memberShowOriginal=function(b){frame.classList.remove('show');document.querySelectorAll('#memberSidebar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();window.scrollTo({top:0,behavior:'smooth'});}
  window.memberShowPortal=function(b){frame.classList.add('show');document.querySelectorAll('#memberSidebar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();}
- frame.src="/leveltrack-member.html?v=13";
+ frame.src="/leveltrack-member.html?v=FINAL_GREEN_V1";
  ready();new MutationObserver(ready).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['style','class']});setInterval(ready,1000);
 })();
 </script>
