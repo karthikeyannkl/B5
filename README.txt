@@ -1,28 +1,18 @@
-BORNTOWIN5 Level Tracking V27 - REAL DATA TEST BUILD
+BORNTOWIN5 Level Tracking V27 FIXED
 
-This build keeps the existing BORNTOWIN5 Admin/Member pages and connects the single Level Tracking menu to the server-backed LevelTrack pages.
-
-Included:
-- admin.html
-- member.html
-- leveltrack-admin.html
-- leveltrack-member.html
-
-Corrections in this build:
-1. Removed the V26 LocalStorage demo/test flow from the integrated Level Tracking path.
-2. Level Tracking reads real member data from the existing server APIs.
-3. Direct referrals are loaded from the real registration/referral database.
-4. Referral count updates from actual joins; no ADD REFERRAL TEST button.
-5. Upgrade eligibility uses the server milestone rules.
-6. Receiver/payment fields are dynamic; sample Kumar/Mohan/payment data was removed.
-7. Receiver status/confirmation functionality is preserved.
-8. Existing BORNTOWIN5 Admin/Member menus and design are preserved.
+This package fixes the menu integration issue.
 
 IMPORTANT:
-- Keep your existing server.js and data/db.json.
-- Upload/replace these four HTML files in the same server project.
-- Do NOT replace production data/db.json with an empty/test database.
-- This build expects the existing LevelTrack API routes in server.js.
+- Admin has ONE "Level Tracking" menu item only.
+- Member has ONE "Level Tracking" menu item only.
+- Clicking it opens the real-data LevelTrack page.
+- The LevelTrack pages use the server APIs and do not use the old V26 LocalStorage demo flow.
+- Keep the existing server.js and existing data/db.json. Do NOT replace the production database with a blank test database.
 
-First test:
-Login with one real Member ID, confirm current level and real direct referrals, then add/check three real referrals and verify the 3/3 milestone and upgrade request flow.
+Upload/replace:
+  admin.html
+  member.html
+  leveltrack-admin.html
+  leveltrack-member.html
+
+The previous old multi-option Level Tracking submenu has been removed from admin.html/member.html.

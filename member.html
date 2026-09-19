@@ -239,7 +239,7 @@ window.addEventListener('load',initMember);
  function close(){side.classList.remove('open');ov.classList.remove('show')}
  window.memberShowOriginal=function(b){frame.classList.remove('show');document.querySelectorAll('#memberSidebar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();window.scrollTo({top:0,behavior:'smooth'});}
  window.memberShowPortal=function(b){frame.classList.add('show');document.querySelectorAll('#memberSidebar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');close();}
- frame.src="/leveltrack-member.html?v=13";
+ frame.src="/leveltrack-member.html?v=27";
  ready();new MutationObserver(ready).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['style','class']});setInterval(ready,1000);
 })();
 </script>
@@ -292,11 +292,7 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
   <button class="uitem" onclick="uMemberMain('messages',this)">📢 My Messages</button>
   <button class="uitem" onclick="uMemberMain('pinwallet',this)">🔐 My PIN Wallet</button>
   <div class="ustitle" style="margin-top:12px">Level Tracking</div>
-  <button class="uitem" onclick="uMemberLevelTrack('dashboard',this)">📊 LevelTrack Dashboard</button>
-  <button class="uitem" onclick="uMemberLevelTrack('membership',this)">👤 LevelTrack My Membership</button>
-  <button class="uitem" onclick="uMemberLevelTrack('upgrade',this)">🚀 Level Upgrade</button>
-  <button class="uitem" onclick="uMemberLevelTrack('payments',this)">💰 My Payments</button>
-  <button class="uitem" onclick="uMemberLevelTrack('history',this)">📜 Upgrade History</button>
+  <button class="uitem" onclick="uMemberLevelTrack(this)">📊 Level Tracking</button>
 </aside>
 <iframe id="unifiedMemberFrame" title="LevelTrack Member Portal"></iframe>
 <script id="unified-member-menu-script">
@@ -326,9 +322,13 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
    showMemberContent((map[id]||[]).filter(Boolean));
    window.scrollTo({top:0,behavior:'smooth'});
  }
- window.uMemberLevelTrack=function(section,b){document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');close();hideMemberContent();frame.classList.add('show');
-   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section},location.origin);
-   if(frame.src.indexOf('/leveltrack-member.html')<0){frame.src='/leveltrack-member.html?v=13';frame.addEventListener('load',send,{once:true});} else send();
+ window.uMemberLevelTrack=function(b){
+   document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));
+   if(b)b.classList.add('active');
+   close();
+   hideMemberContent();
+   frame.classList.add('show');
+   frame.src='/leveltrack-member.html?v=27';
  }
  const style=document.createElement('style');style.textContent='.u-hidden{display:none!important}';document.head.appendChild(style);
  showMemberContent([memberProfile,memberStats]);

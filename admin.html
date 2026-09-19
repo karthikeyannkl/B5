@@ -276,13 +276,7 @@ main.wrap > .card:has(.nav){display:none!important}
   <button class="uitem" data-main="tree" onclick="uAdminMain('tree',this)">🌳 Referral Tree</button>
   <button class="uitem" data-main="settings" onclick="uAdminMain('settings',this)">⚙️ Settings</button>
   <div class="ustitle" style="margin-top:12px">Level Tracking</div>
-  <button class="uitem" onclick="uAdminLevelTrack('dashboard',this)">📊 LevelTrack Dashboard</button>
-  <button class="uitem" onclick="uAdminLevelTrack('searchMember',this)">🔎 Search Member</button>
-  <button class="uitem" onclick="uAdminLevelTrack('upgradeRequests',this)">🚀 Upgrade Requests & Approval</button>
-  <button class="uitem" onclick="uAdminLevelTrack('assignment',this)">💳 New Upgrade Assignment</button>
-  <button class="uitem" onclick="uAdminLevelTrack('incomingPayments',this)">💰 Incoming Payment Approval</button>
-  <button class="uitem" onclick="uAdminLevelTrack('upgradePayments',this)">💳 Upgrade Payment & Final Approval</button>
-  <button class="uitem" onclick="uAdminLevelTrack('dailyReport',this)">📅 Daily Upgrade Report</button>
+  <button class="uitem" onclick="uAdminLevelTrack(this)">📊 Level Tracking</button>
 </aside>
 <iframe id="unifiedAdminFrame" title="LevelTrack Admin Portal"></iframe>
 <script id="unified-admin-menu-script">
@@ -306,11 +300,15 @@ main.wrap > .card:has(.nav){display:none!important}
    document.getElementById(id)?.classList.remove('hidden');
    window.scrollTo({top:0,behavior:'smooth'});
  }
- window.uAdminLevelTrack=function(section,b){
-   document.querySelectorAll('#unifiedAdminSidebar .uitem').forEach(x=>x.classList.remove('active')); if(b)b.classList.add('active'); close();
-   if(hero) hero.style.display='none'; if(statsCard) statsCard.style.display='none'; hideMainPanels(); frame.classList.add('show');
-   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section},location.origin);
-   if(frame.src.indexOf('/leveltrack-admin.html')<0){frame.src='/leveltrack-admin.html?v=8';frame.addEventListener('load',send,{once:true});} else send();
+ window.uAdminLevelTrack=function(b){
+   document.querySelectorAll('#unifiedAdminSidebar .uitem').forEach(x=>x.classList.remove('active'));
+   if(b)b.classList.add('active');
+   close();
+   if(hero) hero.style.display='none';
+   if(statsCard) statsCard.style.display='none';
+   hideMainPanels();
+   frame.classList.add('show');
+   frame.src='/leveltrack-admin.html?v=27';
  }
  ready();setInterval(ready,500);
 })();
