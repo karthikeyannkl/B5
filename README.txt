@@ -1,18 +1,15 @@
-BORNTOWIN5 Level Tracking V27 FIXED
+BORNTOWIN5 + V26 Level Tracking Integration
 
-This package fixes the menu integration issue.
+What changed:
+- Kept the existing BORNTOWIN5 Admin and Member UI/API code.
+- Removed the old Level Tracking submenu items from the unified Admin and Member menus.
+- Added ONE Level Tracking menu button on each side.
+- That single button opens the exact V26 Admin/User Level Tracking files supplied for this test, embedded directly in the page.
+- V26 test flow uses its shared LocalStorage key, so Admin and User V26 test pages can exchange test state when opened in the same browser origin.
 
-IMPORTANT:
-- Admin has ONE "Level Tracking" menu item only.
-- Member has ONE "Level Tracking" menu item only.
-- Clicking it opens the real-data LevelTrack page.
-- The LevelTrack pages use the server APIs and do not use the old V26 LocalStorage demo flow.
-- Keep the existing server.js and existing data/db.json. Do NOT replace the production database with a blank test database.
+Files to replace:
+- admin.html
+- member.html
 
-Upload/replace:
-  admin.html
-  member.html
-  leveltrack-admin.html
-  leveltrack-member.html
-
-The previous old multi-option Level Tracking submenu has been removed from admin.html/member.html.
+Important:
+This is a front-end integration test build. It keeps the existing server/API code in admin.html and member.html; the V26 module itself is the supplied front-end LocalStorage test flow.
