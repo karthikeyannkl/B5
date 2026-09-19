@@ -1,15 +1,24 @@
-BORNTOWIN5 FINAL BASE + LEVEL TRACKING — ONLY REQUESTED CORRECTIONS
+BORNTOWIN5 FINAL — ONLY REQUESTED LEVEL TRACKING CORRECTIONS
 
-Base admin.html and member.html are the uploaded final files. Their existing BORNTOWIN5 UI/API/menu structure is preserved.
+Base:
+- admin.html and member.html are the user's uploaded final files.
+- Existing BORNTOWIN5 UI, login, menus and other functions are preserved.
 
-Only Level Tracking corrections were made:
-- Single Level Tracking menu opens the real-data LevelTrack pages.
-- Demo/test/sample data removed from LevelTrack pages.
-- Member data comes from /api/leveltrack/member/dashboard/:id.
-- Real direct referrals are listed individually from the server referral tree.
-- Real referral link uses /?ref=MEMBER_ID.
-- Level eligibility uses the server direct-referral milestone.
-- Upgrade request/payment/UTR/receiver confirmation/admin flow uses the existing LevelTrack APIs.
-- No Reset Test Data or Add Referral Test buttons.
+Only Level Tracking changes:
+- One Level Tracking menu item remains.
+- V26 mobile Level Tracking look/flow is retained.
+- Demo/Test/sample data is removed.
+- Real server member data is loaded.
+- Real direct referrals are loaded from the real member dashboard.
+- Referral link uses the real Member ID.
+- Direct referral milestones: L1=3, L2=6, L3=9, L4=12, L5=15, L6=18.
+- Upgrade request/payment/UTR/receiver acceptance/final approval use the existing LevelTrack server APIs.
+- No LocalStorage test database is used by Level Tracking.
 
-Keep the existing server.js and data/db.json. Upload these four HTML files together.
+Upload these four HTML files together:
+admin.html
+member.html
+leveltrack-admin.html
+leveltrack-member.html
+
+Keep your existing server.js and data/db.json unchanged.
