@@ -1,0 +1,14 @@
+MAGIZH SERVER REPLACEMENT FILES
+
+Replace these existing GitHub files with the files in this folder:
+1. member.html -> replace old member.html
+2. admin.html -> replace old admin.html
+3. server.js -> replace old server.js
+
+Do NOT rename the files.
+Do NOT upload these as new names such as member(5).html or admin(7).html.
+Keep package.json unchanged.
+
+The new member.html contains the V26 server-connected Level Tracking UI inside the existing Member V15 page.
+The new admin.html contains the V26 server-connected Level Tracking section inside the existing Admin V15 page.
+The new server.js adds the Level Tracking API/database flow.
