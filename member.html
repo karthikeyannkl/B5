@@ -96,7 +96,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--b5-gold)!important;ou
 <div><label>Place / City</label><input id="rPlace" placeholder="Your place"></div>
 <div><label>Mobile Number</label><input id="rMobile" type="tel" inputmode="numeric" maxlength="10" minlength="10" pattern="[0-9]{10}" placeholder="10 digit Mobile Number"></div>
 <div><label>Referral ID</label><input id="rReferral" autocomplete="off" oninput="checkReferralId()" readonly><div id="referralConfirm" class="small" style="margin-top:5px"></div></div>
-<div class="b5-full"><label>Joining PIN</label><input id="b5JoinPin" maxlength="9" placeholder="Enter Joining PIN"><div style="font-size:12px;color:#667085;margin-top:5px">First Registration PIN: <b>B5-FMUXNF</b></div></div>
+
 <div class="b5-full"><label style="color:#667085;font-size:12px">After registration, complete your Profile with Bank Details.</label></div>
 <div class="b5-full"><label>Declaration</label><label style="color:#172033"><input id="rDeclaration" type="checkbox" style="width:auto;margin-right:6px"> I confirm that the details provided are correct.</label></div>
 <div class="b5-full"><label>Joining PIN</label><input id="b5JoinPin" maxlength="9" placeholder="Enter Joining PIN"><div style="font-size:12px;color:#667085;margin-top:5px">First Registration PIN: <b>B5-FMUXNF</b></div></div>
@@ -130,7 +130,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--b5-gold)!important;ou
 <div class="stat" onclick="showLevel(7)"><b id="lv7">0</b><span>Level 7</span><small>Tap</small></div>
 </section>
 
-<section id="memberProfileEdit" class="card" style="display:none">
+<section id="memberProfileEdit" class="card u-hidden">
 <h3 style="margin-top:0">👤 My Profile</h3>
 <div class="member-detail">
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div class="avatar" id="profileAvatar">B5</div><div><b>Profile Picture</b><input id="profilePhoto" type="file" accept="image/*" style="display:block;margin-top:6px"></div></div>
@@ -296,11 +296,7 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
   <button class="uitem" onclick="uMemberMain('messages',this)">📢 My Messages</button>
   <button class="uitem" onclick="uMemberMain('pinwallet',this)">🔐 My PIN Wallet</button>
   <div class="ustitle" style="margin-top:12px">Level Tracking</div>
-  <button class="uitem" onclick="uMemberLevelTrack('dashboard',this)">📊 LevelTrack Dashboard</button>
-  <button class="uitem" onclick="uMemberLevelTrack('membership',this)">👤 LevelTrack My Membership</button>
-  <button class="uitem" onclick="uMemberLevelTrack('upgrade',this)">🚀 Level Upgrade</button>
-  <button class="uitem" onclick="uMemberLevelTrack('payments',this)">💰 My Payments</button>
-  <button class="uitem" onclick="uMemberLevelTrack('history',this)">📜 Upgrade History</button>
+  <button class="uitem" onclick="uMemberLevelTrack('dashboard',this)">📊 Level Tracking Dashboard</button>
 </aside>
 <iframe id="unifiedMemberFrame" title="LevelTrack Member Portal"></iframe>
 <script id="unified-member-menu-script">

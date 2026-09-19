@@ -5,18 +5,19 @@
 <div class="card"><div class="stats"><div class="stat"><b id="aLevel">—</b><span>Current Level</span></div><div class="stat"><b id="aRefs">0</b><span>Direct Referrals</span></div><div class="stat"><b id="aNext">—</b><span>Next Level</span></div></div></div>
 <section class="card"><div class="sectionTitle"><div class="title">Upgrade Request &amp; Approval</div><span id="refreshState" class="small">Live</span></div><div id="adminRequest"><div class="warn">Loading Level Tracking data…</div></div></section>
 <section class="card"><div class="title">Send Payment To This Member</div>
-<div id="selectedInfo" class="info">Select a pending upgrade request above to enter payment details.</div>
+<div id="selectedInfo" class="info">Select an upgrade request above. Then enter the receiver Member ID below.</div>
 <div id="paymentForm" class="hidden">
+<label>Receiver Member ID</label><input id="receiverIdInput" placeholder="Enter Receiver Member ID" autocomplete="off">
+<div id="receiverLookup" class="small" style="margin-bottom:8px"></div>
 <label>Receiver Name</label><input id="receiverName" readonly>
-<label>Receiver Member ID</label><input id="receiverIdInput" placeholder="Receiver Member ID">
 <label>Receiver Phone</label><input id="receiverPhone" readonly>
 <label>Account Holder</label><input id="accountHolder" readonly>
 <label>Bank Name</label><input id="bankName" readonly>
 <label>Account Number</label><input id="accountNumber" readonly>
 <label>IFSC</label><input id="ifsc" readonly>
+<label>Branch</label><input id="branchName" readonly>
 <label>UPI</label><input id="upi" readonly>
-<label>Amount</label><input id="amount" type="number">
-
+<label>Amount</label><input id="amount" type="number" min="1" placeholder="Enter amount">
 <button class="primary" onclick="sendDetails()">SEND PAYMENT DETAILS TO MEMBER</button>
 </div></section>
 <section class="card"><div class="title">Upgrade History</div><div id="history"><div class="small">No upgrade history yet.</div></div></section>
@@ -43,44 +44,43 @@ async function load(){
  }catch(e){$('refreshState').textContent='Connection error';$('adminRequest').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}
 }
 function selectRequest(id){
- const r=(state.dashboard.requests||[]).find(x=>x.id===id);if(!r)return;state.selectedRequest=r;const m=memberMap()[r.memberId];
- $('selectedInfo').innerHTML=`<b>Selected Member</b><br>${esc(m?.name||r.memberId)} • ${esc(r.memberId)}<br>L${r.from} → L${r.to}`;
+ const r=(state.dashboard.requests||[]).find(x=>x.id===id);if(!r)return;state.selectedRequest=r;
+ $('selectedInfo').innerHTML=`<b>Selected Upgrade Request</b><br>${esc(r.memberId)} • L${r.from} → L${r.to}<br><span class="small">Enter the receiver Member ID below. Bank details will load automatically.</span>`;
  $('paymentForm').classList.remove('hidden');
- $('receiverName').value='';$('receiverPhone').value='';$('receiverIdInput').value='';$('accountHolder').value='';$('bankName').value='';$('accountNumber').value='';$('ifsc').value='';$('upi').value='';
- $('amount').value=({1:1000,2:3000,3:20000,4:100000,5:200000,6:500000}[r.from]||'');$('adminMessage').value='';
+ $('receiverIdInput').value='';$('receiverLookup').textContent='';
+ ['receiverName','receiverPhone','accountHolder','bankName','accountNumber','ifsc','branchName','upi'].forEach(id=>$(id).value='');
+ $('amount').value=({1:1000,2:3000,3:20000,4:100000,5:200000,6:500000}[r.from]||'');
  $('receiverIdInput').focus();
 }
 async function fillReceiver(){
- const id=$('receiverIdInput').value.trim();if(!id)return;
+ const id=$('receiverIdInput').value.trim();
+ if(!id){$('receiverLookup').textContent='';return;}
  try{
   const d=await api('/api/leveltrack/admin/member-details/'+encodeURIComponent(id));
   const m=d.member||{};
-  $('receiverName').value=m.name||'';
-  $('receiverPhone').value=m.mobile||'';
-  $('accountHolder').value=m.accountHolder||m.name||'';
-  $('bankName').value=m.bank||'';
-  $('accountNumber').value=m.account||'';
-  $('ifsc').value=m.ifsc||'';
-  $('upi').value=m.upi||'';
- }catch(e){$('receiverName').value='';$('receiverPhone').value='';}
+  $('receiverName').value=m.name||'';$('receiverPhone').value=m.mobile||'';$('accountHolder').value=m.accountHolder||m.name||'';
+  $('bankName').value=m.bank||'';$('accountNumber').value=m.account||'';$('ifsc').value=m.ifsc||'';$('branchName').value=m.branch||'';$('upi').value=m.upi||'';
+  $('receiverLookup').innerHTML='<span style="color:#227442;font-weight:800">✓ Member found</span>';
+ }catch(e){
+  ['receiverName','receiverPhone','accountHolder','bankName','accountNumber','ifsc','branchName','upi'].forEach(id=>$(id).value='');
+  $('receiverLookup').innerHTML='<span style="color:#b42318">✕ Member ID not found</span>';
+ }
 }
 async function sendDetails(){
  const r=state.selectedRequest;if(!r)return alert('Select an upgrade request first.');
- // Refresh the request from the server so an old/stale screen state cannot block a valid request.
  const latest=await api('/api/leveltrack/admin/dashboard');
- const fresh=(latest.requests||[]).find(x=>x.id===r.id);
- if(!fresh){return alert('Upgrade request not found.');}
- if(String(fresh.status).toLowerCase()!=='requested'){
-   if(String(fresh.status).toLowerCase()==='assigned') return alert('Payment details are already sent for this request.');
-   return alert('This upgrade request is no longer pending.');
- }
- state.selectedRequest=fresh;
- const body={payee:$('receiverName').value.trim(),accountHolder:$('accountHolder').value.trim(),payeeId:$('receiverIdInput').value.trim(),amount:Number($('amount').value),account:$('accountNumber').value.trim(),bank:$('bankName').value.trim(),ifsc:$('ifsc').value.trim(),upi:$('upi').value.trim() };
- if(!body.payeeId)return alert('Enter Receiver Member ID.');
- if(!body.amount)return alert('Enter payment amount.');
+ const fresh=(latest.requests||[]).find(x=>x.id===r.id);if(!fresh)return alert('Upgrade request not found.');
+ if(String(fresh.status||'').toLowerCase()!=='requested'){if(String(fresh.status||'').toLowerCase()==='assigned')return alert('Payment details are already sent for this request.');return alert('This upgrade request is no longer pending.');}
+ const receiverId=$('receiverIdInput').value.trim();if(!receiverId)return alert('Enter Receiver Member ID.');
+ const receiver=await api('/api/leveltrack/admin/member-details/'+encodeURIComponent(receiverId));
+ const m=receiver.member||{};
+ if(!m.memberId)return alert('Receiver Member ID not found.');
+ const amount=Number($('amount').value);if(!amount)return alert('Enter payment amount.');
+ const body={payee:m.name||'',accountHolder:m.accountHolder||m.name||'',payeeId:m.memberId,amount,account:m.account||'',bank:m.bank||'',ifsc:m.ifsc||'',upi:m.upi||'',adminMessage:''};
  try{await api('/api/leveltrack/admin/requests/'+encodeURIComponent(fresh.id)+'/assign',{method:'POST',body:JSON.stringify(body)});alert('Payment details sent to member.');$('paymentForm').classList.add('hidden');state.selectedRequest=null;await load()}catch(e){alert(e.message)}
 }
 $('receiverIdInput').addEventListener('blur',fillReceiver);
 $('receiverIdInput').addEventListener('change',fillReceiver);
+$('receiverIdInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();fillReceiver()}});
 setInterval(load,5000);load();
 </script></body></html>

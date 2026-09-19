@@ -174,6 +174,18 @@ function ltDashboard(memberId){
   const relatedUpgrades=db.leveltrackUpgrades.filter(u=>u.memberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
   let upgrade=(latestRequest && db.leveltrackUpgrades.find(u=>u.requestId===latestRequest.id)) || relatedUpgrades[0] || null;
   if(upgrade && latestRequest){ upgrade={...latestRequest,...upgrade}; }
+  if(upgrade && String(upgrade.status||'').toLowerCase()==='assigned'){
+    upgrade.payment={
+      payee:upgrade.payee||'',
+      payeeId:upgrade.payeeId||'',
+      accountHolder:upgrade.accountHolder||'',
+      bank:upgrade.bank||'',
+      account:upgrade.account||'',
+      ifsc:upgrade.ifsc||'',
+      upi:upgrade.upi||'',
+      amount:upgrade.amount||0
+    };
+  }
   if(!upgrade && latestRequest && latestRequest.status==='Assigned'){ upgrade={...latestRequest}; }
   const payments=db.leveltrackPayments.filter(p=>p.receiverMemberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
   const directReferrals=direct(memberId).length;

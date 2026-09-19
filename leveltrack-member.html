@@ -40,7 +40,7 @@ function renderUpgrade(level,count){
  if(level>=7){$('memberStatus').innerHTML='<div class="success"><b>✓ L7 ACTIVE</b><br>Final level completed.</div>';$('memberPayment').innerHTML='';return}
  if(!u&&count<need){const left=need-count;$('memberStatus').innerHTML=`<div class="warn">Need ${left} more direct referral${left===1?'':'s'} to unlock L${level} → L${level+1}.</div>`;$('memberPayment').innerHTML='';return}
  if(!u&&count>=need){$('memberStatus').innerHTML='<div class="success"><b>✓ Requirement Completed</b><br>You can request the next level.</div><button class="primary" onclick="requestUpgrade()">REQUEST L'+level+' → L'+(level+1)+' UPGRADE</button>';$('memberPayment').innerHTML='';return}
- const p=u.payment;$('memberStatus').innerHTML='<div class="success">✓ Upgrade request: L'+u.from+' → L'+u.to+'</div>';
+ const p=u.payment;$('memberStatus').innerHTML=String(u.status||'').toLowerCase()==='assigned'?'<div class="success">✓ Payment details received from Admin for L'+u.from+' → L'+u.to+'</div>':'<div class="success">✓ Upgrade request: L'+u.from+' → L'+u.to+'</div>';
  if(!p){$('memberPayment').innerHTML='<div class="warn">Waiting for Admin to send payment details.</div>';return}
  let h='<div class="title">Payment To</div>'+detail('Receiver Name',p.payee||p.receiverName)+detail('Receiver Member ID',p.payeeId||p.receiverMemberId)+detail('Account Holder',p.accountHolder)+detail('Bank Name',p.bank||p.bankName)+detail('Account Number',p.account||p.accountNumber)+detail('IFSC',p.ifsc)+detail('UPI',p.upi)+detail('Amount','₹ '+(p.amount||u.amount||'—'));
  if(u.memberPaid)h+='<div class="success">✓ PAYMENT SUBMITTED<br>UTR: <b>'+esc(u.utr)+'</b><br>Waiting for Receiver confirmation.</div>';
