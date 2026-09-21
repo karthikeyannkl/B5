@@ -36,13 +36,14 @@ async function load(){
   $('aLevel').textContent=first?'L'+first.from:'—';$('aRefs').textContent=first?(first.directReferralCount??'—'):'—';$('aNext').textContent=first?'L'+first.to:'—';
   $('adminRequest').innerHTML=requests.length?requests.map(r=>{
     const m=members[r.memberId]||{name:r.memberId,mobile:'',memberId:r.memberId};
-    return `<div class="member"><div><b>${esc(m.name)}</b><div class="small">${esc(m.mobile)} • ${esc(m.memberId)}</div><div class="small">L${r.from} → L${r.to} • Direct Referrals: ${r.directReferralCount??'—'}</div></div><span class="badge">${esc(r.status||'Requested')}</span><button class="primary" style="margin-top:8px" onclick="selectRequest('${r.id}')">SELECT REQUEST</button></div>`;
+    const u=(d.upgrades||[]).find(x=>x.requestId===r.id);const pay=(d.payments||[]).find(x=>x.upgradeId===u?.id);let action=`<button class="primary" style="margin-top:8px" onclick="selectRequest('${r.id}')">SELECT REQUEST</button>`;if(u&&pay?.memberAccepted&&!u.adminApproved)action+=`<button class="primary" style="margin-top:8px;background:#b7791f" onclick="approvePayment('${u.id}')">✓ ADMIN APPROVE PAYMENT & COMPLETE</button>`;if(u&&u.adminApproved)action=`<div class="success" style="margin-top:8px">✓ Admin Approved • L${u.from} → L${u.to} completed</div>`;return `<div class="member"><div><b>${esc(m.name)}</b><div class="small">${esc(m.mobile)} • ${esc(m.memberId)}</div><div class="small">L${r.from} → L${r.to} • Direct Referrals: ${r.directReferralCount??'—'}</div></div><span class="badge">${esc(r.status||'Requested')}</span>${action}</div>`;
   }).join(''):'<div class="warn">No active upgrade request.</div>';
   const hist=(d.upgrades||[]).filter(x=>x.status==='Completed').slice(0,50);
   $('history').innerHTML=hist.length?hist.map(x=>`<div class="member"><b>${esc(x.memberId||'')} — L${x.from} → L${x.to}</b><div class="small">${x.completedAt?new Date(x.completedAt).toLocaleString():''}</div></div>`).join(''):'<div class="small">No upgrade history yet.</div>';
   $('refreshState').textContent='Live';
  }catch(e){$('refreshState').textContent='Connection error';$('adminRequest').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}
 }
+async function approvePayment(upgradeId){if(!confirm('Approve this confirmed payment and complete the member level upgrade?'))return;try{await api('/api/leveltrack/admin/payments/by-upgrade/'+encodeURIComponent(upgradeId)+'/approve',{method:'POST'});alert('Admin approval completed. Member moved to next level.');await load()}catch(e){alert(e.message)}}
 function selectRequest(id){
  const r=(state.dashboard.requests||[]).find(x=>x.id===id);if(!r)return;state.selectedRequest=r;
  $('selectedInfo').innerHTML=`<b>Selected Upgrade Request</b><br>${esc(r.memberId)} • L${r.from} → L${r.to}<br><span class="small">Enter the receiver Member ID below. Bank details will load automatically.</span>`;

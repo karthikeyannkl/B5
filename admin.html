@@ -113,7 +113,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--b5-gold)!important;ou
 
 <section id="pin" class="card panel hidden">
 <span class="pill">PIN MANAGEMENT</span><h3>Generate & Assign Joining PINs</h3>
-<label class="small">Leader</label><select id="leader"><option value="">Select Member / Leader</option></select>
+<label class="small">Search Member / Leader</label><div class="search" style="margin:6px 0 8px"><input id="pinMemberSearch" placeholder="Member ID / Mobile Number"><button class="btn send" style="width:auto;margin:0" onclick="searchPinMember()">Search</button></div><div id="pinMemberResults"></div><label class="small">Leader</label><select id="leader"><option value="">Select Member / Leader</option></select>
 <label class="small" style="display:block;margin-top:10px">Quantity</label><select id="qty"><option>10</option><option>20</option><option>50</option><option>100</option></select>
 <button class="btn send" onclick="generatePins()">Generate & Assign PINs</button>
 <div id="pinResult"></div>
@@ -136,6 +136,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--b5-gold)!important;ou
 
 <section id="tree" class="card panel hidden"><span class="pill">FULL REFERRAL TREE</span><h3>All Members Downline</h3><div id="fullTree"><div class="small">இன்னும் உறுப்பினர்கள் பதிவு செய்யப்படவில்லை.</div></div></section>
 
+<section id="pwreset" class="panel hidden"><div class="card"><h2>Password Reset Requests</h2><div id="pwResetList">Loading...</div></div></section>
 <section id="settings" class="card panel hidden">
 <span class="pill">ADMIN SETTINGS</span><h3>System Settings</h3>
 <div class="msgbox"><b> Mode</b><p class="small">Production version-ல் Admin authentication, database, SMS OTP, Drive storage மற்றும் audit log இணைக்கப்படும்.</p></div>
@@ -152,7 +153,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--b5-gold)!important;ou
 
 <script>
 async function api(u,o={}){const r=await fetch(u,{headers:{'Content-Type':'application/json'},...o});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Request failed');return d}
-function tab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.add('hidden'));document.getElementById(id)?.classList.remove('hidden');}
+function tab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.add('hidden'));document.getElementById(id)?.classList.remove('hidden'); if(id==='pwreset')loadPwReset();}
 async function b5AdminLogin(){try{await api('/api/admin/login',{method:'POST',body:JSON.stringify({password:document.getElementById('B5_ADMIN_PASSWORD').value})});localStorage.setItem('B5_ADMIN_LOGIN','1');document.getElementById('B5_ADMIN_GATE').style.display='none';loadAdminData()}catch(e){const x=document.getElementById('B5_ADMIN_ERR');x.textContent=e.message;x.style.display='block'}}
 function adminLogout(){localStorage.removeItem('B5_ADMIN_LOGIN');location.reload()}
 async function adminRefresh(){await loadAdminData()}
@@ -165,6 +166,9 @@ async function memberSearch(){try{const d=await api('/api/admin/members?q='+enco
 async function showMemberDetails(id){try{const d=await api('/api/admin/member-details/'+encodeURIComponent(id)),m=d.details||d.member;const rows=Object.entries(m).filter(([k])=>!['pin'].includes(k)).map(([k,v])=>`<div><small>${k}</small><b>${String(v??'').replace(/</g,'&lt;')}</b></div>`).join('');document.getElementById('memberDetail').innerHTML=`<div class="member-detail"><h3 style="margin-top:0">${m.name} — Full Details</h3><div class="detail-grid">${rows}</div></div>`}catch(e){alert(e.message)}}
 async function findTarget(){try{const d=await api('/api/admin/members?q='+encodeURIComponent(document.getElementById('targetMobile').value.trim())),m=d.members[0],el=document.getElementById('target');if(m){el.dataset.memberId=m.memberId;el.innerHTML=`<div class="member"><b>✓ ${m.name}</b><div class="small">${m.memberId} • ${m.mobile}</div></div>`}else el.innerHTML='<div class="msgbox">Member not found.</div>'}catch(e){alert(e.message)}}
 async function sendMessage(){const msg=document.getElementById('message').value.trim(),to=document.getElementById('msgTo').value,memberId=document.getElementById('target')?.dataset?.memberId||'';if(!msg)return alert('Message எழுதுங்கள்');if(to==='mobile'&&!memberId)return alert('முதலில் Member search செய்யுங்கள்');try{await api('/api/admin/message',{method:'POST',body:JSON.stringify({to:to==='all'?'all':'mobile',memberId,message:msg})});document.getElementById('msgResult').innerHTML='<div class="msgbox" style="margin-top:10px">✓ Message sent successfully.</div>';document.getElementById('message').value=''}catch(e){alert(e.message)}}
+
+async function searchPinMember(){const q=document.getElementById('pinMemberSearch').value.trim();if(!q)return alert('Enter Member ID or Mobile Number');try{const d=await api('/api/admin/members?q='+encodeURIComponent(q));const el=document.getElementById('pinMemberResults');el.innerHTML=(d.members||[]).map(m=>`<div class="member" style="cursor:pointer" onclick="selectPinMember('${m.memberId}')"><b>${m.name}</b><div class="small">${m.memberId} • ${m.mobile}</div></div>`).join('')||'<div class="small">Member not found.</div>'}catch(e){alert(e.message)}}
+function selectPinMember(id){const s=document.getElementById('leader');if(s){s.value=id;if(!s.value){const o=document.createElement('option');o.value=id;o.textContent=id;s.appendChild(o);s.value=id}}document.getElementById('pinMemberResults').innerHTML='<div class="success" style="margin-bottom:8px">✓ Member selected: '+id+'</div>'}
 async function generatePins(){const quantity=Math.max(1,Number(document.getElementById('qty').value)||1),memberId=document.getElementById('leader').value;if(!memberId)return alert('Select Member / Leader');try{const d=await api('/api/admin/pins/generate',{method:'POST',body:JSON.stringify({memberId,quantity})});document.getElementById('pinResult').innerHTML=`<div class="msgbox"><b>✓ ${d.pins.length} PINs generated & assigned</b><p class="small">${d.member.name} — ${d.member.memberId}<br>Available: ${d.available} • Used: ${d.used}</p><details><summary>Show PINs</summary><div class="pinbox">${d.pins.map(x=>`<div class="pin"><b>${x.pin}</b><span class="small">AVAILABLE</span></div>`).join('')}</div></details></div>`;await loadAdminData()}catch(e){alert(e.message)}}
 function renderPinReport(report){const el=document.getElementById('leaders');if(el)el.innerHTML=report.map(x=>`<div class="leader"><div class="lh"><div><b>${x.name}</b><div class="small">${x.memberId}</div></div><span class="pill green">Assigned</span></div><div class="grid" style="margin-top:9px"><div class="box"><b>${x.received}</b><small>Total Received</small></div><div class="box"><b>${x.available}</b><small>Available</small></div><div class="box"><b>${x.used}</b><small>Used</small></div><div class="box"><b>${x.received?Math.round(x.used/x.received*100):0}%</b><small>Activated</small></div></div></div>`).join('')||'<div class="small">இன்னும் PIN data இல்லை.</div>'}
 function drawTree(list){const el=document.getElementById('fullTree');if(!el)return;const children=id=>list.filter(m=>m.referral===id).map(m=>({name:m.name,id:m.memberId,referral:m.referral,children:children(m.memberId)}));const roots=list.filter(m=>!m.referral||m.referral==='FIRST MEMBER');el.innerHTML=roots.length?roots.map(r=>makeAdminTree({name:r.name,id:r.memberId,children:children(r.memberId)},0)).join(''):'<div class="small">இன்னும் உறுப்பினர்கள் பதிவு செய்யப்படவில்லை.</div>'}
@@ -272,6 +276,7 @@ main.wrap > .card:has(.nav){display:none!important}
   <button class="uitem" data-main="members" onclick="uAdminMain('members',this)">👥 Members</button>
   <button class="uitem" data-main="msg" onclick="uAdminMain('msg',this)">📢 Messages</button>
   <button class="uitem" data-main="pin" onclick="uAdminMain('pin',this)">🔐 PIN Management</button>
+  <button class="uitem" data-main="pwreset" onclick="uAdminMain('pwreset',this)">🔑 Password Reset</button>
   <button class="uitem" data-main="pinreport" onclick="uAdminMain('pinreport',this)">📊 Admin PIN Report</button>
   <button class="uitem" data-main="tree" onclick="uAdminMain('tree',this)">🌳 Referral Tree</button>
   <button class="uitem" data-main="settings" onclick="uAdminMain('settings',this)">⚙️ Settings</button>
@@ -282,7 +287,7 @@ main.wrap > .card:has(.nav){display:none!important}
 <script id="unified-admin-menu-script">
 (function(){
  const btn=document.getElementById('unifiedAdminMenuBtn'),side=document.getElementById('unifiedAdminSidebar'),ov=document.getElementById('unifiedAdminOverlay'),frame=document.getElementById('unifiedAdminFrame');
- const panels=['review','members','msg','pin','pinreport','tree','settings'];
+ const panels=['review','members','msg','pin','pinreport','tree','settings','pwreset'];
  function logged(){return localStorage.getItem('B5_ADMIN_LOGIN')==='1' && getComputedStyle(document.getElementById('B5_ADMIN_GATE')).display!=='flex'}
  function ready(){const ok=logged();[btn,side].forEach(x=>x&&x.classList.toggle('ready',ok));if(!ok){frame.classList.remove('show');side.classList.remove('open');ov.classList.remove('show');}}
  window.uAdminToggle=function(){if(!btn.classList.contains('ready'))return;side.classList.toggle('open');ov.classList.toggle('show')}
@@ -311,6 +316,9 @@ main.wrap > .card:has(.nav){display:none!important}
    frame.src='/leveltrack-admin.html?v=FINAL';
    window.scrollTo({top:0,behavior:'smooth'});
  }
- ready();setInterval(ready,500);
+ async function loadPwReset(){const el=document.getElementById('pwResetList');if(!el)return;try{const d=await fetch('/api/admin/password-reset-requests').then(r=>r.json());if(!d.requests.length){el.innerHTML='<div class="small">No pending password reset requests.</div>';return}el.innerHTML=d.requests.map(r=>`<div class="card" style="margin-top:10px"><b>${String(r.name).replace(/</g,'&lt;')}</b><div class="small">${r.memberId} • ${r.mobile}</div><button class="primary" style="margin-top:10px" onclick="approvePwReset('${r.id}')">APPROVE & RESET PASSWORD</button></div>`).join('')}catch(e){el.textContent='Failed to load requests'}}
+window.approvePwReset=async function(id){let temp=prompt('Temporary password (minimum 6 characters). Leave blank for auto-generate:','');if(temp!==null&&temp&&temp.length<6)return alert('Minimum 6 characters');try{const r=await fetch('/api/admin/password-reset/'+encodeURIComponent(id),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({temporaryPassword:temp||''})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Reset failed');alert('Temporary password: '+d.temporaryPassword);loadPwReset()}catch(e){alert(e.message)}};
+
+ready();setInterval(ready,500);
 })();
 </script>
