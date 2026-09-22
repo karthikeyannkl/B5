@@ -166,4 +166,27 @@ setInterval(load,5000);setInterval(()=>{if(!$('receiver').classList.contains('hi
  }
  window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;openSection(e.data.section||'dashboard')});
 })();
-</script></body></html>
+</script>
+<script id="b5-v11-nav">
+(function(){
+ const cards=Array.from(document.querySelectorAll('#member>.card'));
+ const map={membership:0,referrals:[1,2],upgrade:3,earnings:4,history:5,payment:3};
+ function show(section){
+   document.body.classList.add('b5-embedded');
+   const member=document.getElementById('member'), receiver=document.getElementById('receiver');
+   if(member) member.classList.remove('hidden');
+   if(receiver) receiver.classList.add('hidden');
+   cards.forEach((el,i)=>el.classList.toggle('b5-show',section==='dashboard'?i===0:(Array.isArray(map[section])?map[section].includes(i):map[section]===i)));
+   const info=document.querySelector('#member>.info'); if(info) info.classList.toggle('b5-show',section==='dashboard');
+   if(section==='receiver'){if(member)member.classList.add('hidden');if(receiver){receiver.classList.remove('hidden');receiver.classList.add('b5-show')}}
+   if(section==='dashboard'){cards.forEach((el,i)=>el.classList.toggle('b5-show',i===0));}
+   window.scrollTo({top:0,behavior:'smooth'});
+ }
+ window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;show(e.data.section||'dashboard')});
+ window.addEventListener('load',()=>show('dashboard'));
+})();
+</script>
+<style id="b5-v11-nav-style">
+.b5-show{display:block!important}.b5-embedded .topnav{display:none}.b5-embedded #member>.card,.b5-embedded #member>.info{display:none}.b5-embedded #member>.card.b5-show,.b5-embedded #member>.info.b5-show{display:block}.b5-embedded #receiver{display:none!important}.b5-embedded #receiver.b5-show{display:block!important}.b5-embedded .wrap{padding-top:10px}
+</style>
+</body></html>

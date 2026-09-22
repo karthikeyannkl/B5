@@ -91,8 +91,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)
 .b5-lt-options .b5-subitem{font-size:13px!important;padding:10px 12px!important;background:#fff!important;border-left:3px solid #c89a4b!important}
 </style>
 
+
+<style id="b5-splash-style">
+#b5Splash{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#063f2e,#0b6a4b 58%,#f8f4ea);color:#fff;transition:opacity .35s ease,visibility .35s ease}
+#b5Splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+.b5SplashLogo{width:78px;height:78px;border-radius:24px;display:grid;place-items:center;background:linear-gradient(145deg,#d5aa5a,#f1d58d);color:#064b35;font-size:34px;font-weight:950;box-shadow:0 12px 35px rgba(0,0,0,.22);animation:b5Pulse 1.1s ease-in-out infinite}
+.b5SplashName{margin-top:15px;font-size:22px;font-weight:900;letter-spacing:1.5px}.b5SplashLine{width:70px;height:3px;margin-top:12px;border-radius:99px;background:#d5aa5a;animation:b5Load 1.1s ease-in-out infinite}
+@keyframes b5Pulse{50%{transform:scale(1.04)}}@keyframes b5Load{50%{width:110px;opacity:.7}}
+</style>
 </head>
-<body>
+<body><div id="b5Splash" aria-label="BORNTOWIN5 loading"><div class="b5SplashLogo">B5</div><div class="b5SplashName">BORNTOWIN5</div><div class="b5SplashLine"></div></div>
 <div id="B5_ADMIN_GATE">
   <div class="gate">
     <div class="glogo">B5</div>
@@ -221,7 +229,7 @@ function renderPinReport(report){const el=document.getElementById('leaders');if(
 function drawTree(list){const el=document.getElementById('fullTree');if(!el)return;const children=id=>list.filter(m=>m.referral===id).map(m=>({name:m.name,id:m.memberId,referral:m.referral,children:children(m.memberId)}));const roots=list.filter(m=>!m.referral||m.referral==='FIRST MEMBER');el.innerHTML=roots.length?roots.map(r=>makeAdminTree({name:r.name,id:r.memberId,children:children(r.memberId)},0)).join(''):'<div class="small">இன்னும் உறுப்பினர்கள் பதிவு செய்யப்படவில்லை.</div>'}
 function makeAdminTree(n,l){return `<div class="node"><b>L${l} — ${n.name}</b><div class="small">${n.id}</div>${n.children?.length?'<div class="children">'+n.children.map(x=>makeAdminTree(x,l+1)).join('')+'</div>':''}</div>`}
 document.getElementById('rq')?.addEventListener('input',drawReview);window.addEventListener('load',loadAdminData);
-</script></body></html><style>.nav button.active{background:#075B35!important;color:#fff!important;border-color:#075B35!important}</style>
+</script><script id="b5-splash-script">window.addEventListener('load',function(){setTimeout(function(){document.getElementById('b5Splash')?.classList.add('hide')},900)});</script></body></html><style>.nav button.active{background:#075B35!important;color:#fff!important;border-color:#075B35!important}</style>
 <script>
 (function(){
  const oldTab=window.tab;
@@ -313,6 +321,12 @@ main.wrap > .card:has(.nav){display:none!important}
 #unifiedAdminFrame{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147482997;background:#fff}
 #unifiedAdminFrame.show{display:block}
 @media(max-width:520px){#unifiedAdminMenuBtn{top:9px;left:9px}.top{padding-left:66px}.wrap{padding-left:10px;padding-right:10px}}
+
+/* V11 sidebar contrast fix */
+#unifiedAdminSidebar .uitem{color:#20312a!important;background:#f4f7f4!important;text-shadow:none!important;opacity:1!important}
+#unifiedAdminSidebar .uitem.active{color:#fff!important;background:linear-gradient(135deg,#075B35,#0b7654)!important}
+#unifiedAdminSidebar .b5-subitem{color:#20312a!important;background:#f8faf8!important}
+#unifiedAdminSidebar .b5-subitem.active{color:#fff!important;background:#075B35!important}
 </style>
 <button id="unifiedAdminMenuBtn" onclick="uAdminToggle()" aria-label="Open Admin menu">☰</button>
 <div id="unifiedAdminOverlay" onclick="uAdminToggle()"></div>
