@@ -1,4 +1,40 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BORNTOWIN5 Level Tracking - Admin</title><style>*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#172033;font-family:system-ui,-apple-system,"Noto Sans Tamil",sans-serif}.top{height:64px;background:#fff;border-bottom:1px solid #e5e8ef;display:flex;align-items:center;gap:10px;padding:0 14px;position:sticky;top:0;z-index:5}.logo{width:39px;height:39px;border-radius:12px;background:linear-gradient(135deg,#034A2B,#d39a42);color:#fff;display:grid;place-items:center;font-size:23px;font-weight:800}.brand b{display:block;font-size:15px}.brand small{display:block;color:#7b8496;font-size:10px}.wrap{max-width:900px;margin:auto;padding:15px 12px 35px}.hero{background:linear-gradient(135deg,#681733,#a82d53);color:#fff;border-radius:19px;padding:20px 18px;margin-bottom:13px}.hero h1{margin:8px 0 4px;font-size:27px}.hero p{margin:0;color:#f8e9ed;font-size:11px}.card{background:#fff;border:1px solid #e3e7ef;border-radius:18px;padding:16px;margin-bottom:13px;box-shadow:0 5px 20px #00000008}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{text-align:center;border:1px solid #e5e8ef;border-radius:13px;padding:10px}.stat b{display:block;font-size:23px;color:#075B35}.stat span{font-size:10px;color:#788196}.member{border:1px solid #e4e8ef;border-radius:13px;padding:12px;margin-top:9px}.small{font-size:10px;color:#7b8496}.pill{display:inline-block;background:#eee1e6;color:#075B35;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}.info{background:#fff8fb;border-left:4px solid #075B35;padding:11px;border-radius:10px;font-size:11px;line-height:1.5}.success{background:#e1f4e7;color:#227442;border-radius:10px;padding:11px;font-size:11px;line-height:1.5}.warn{background:#fff0c2;color:#806000;border-radius:10px;padding:11px;font-size:11px;line-height:1.5;margin-top:9px}.primary,.send{background:#075B35;color:#fff;width:100%;margin-top:10px;border:0;border-radius:10px;padding:11px;font-weight:800;cursor:pointer}.secondary{background:#fff;color:#075B35;border:1px solid #075B35;width:100%;padding:11px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}.danger{background:#fff;color:#b42318;border:1px solid #b42318;width:100%;padding:9px;border-radius:10px;font-weight:800}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.account{border:1px solid #e4e8ef;border-radius:12px;padding:11px}.account h4{margin:0 0 8px;color:#075B35}.row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #eee;font-size:12px}.row:last-child{border-bottom:0}.badge{padding:5px 9px;border-radius:20px;background:#e1f4e7;color:#227442;font-weight:800;font-size:10px}input,select,textarea{width:100%;padding:10px;border:1px solid #dfe3ec;border-radius:10px;font:inherit;background:#fff;margin:5px 0 10px}label{font-size:10px;font-weight:800;display:block}.hidden{display:none}.tableWrap{overflow:auto}.reportTable{width:100%;border-collapse:collapse;font-size:10px}.reportTable th,.reportTable td{padding:8px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap}.reportTable th{background:#fafbfe;color:#075B35}.title{font-weight:800;font-size:14px}.split{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}.split div{border:1px solid #e4e8ef;border-radius:10px;padding:8px;text-align:center;font-size:10px}.split b{display:block;font-size:13px;color:#075B35}@media(max-width:650px){.grid2,.grid3,.split{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr 1fr}}</style></head><body>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BORNTOWIN5 Level Tracking - Admin</title><style>*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#172033;font-family:system-ui,-apple-system,"Noto Sans Tamil",sans-serif}.top{height:64px;background:#fff;border-bottom:1px solid #e5e8ef;display:flex;align-items:center;gap:10px;padding:0 14px;position:sticky;top:0;z-index:5}.logo{width:39px;height:39px;border-radius:12px;background:linear-gradient(135deg,#034A2B,#d39a42);color:#fff;display:grid;place-items:center;font-size:23px;font-weight:800}.brand b{display:block;font-size:15px}.brand small{display:block;color:#7b8496;font-size:10px}.wrap{max-width:900px;margin:auto;padding:15px 12px 35px}.hero{background:linear-gradient(135deg,#681733,#a82d53);color:#fff;border-radius:19px;padding:20px 18px;margin-bottom:13px}.hero h1{margin:8px 0 4px;font-size:27px}.hero p{margin:0;color:#f8e9ed;font-size:11px}.card{background:#fff;border:1px solid #e3e7ef;border-radius:18px;padding:16px;margin-bottom:13px;box-shadow:0 5px 20px #00000008}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{text-align:center;border:1px solid #e5e8ef;border-radius:13px;padding:10px}.stat b{display:block;font-size:23px;color:#075B35}.stat span{font-size:10px;color:#788196}.member{border:1px solid #e4e8ef;border-radius:13px;padding:12px;margin-top:9px}.small{font-size:10px;color:#7b8496}.pill{display:inline-block;background:#eee1e6;color:#075B35;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}.info{background:#fff8fb;border-left:4px solid #075B35;padding:11px;border-radius:10px;font-size:11px;line-height:1.5}.success{background:#e1f4e7;color:#227442;border-radius:10px;padding:11px;font-size:11px;line-height:1.5}.warn{background:#fff0c2;color:#806000;border-radius:10px;padding:11px;font-size:11px;line-height:1.5;margin-top:9px}.primary,.send{background:#075B35;color:#fff;width:100%;margin-top:10px;border:0;border-radius:10px;padding:11px;font-weight:800;cursor:pointer}.secondary{background:#fff;color:#075B35;border:1px solid #075B35;width:100%;padding:11px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}.danger{background:#fff;color:#b42318;border:1px solid #b42318;width:100%;padding:9px;border-radius:10px;font-weight:800}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.account{border:1px solid #e4e8ef;border-radius:12px;padding:11px}.account h4{margin:0 0 8px;color:#075B35}.row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #eee;font-size:12px}.row:last-child{border-bottom:0}.badge{padding:5px 9px;border-radius:20px;background:#e1f4e7;color:#227442;font-weight:800;font-size:10px}input,select,textarea{width:100%;padding:10px;border:1px solid #dfe3ec;border-radius:10px;font:inherit;background:#fff;margin:5px 0 10px}label{font-size:10px;font-weight:800;display:block}.hidden{display:none}.tableWrap{overflow:auto}.reportTable{width:100%;border-collapse:collapse;font-size:10px}.reportTable th,.reportTable td{padding:8px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap}.reportTable th{background:#fafbfe;color:#075B35}.title{font-weight:800;font-size:14px}.split{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}.split div{border:1px solid #e4e8ef;border-radius:10px;padding:8px;text-align:center;font-size:10px}.split b{display:block;font-size:13px;color:#075B35}@media(max-width:650px){.grid2,.grid3,.split{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr 1fr}}</style><style id="b5-unified-theme">
+:root{--b5-green:#064b35;--b5-green2:#0a6a4b;--b5-gold:#c89a4b;--b5-cream:#f8f4ea;--b5-ink:#18241f;--b5-muted:#6f7b76;--b5-line:#e4e9e5;--b5-soft:#f5f8f5;--b5-radius:18px}
+*{box-sizing:border-box}
+body{background:linear-gradient(180deg,#f7f8f5 0,#f4f6f4 100%)!important;color:var(--b5-ink)!important;font-family:Inter,system-ui,-apple-system,"Noto Sans Tamil","Noto Sans",sans-serif!important;font-size:13px}
+.top,header{background:rgba(255,255,255,.96)!important;border-bottom:1px solid var(--b5-line)!important;backdrop-filter:blur(10px)}
+.logo{background:linear-gradient(135deg,var(--b5-green),var(--b5-gold))!important;box-shadow:0 5px 14px #064b3520}
+.brand b{color:var(--b5-green)!important;font-weight:850!important;letter-spacing:.1px}.brand small{color:var(--b5-muted)!important}
+.card{background:rgba(255,255,255,.97)!important;border:1px solid var(--b5-line)!important;border-radius:var(--b5-radius)!important;box-shadow:0 8px 26px rgba(6,75,53,.06)!important}
+.hero{background:linear-gradient(135deg,var(--b5-green),#0b6b4b 62%,var(--b5-gold))!important;border-radius:22px!important;box-shadow:0 10px 28px rgba(6,75,53,.14)}
+.hero h1,.title{font-family:inherit!important;color:var(--b5-green)!important;font-weight:850!important;letter-spacing:.1px}
+.hero h1{color:#fff!important}.hero p{color:#eef7f2!important}
+button,.primary,.send{background:linear-gradient(135deg,var(--b5-green),var(--b5-green2))!important;color:#fff!important;border-radius:12px!important;box-shadow:0 5px 12px rgba(6,75,53,.10)}
+.secondary{background:#fff!important;color:var(--b5-green)!important;border:1px solid #b8cfc3!important}
+input,select,textarea{border:1px solid #d7e1db!important;border-radius:11px!important;color:var(--b5-ink)!important}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)!important;box-shadow:0 0 0 3px rgba(200,154,75,.14)!important}
+.stat b,.account h4,.reportTable th{color:var(--b5-green)!important}
+.pill,.tag{background:#edf5f0!important;color:var(--b5-green)!important}
+.badge,.success{background:#edf7f0!important;color:#246b47!important}
+.info{background:#f7faf7!important;border-left-color:var(--b5-gold)!important}
+.warn{background:#fff8e8!important;border-color:#efdca8!important}
+/* unified accordion / slide cards */
+.b5-accordion-card>.b5-accordion-head,.b5-account-card>h4{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none}
+.b5-accordion-head:after,.b5-account-card>h4:after{content:'⌄';font-size:16px;color:var(--b5-gold);transition:transform .2s ease}
+.b5-accordion-card.is-collapsed>.b5-accordion-head:after,.b5-account-card.is-collapsed>h4:after{transform:rotate(-90deg)}
+.b5-accordion-body{overflow:hidden;max-height:5000px;opacity:1;transition:max-height .25s ease,opacity .18s ease,padding .2s ease}
+.b5-accordion-card.is-collapsed>.b5-accordion-body,.b5-account-card.is-collapsed>.b5-account-body{max-height:0;opacity:0;overflow:hidden;padding-top:0!important;padding-bottom:0!important}
+.b5-accordion-card>.b5-accordion-head{padding:2px 0 8px;margin-bottom:2px}
+.b5-accordion-card.is-collapsed>.b5-accordion-head{margin-bottom:0}
+.b5-account-card{padding:12px!important;border-radius:14px!important;background:#fff!important;border:1px solid var(--b5-line)!important}
+.b5-account-card>h4{margin:0!important;padding:2px 0!important;color:var(--b5-green)!important;font-size:13px!important}
+.b5-account-body{max-height:5000px;overflow:hidden;opacity:1;transition:max-height .25s ease,opacity .18s ease,padding .2s ease;padding-top:9px}
+.b5-account-card>h4:before{content:'▸';font-size:10px;color:var(--b5-gold);margin-right:2px}.b5-account-card:not(.is-collapsed)>h4:before{content:'▾'}
+.b5-level-row{border:1px solid var(--b5-line);border-radius:14px;margin:8px 0;overflow:hidden;background:#fff}.b5-level-row .b5-level-head{padding:12px;background:var(--b5-soft);font-weight:850;color:var(--b5-green);cursor:pointer;display:flex;justify-content:space-between}.b5-level-row .b5-level-body{padding:10px}
+@media(max-width:600px){.card{border-radius:16px!important}.hero{border-radius:18px!important}.b5-account-card{margin-bottom:8px!important}}
+</style>
+
+</head><body>
 <header class="top"><div class="logo">B5</div><div class="brand"><b>BORNTOWIN5 ADMIN</b><small>Level Tracking • Payment Control Center</small></div></header>
 <main class="wrap">
 <section class="hero"><span class="pill">LEVEL TRACKING</span><h1>Sequential Upgrade Control</h1><p>Payment • Receiver • Trust • Admin • Reports</p></section>
@@ -33,4 +69,47 @@ function iso(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOSt
 function quickDate(kind){const [a,b]=fmtDate(kind);$('fromDate').value=iso(a);$('toDate').value=iso(b);runReport()}
 async function runReport(){const q=new URLSearchParams({from:$('fromDate').value,to:$('toDate').value,q:$('reportQ').value,level:$('reportLevel').value});try{const d=await api('/api/leveltrack/admin/payment-report?'+q.toString());const adminCards=Object.entries(d.adminByAccount||{}).map(([name,amt])=>`<div class="account"><b>${esc(name)}</b><br>₹${Number(amt||0).toLocaleString()}</div>`).join('');$('reportSummary').innerHTML=`<div class="grid3"><div class="account"><b>Member</b><br>₹${Number(d.totals.member||0).toLocaleString()}</div><div class="account"><b>Trust</b><br>₹${Number(d.totals.trust||0).toLocaleString()}</div><div class="account"><b>Admin Total</b><br>₹${Number(d.totals.admin||0).toLocaleString()}</div></div><div class="grid3" style="margin-top:8px">${adminCards||'<div class="account">No admin payments</div>'}</div><div class="success" style="margin-top:8px">${d.count} payment transaction(s) • Total allocated ₹${Number(d.totals.total||0).toLocaleString()}</div>`;if(!d.rows.length){$('reportTable').innerHTML='<div class="small">No payment records for this date range.</div>';return}$('reportTable').innerHTML='<table class="reportTable"><thead><tr><th>Date</th><th>Level</th><th>Payer</th><th>Receiver</th><th>Member</th><th>Trust</th><th>Admin</th><th>Status</th></tr></thead><tbody>'+d.rows.map(r=>{const g=Object.fromEntries(r.parts.map(x=>[x.type,x.amount]));return `<tr><td>${esc(r.date)}</td><td>${esc(r.level)}</td><td>${esc(r.payerMemberId)}</td><td>${esc(r.receiverMemberId)}</td><td>₹${Number(g.member||0).toLocaleString()}</td><td>₹${Number(g.trust||0).toLocaleString()}</td><td>₹${Number(g.admin||0).toLocaleString()}</td><td>${esc(r.status)}</td></tr>`}).join('')+'</tbody></table>'}catch(e){$('reportTable').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}}
 load();
-</script></body></html>
+</script><script id="b5-unified-accordion">
+(function(){
+  function makeCardAccordion(card){
+    if(!card || card.dataset.b5Acc==='1') return;
+    const head=card.querySelector(':scope > .title');
+    if(!head) return;
+    const body=document.createElement('div'); body.className='b5-accordion-body';
+    const nodes=Array.from(card.children).filter(n=>n!==head);
+    nodes.forEach(n=>body.appendChild(n));
+    head.classList.add('b5-accordion-head');
+    card.insertBefore(body, null);
+    card.dataset.b5Acc='1';
+    head.addEventListener('click',()=>card.classList.toggle('is-collapsed'));
+  }
+  function makeAccountAccordion(card){
+    if(!card || card.dataset.b5AccountAcc==='1') return;
+    const head=card.querySelector(':scope > h4');
+    if(!head) return;
+    const body=document.createElement('div'); body.className='b5-account-body';
+    const nodes=Array.from(card.children).filter(n=>n!==head);
+    nodes.forEach(n=>body.appendChild(n));
+    card.classList.add('b5-account-card');
+    card.appendChild(body);
+    card.dataset.b5AccountAcc='1';
+    head.addEventListener('click',()=>card.classList.toggle('is-collapsed'));
+  }
+  function init(){
+    document.querySelectorAll('.card').forEach(makeCardAccordion);
+    document.querySelectorAll('.account').forEach(makeAccountAccordion);
+    document.querySelectorAll('.level .lh').forEach(h=>{
+      if(h.dataset.b5LevelAcc==='1') return;
+      const body=h.nextElementSibling;
+      if(!body || !body.classList.contains('pay')) return;
+      h.dataset.b5LevelAcc='1'; h.style.cursor='pointer';
+      h.addEventListener('click',()=>{body.classList.toggle('hidden');});
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+  const obs=new MutationObserver(()=>init());
+  obs.observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+</body></html>
