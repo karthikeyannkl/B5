@@ -32,6 +32,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)
 .b5-account-card>h4:before{content:'▸';font-size:10px;color:var(--b5-gold);margin-right:2px}.b5-account-card:not(.is-collapsed)>h4:before{content:'▾'}
 .b5-level-row{border:1px solid var(--b5-line);border-radius:14px;margin:8px 0;overflow:hidden;background:#fff}.b5-level-row .b5-level-head{padding:12px;background:var(--b5-soft);font-weight:850;color:var(--b5-green);cursor:pointer;display:flex;justify-content:space-between}.b5-level-row .b5-level-body{padding:10px}
 @media(max-width:600px){.card{border-radius:16px!important}.hero{border-radius:18px!important}.b5-account-card{margin-bottom:8px!important}}
+
+/* V9 Royal Level Tracking */
+body{background:radial-gradient(circle at 15% 0,#eef6f0 0,#f6f8f5 35%,#f3f4f1 100%)!important}
+.top{height:72px!important;box-shadow:0 4px 18px rgba(6,75,53,.07)!important}
+.logo{width:46px!important;height:46px!important;border-radius:15px!important}
+.card{border-radius:22px!important;padding:18px!important;box-shadow:0 10px 30px rgba(6,75,53,.065)!important;position:relative;overflow:hidden}
+.card:before{content:"";position:absolute;left:0;top:0;width:4px;height:100%;background:linear-gradient(180deg,var(--b5-gold),transparent);opacity:.55}
+.title{font-size:18px!important;letter-spacing:.1px}
+.title:after{content:'⌄';float:right;color:var(--b5-gold);font-size:18px;font-weight:900;transition:transform .22s ease}
+.card.is-collapsed .title:after{transform:rotate(-90deg)}
+.b5-accordion-body{overflow:hidden;max-height:1400px;opacity:1;transition:max-height .28s ease,opacity .2s ease,padding .2s ease}
+.card.is-collapsed .b5-accordion-body{max-height:0;opacity:0;padding-top:0!important;padding-bottom:0!important}
+.topnav button{background:#f8f4ea!important;color:var(--b5-green)!important;border:1px solid #e7dcc5!important}
+.topnav button.active{background:linear-gradient(135deg,var(--b5-green),var(--b5-green2))!important;color:#fff!important;border-color:var(--b5-gold)!important}
+#ltMembership,#ltReferral,#ltReferrals,#ltUpgrade,#ltEarnings,#ltHistory,#ltPayment{scroll-margin-top:90px}
 </style>
 
 </head><body>
@@ -138,4 +153,17 @@ setInterval(load,5000);setInterval(()=>{if(!$('receiver').classList.contains('hi
 })();
 </script>
 
-</body></html>
+
+<script id="b5-leveltrack-nav-v9">
+(function(){
+ const map={dashboard:null,membership:'ltMembership',referrals:'ltReferrals',upgrade:'ltUpgrade',earnings:'ltEarnings',history:'ltHistory',payment:'ltPayment',receiver:'receiver'};
+ function openSection(key){
+   document.querySelectorAll('main .card').forEach(c=>c.classList.remove('b5-v9-show'));
+   const id=map[key];
+   if(!id){document.querySelectorAll('main .card').forEach(c=>c.classList.remove('hidden'));return;}
+   document.querySelectorAll('main .card').forEach(c=>c.classList.add('hidden'));
+   const el=document.getElementById(id); if(el){el.classList.remove('hidden');el.scrollIntoView({behavior:'smooth',block:'start'});}
+ }
+ window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;openSection(e.data.section||'dashboard')});
+})();
+</script></body></html>

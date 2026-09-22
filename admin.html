@@ -78,6 +78,17 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)
 .b5-account-card>h4:before{content:'▸';font-size:10px;color:var(--b5-gold);margin-right:2px}.b5-account-card:not(.is-collapsed)>h4:before{content:'▾'}
 .b5-level-row{border:1px solid var(--b5-line);border-radius:14px;margin:8px 0;overflow:hidden;background:#fff}.b5-level-row .b5-level-head{padding:12px;background:var(--b5-soft);font-weight:850;color:var(--b5-green);cursor:pointer;display:flex;justify-content:space-between}.b5-level-row .b5-level-body{padding:10px}
 @media(max-width:600px){.card{border-radius:16px!important}.hero{border-radius:18px!important}.b5-account-card{margin-bottom:8px!important}}
+
+/* V9 Royal Admin UI */
+#unifiedAdminSidebar{background:linear-gradient(180deg,#fffdf8 0,#f7faf7 100%)!important;border-right:1px solid #e3d8bd!important}
+#unifiedAdminSidebar .uitem{background:#f7f8f5!important;border:1px solid #e4e9e5!important}
+#unifiedAdminSidebar .uitem:hover{border-color:#c89a4b!important;transform:translateX(2px)}
+#unifiedAdminSidebar .uitem.active{background:linear-gradient(135deg,#064b35,#0a6a4b)!important;border-color:#c89a4b!important;color:#fff!important}
+.b5-lt-toggle{display:flex!important;align-items:center;justify-content:space-between}
+.b5-lt-toggle span{color:var(--b5-gold);font-size:17px;transition:.2s}.b5-lt-toggle.open span{transform:rotate(180deg)}
+.b5-lt-options{display:grid;gap:4px;max-height:0;overflow:hidden;opacity:0;transition:max-height .28s ease,opacity .2s ease;padding-left:8px}
+.b5-lt-options.open{max-height:500px;opacity:1;padding-bottom:8px}
+.b5-lt-options .b5-subitem{font-size:13px!important;padding:10px 12px!important;background:#fff!important;border-left:3px solid #c89a4b!important}
 </style>
 
 </head>
@@ -316,8 +327,17 @@ main.wrap > .card:has(.nav){display:none!important}
   <button class="uitem" data-main="pinreport" onclick="uAdminMain('pinreport',this)">📊 Admin PIN Report</button>
   <button class="uitem" data-main="tree" onclick="uAdminMain('tree',this)">🌳 Referral Tree</button>
   <button class="uitem" data-main="settings" onclick="uAdminMain('settings',this)">⚙️ Settings</button>
-  <div class="ustitle" style="margin-top:12px">Level Tracking</div>
-  <button class="uitem" onclick="uAdminLevelTrack(this)">📊 Level Tracking</button>
+  <div class="ustitle b5-lt-title" style="margin-top:14px">Level Tracking</div>
+  <button class="uitem b5-lt-toggle" type="button" onclick="uAdminLevelTrackToggle(this)">📊 Level Tracking <span>⌄</span></button>
+  <div id="b5AdminLTOptions" class="b5-lt-options">
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('dashboard',this)">⌂ Dashboard</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('requests',this)">◈ Requests & Approval</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('payments',this)">₹ Payment Details</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('accounts',this)">▣ Payment Accounts</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('seniority',this)">♛ Seniority Queue</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('reports',this)">▤ Reports / Schedule</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('history',this)">◷ Upgrade History</button>
+  </div>
 </aside>
 <iframe id="unifiedAdminFrame" title="LevelTrack Admin Portal"></iframe>
 <script id="unified-admin-menu-script">
@@ -341,7 +361,8 @@ main.wrap > .card:has(.nav){display:none!important}
    document.getElementById(id)?.classList.remove('hidden');
    window.scrollTo({top:0,behavior:'smooth'});
  }
- window.uAdminLevelTrack=function(b){
+ window.uAdminLevelTrackToggle=function(b){const box=document.getElementById('b5AdminLTOptions');box.classList.toggle('open');b.classList.toggle('open');};
+ window.uAdminLevelTrack=function(section,b){
    document.querySelectorAll('#unifiedAdminSidebar .uitem').forEach(x=>x.classList.remove('active'));
    if(b)b.classList.add('active');
    close();
@@ -349,7 +370,8 @@ main.wrap > .card:has(.nav){display:none!important}
    if(statsCard) statsCard.style.display='none';
    hideMainPanels();
    frame.classList.add('show');
-   frame.src='/leveltrack-admin.html?v=FINAL';
+   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section:section||'dashboard'},location.origin);
+   if(frame.src.indexOf('/leveltrack-admin.html')<0){frame.src='/leveltrack-admin.html?v=FINAL';frame.addEventListener('load',send,{once:true});} else send();
    window.scrollTo({top:0,behavior:'smooth'});
  }
  async function loadPwReset(){const el=document.getElementById('pwResetList');if(!el)return;try{const d=await fetch('/api/admin/password-reset-requests').then(r=>r.json());if(!d.requests.length){el.innerHTML='<div class="small">No pending password reset requests.</div>';return}el.innerHTML=d.requests.map(r=>`<div class="card" style="margin-top:10px"><b>${String(r.name).replace(/</g,'&lt;')}</b><div class="small">${r.memberId} • ${r.mobile}</div><button class="primary" style="margin-top:10px" onclick="approvePwReset('${r.id}')">APPROVE & RESET PASSWORD</button></div>`).join('')}catch(e){el.textContent='Failed to load requests'}}
