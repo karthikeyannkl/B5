@@ -127,36 +127,33 @@ load();
 </script>
 
 
-<script id="b5-leveltrack-admin-nav-v9">
+<script id="b5-leveltrack-admin-nav-v12">
 (function(){
- const map={dashboard:null,requests:'ltRequests',payments:'ltPayments',accounts:'ltAccounts',seniority:'ltSeniority',reports:'ltReports',history:'ltHistory'};
- function openSection(key){
-   const id=map[key];
-   if(!id){document.querySelectorAll('main .card').forEach(c=>c.classList.remove('hidden'));return;}
-   document.querySelectorAll('main .card').forEach(c=>c.classList.add('hidden'));
-   const el=document.getElementById(id); if(el){el.classList.remove('hidden');el.scrollIntoView({behavior:'smooth',block:'start'});}
- }
- window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;openSection(e.data.section||'dashboard')});
+  const sections={requests:'ltRequests',payments:'ltPayments',accounts:'ltAccounts',seniority:'ltSeniority',reports:'ltReports',history:'ltHistory'};
+  function show(key){
+    document.body.classList.add('b5-embedded');
+    const hero=document.querySelector('main.wrap > .hero');
+    const cards=Array.from(document.querySelectorAll('main.wrap > .card'));
+    cards.forEach(c=>c.classList.remove('b5-v12-show'));
+    if(hero) hero.classList.remove('b5-v12-show');
+    if(key==='dashboard'){
+      if(hero) hero.classList.add('b5-v12-show');
+      if(cards[0]) cards[0].classList.add('b5-v12-show');
+    } else {
+      const el=document.getElementById(sections[key]);
+      if(el) el.classList.add('b5-v12-show');
+    }
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function handle(e){if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;show(e.data.section||'dashboard');}
+  window.addEventListener('message',handle);
+  window.addEventListener('load',()=>show('dashboard'));
 })();
 </script>
-<script id="b5-v11-nav">
-(function(){
- const ids=['ltRequests','ltPayments','ltAccounts','ltSeniority','ltReports','ltHistory'];
- function show(section){
-   document.body.classList.add('b5-embedded');
-   const hero=document.querySelector('main.wrap > .hero');
-   const stats=document.querySelector('main.wrap > .card:not([id])');
-   if(hero) hero.classList.toggle('b5-show',section==='dashboard');
-   if(stats) stats.classList.toggle('b5-show',section==='dashboard');
-   ids.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('b5-show',section===({requests:'ltRequests',payments:'ltPayments',accounts:'ltAccounts',seniority:'ltSeniority',reports:'ltReports',history:'ltHistory'}[section]));});
-   if(section==='dashboard'){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('b5-show')});}
-   window.scrollTo({top:0,behavior:'smooth'});
- }
- window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;show(e.data.section||'dashboard')});
- window.addEventListener('load',()=>{show('dashboard')});
-})();
-</script>
-<style id="b5-v11-nav-style">
-.b5-show{display:block!important}.b5-embedded .hero,.b5-embedded main.wrap>.card{display:none}.b5-embedded .hero.b5-show,.b5-embedded main.wrap>.card.b5-show{display:block}.b5-embedded #ltRequests,.b5-embedded #ltPayments,.b5-embedded #ltAccounts,.b5-embedded #ltSeniority,.b5-embedded #ltReports,.b5-embedded #ltHistory{display:none}.b5-embedded #ltRequests.b5-show,.b5-embedded #ltPayments.b5-show,.b5-embedded #ltAccounts.b5-show,.b5-embedded #ltSeniority.b5-show,.b5-embedded #ltReports.b5-show,.b5-embedded #ltHistory.b5-show{display:block}.b5-embedded .wrap{padding-top:10px}
+<style id="b5-v12-nav-style">
+.b5-v12-show{display:block!important}
+.b5-embedded main.wrap>.hero,.b5-embedded main.wrap>.card{display:none!important}
+.b5-embedded main.wrap>.hero.b5-v12-show,.b5-embedded main.wrap>.card.b5-v12-show{display:block!important}
+.b5-embedded .wrap{padding-top:10px}
 </style>
 </body></html>
