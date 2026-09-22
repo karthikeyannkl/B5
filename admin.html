@@ -95,12 +95,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)
 <style id="b5-splash-style">
 #b5Splash{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#063f2e,#0b6a4b 58%,#f8f4ea);color:#fff;transition:opacity .35s ease,visibility .35s ease}
 #b5Splash.hide{opacity:0;visibility:hidden;pointer-events:none}
-.b5SplashLogo{width:78px;height:78px;border-radius:24px;display:grid;place-items:center;background:linear-gradient(145deg,#d5aa5a,#f1d58d);color:#064b35;font-size:34px;font-weight:950;box-shadow:0 12px 35px rgba(0,0,0,.22);animation:b5Pulse 1.1s ease-in-out infinite}
+.b5SplashLogo{width:190px;height:190px;border-radius:50%;display:block;object-fit:contain;background:#fff;padding:6px;box-shadow:0 20px 55px rgba(0,0,0,.30),0 0 0 2px rgba(217,164,65,.85),0 0 35px rgba(217,164,65,.35);animation:b5Logo3D 1.55s cubic-bezier(.2,.75,.25,1) both}
 .b5SplashName{margin-top:15px;font-size:22px;font-weight:900;letter-spacing:1.5px}.b5SplashLine{width:70px;height:3px;margin-top:12px;border-radius:99px;background:#d5aa5a;animation:b5Load 1.1s ease-in-out infinite}
-@keyframes b5Pulse{50%{transform:scale(1.04)}}@keyframes b5Load{50%{width:110px;opacity:.7}}
+@keyframes b5Logo3D{0%{opacity:0;transform:perspective(900px) rotateY(-78deg) rotateX(10deg) scale(.62);filter:drop-shadow(0 4px 5px rgba(0,0,0,.12))}45%{opacity:1;transform:perspective(900px) rotateY(18deg) rotateX(-3deg) scale(1.04)}70%{transform:perspective(900px) rotateY(-8deg) rotateX(2deg) scale(.99)}100%{opacity:1;transform:perspective(900px) rotateY(0deg) rotateX(0deg) scale(1)}}@keyframes b5Load{50%{width:110px;opacity:.7}}
 </style>
 </head>
-<body><div id="b5Splash" aria-label="BORNTOWIN5 loading"><div class="b5SplashLogo">B5</div><div class="b5SplashName">BORNTOWIN5</div><div class="b5SplashLine"></div></div>
+<body><div id="b5Splash" aria-label="BORNTOWIN5 loading"><img class="b5SplashLogo" src="b5-logo.png" alt="BORNTOWIN5"><div class="b5SplashName">BORNTOWIN5</div><div class="b5SplashLine"></div></div>
 <div id="B5_ADMIN_GATE">
   <div class="gate">
     <div class="glogo"><img src="b5-logo.png" alt="BORNTOWIN5"></div>
