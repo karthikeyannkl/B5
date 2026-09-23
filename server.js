@@ -17,6 +17,9 @@ let saveQueue=Promise.resolve();
 function freshDB(){return {schemaVersion:4,adminPassword:'ADMIN',members:[],pins:[],messages:[],passwordResetRequests:[],leveltrackRequests:[],leveltrackUpgrades:[],leveltrackPayments:[],leveltrackMessages:[],paymentSettings:{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}}};}
 
 function loadLocal(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch(e){return freshDB()}}
+function id(){return 'B5-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
+function referralCode(memberId){const suffix=String(memberId||'').split('-').pop()||crypto.randomBytes(3).toString('hex').toUpperCase();return 'REF-'+suffix.toUpperCase()}
+function pin(){return 'PIN-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
 function normalizeDB(d){
   d=d||freshDB();
   d.schemaVersion=4;

@@ -1,24 +1,20 @@
-BORNTOWIN5 FINAL PRODUCTION V1
+BORNTOWIN5 FINAL PRODUCTION V2
 
-This package consolidates the approved BORNTOWIN5 UI with:
-- 3D B5 logo splash before member login
-- Password login (no OTP)
-- Forgot Password -> Admin approval -> temporary password -> change password
-- Registration with password + confirm password; bank details are completed in Profile after registration
-- Royal mobile UI, Profile, Referral, PIN, Messages, Level Tracking and Admin modules
-- Level payment split rules and seniority/receiver workflow
-- PostgreSQL persistence when DATABASE_URL is configured
-- Local JSON fallback only for local testing
+This package fixes the server-side helper functions required by member IDs,
+referral IDs and PIN generation. The previous package could fail on PIN
+assignment because those helpers were missing, which could make the app stop
+responding.
 
-IMPORTANT DEPLOYMENT RULE
-Do not include or upload data/db.json from an old deployment. Production member data must live in the PostgreSQL database referenced by DATABASE_URL. Keep DATABASE_URL unchanged during code-only updates.
+Files are intended to replace the matching files in GitHub B5/main.
+Do not delete unrelated legacy files yet.
+Do not add db.json to the repository.
 
-AIC setup:
-1. Create/provision the PostgreSQL database and copy its connection string.
-2. AIC App -> Environment -> add DATABASE_URL with that connection string.
-3. Save environment variables.
-4. Redeploy the existing BORNTOWIN5 app.
-5. Check /api/health; dataStore should say postgresql.
-6. Test login, registration, forgot password, profile, referral, PIN, Level Tracking and admin.
+Production persistence:
+Set DATABASE_URL in AIC Environment after a managed PostgreSQL database is
+available. Without DATABASE_URL the app uses local data/db.json for testing.
 
-No production db.json is included in this ZIP.
+Login:
+Mobile + Password. Forgot Password creates an Admin reset request.
+
+Startup:
+B5 3D splash -> Login/Registration.
