@@ -44,66 +44,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--b5-gold)!important;ou
 #integratedMenuBtn,#memberMenuBtn{background:#fff!important;color:var(--b5-green)!important;border:1px solid var(--b5-gold)!important}
 .logo img{object-fit:contain!important;background:#fff!important;border-radius:50%!important}
 </style>
-<style id="b5-unified-theme">
-:root{--b5-green:#064b35;--b5-green2:#0a6a4b;--b5-gold:#c89a4b;--b5-cream:#f8f4ea;--b5-ink:#18241f;--b5-muted:#6f7b76;--b5-line:#e4e9e5;--b5-soft:#f5f8f5;--b5-radius:18px}
-*{box-sizing:border-box}
-body{background:linear-gradient(180deg,#f7f8f5 0,#f4f6f4 100%)!important;color:var(--b5-ink)!important;font-family:Inter,system-ui,-apple-system,"Noto Sans Tamil","Noto Sans",sans-serif!important;font-size:13px}
-.top,header{background:rgba(255,255,255,.96)!important;border-bottom:1px solid var(--b5-line)!important;backdrop-filter:blur(10px)}
-.logo{background:linear-gradient(135deg,var(--b5-green),var(--b5-gold))!important;box-shadow:0 5px 14px #064b3520}
-.brand b{color:var(--b5-green)!important;font-weight:850!important;letter-spacing:.1px}.brand small{color:var(--b5-muted)!important}
-.card{background:rgba(255,255,255,.97)!important;border:1px solid var(--b5-line)!important;border-radius:var(--b5-radius)!important;box-shadow:0 8px 26px rgba(6,75,53,.06)!important}
-.hero{background:linear-gradient(135deg,var(--b5-green),#0b6b4b 62%,var(--b5-gold))!important;border-radius:22px!important;box-shadow:0 10px 28px rgba(6,75,53,.14)}
-.hero h1,.title{font-family:inherit!important;color:var(--b5-green)!important;font-weight:850!important;letter-spacing:.1px}
-.hero h1{color:#fff!important}.hero p{color:#eef7f2!important}
-button,.primary,.send{background:linear-gradient(135deg,var(--b5-green),var(--b5-green2))!important;color:#fff!important;border-radius:12px!important;box-shadow:0 5px 12px rgba(6,75,53,.10)}
-.secondary{background:#fff!important;color:var(--b5-green)!important;border:1px solid #b8cfc3!important}
-input,select,textarea{border:1px solid #d7e1db!important;border-radius:11px!important;color:var(--b5-ink)!important}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)!important;box-shadow:0 0 0 3px rgba(200,154,75,.14)!important}
-.stat b,.account h4,.reportTable th{color:var(--b5-green)!important}
-.pill,.tag{background:#edf5f0!important;color:var(--b5-green)!important}
-.badge,.success{background:#edf7f0!important;color:#246b47!important}
-.info{background:#f7faf7!important;border-left-color:var(--b5-gold)!important}
-.warn{background:#fff8e8!important;border-color:#efdca8!important}
-/* unified accordion / slide cards */
-.b5-accordion-card>.b5-accordion-head,.b5-account-card>h4{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none}
-.b5-accordion-head:after,.b5-account-card>h4:after{content:'⌄';font-size:16px;color:var(--b5-gold);transition:transform .2s ease}
-.b5-accordion-card.is-collapsed>.b5-accordion-head:after,.b5-account-card.is-collapsed>h4:after{transform:rotate(-90deg)}
-.b5-accordion-body{overflow:hidden;max-height:5000px;opacity:1;transition:max-height .25s ease,opacity .18s ease,padding .2s ease}
-.b5-accordion-card.is-collapsed>.b5-accordion-body,.b5-account-card.is-collapsed>.b5-account-body{max-height:0;opacity:0;overflow:hidden;padding-top:0!important;padding-bottom:0!important}
-.b5-accordion-card>.b5-accordion-head{padding:2px 0 8px;margin-bottom:2px}
-.b5-accordion-card.is-collapsed>.b5-accordion-head{margin-bottom:0}
-.b5-account-card{padding:12px!important;border-radius:14px!important;background:#fff!important;border:1px solid var(--b5-line)!important}
-.b5-account-card>h4{margin:0!important;padding:2px 0!important;color:var(--b5-green)!important;font-size:13px!important}
-.b5-account-body{max-height:5000px;overflow:hidden;opacity:1;transition:max-height .25s ease,opacity .18s ease,padding .2s ease;padding-top:9px}
-.b5-account-card>h4:before{content:'▸';font-size:10px;color:var(--b5-gold);margin-right:2px}.b5-account-card:not(.is-collapsed)>h4:before{content:'▾'}
-.b5-level-row{border:1px solid var(--b5-line);border-radius:14px;margin:8px 0;overflow:hidden;background:#fff}.b5-level-row .b5-level-head{padding:12px;background:var(--b5-soft);font-weight:850;color:var(--b5-green);cursor:pointer;display:flex;justify-content:space-between}.b5-level-row .b5-level-body{padding:10px}
-@media(max-width:600px){.card{border-radius:16px!important}.hero{border-radius:18px!important}.b5-account-card{margin-bottom:8px!important}}
-
-/* V9 Royal Admin UI */
-#unifiedAdminSidebar{background:linear-gradient(180deg,#fffdf8 0,#f7faf7 100%)!important;border-right:1px solid #e3d8bd!important}
-#unifiedAdminSidebar .uitem{background:#f7f8f5!important;border:1px solid #e4e9e5!important}
-#unifiedAdminSidebar .uitem:hover{border-color:#c89a4b!important;transform:translateX(2px)}
-#unifiedAdminSidebar .uitem.active{background:linear-gradient(135deg,#064b35,#0a6a4b)!important;border-color:#c89a4b!important;color:#fff!important}
-.b5-lt-toggle{display:flex!important;align-items:center;justify-content:space-between}
-.b5-lt-toggle span{color:var(--b5-gold);font-size:17px;transition:.2s}.b5-lt-toggle.open span{transform:rotate(180deg)}
-.b5-lt-options{display:grid;gap:4px;max-height:0;overflow:hidden;opacity:0;transition:max-height .28s ease,opacity .2s ease;padding-left:8px}
-.b5-lt-options.open{max-height:500px;opacity:1;padding-bottom:8px}
-.b5-lt-options .b5-subitem{font-size:13px!important;padding:10px 12px!important;background:#fff!important;border-left:3px solid #c89a4b!important}
-</style>
-
-
-<style id="b5-splash-style">
-#b5Splash{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#063f2e,#0b6a4b 58%,#f8f4ea);color:#fff;transition:opacity .35s ease,visibility .35s ease}
-#b5Splash.hide{opacity:0;visibility:hidden;pointer-events:none}
-.b5SplashLogo{width:190px;height:190px;border-radius:50%;display:block;object-fit:contain;background:#fff;padding:6px;box-shadow:0 20px 55px rgba(0,0,0,.30),0 0 0 2px rgba(217,164,65,.85),0 0 35px rgba(217,164,65,.35);animation:b5Logo3D 1.55s cubic-bezier(.2,.75,.25,1) both}
-.b5SplashName{margin-top:15px;font-size:22px;font-weight:900;letter-spacing:1.5px}.b5SplashLine{width:70px;height:3px;margin-top:12px;border-radius:99px;background:#d5aa5a;animation:b5Load 1.1s ease-in-out infinite}
-@keyframes b5Logo3D{0%{opacity:0;transform:perspective(900px) rotateY(-78deg) rotateX(10deg) scale(.62);filter:drop-shadow(0 4px 5px rgba(0,0,0,.12))}45%{opacity:1;transform:perspective(900px) rotateY(18deg) rotateX(-3deg) scale(1.04)}70%{transform:perspective(900px) rotateY(-8deg) rotateX(2deg) scale(.99)}100%{opacity:1;transform:perspective(900px) rotateY(0deg) rotateX(0deg) scale(1)}}@keyframes b5Load{50%{width:110px;opacity:.7}}
-</style>
 </head>
-<body><div id="b5Splash" aria-label="BORNTOWIN5 loading"><img class="b5SplashLogo" src="b5-logo.png" alt="BORNTOWIN5"><div class="b5SplashName">BORNTOWIN5</div><div class="b5SplashLine"></div></div>
+<body>
 <div id="B5_ADMIN_GATE">
   <div class="gate">
-    <div class="glogo"><img src="b5-logo.png" alt="BORNTOWIN5"></div>
+    <div class="glogo">B5</div>
     <h2>BORNTOWIN5 Admin</h2>
     <div class="b5sub">Admin Login</div>
     <input id="B5_ADMIN_PASSWORD" type="password" placeholder="Enter Admin Password" autocomplete="off">
@@ -168,7 +113,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)
 
 <section id="pin" class="card panel hidden">
 <span class="pill">PIN MANAGEMENT</span><h3>Generate & Assign Joining PINs</h3>
-<label class="small">Search Member / Leader</label><div class="search" style="margin:6px 0 8px"><input id="pinMemberSearch" placeholder="Member ID / Mobile Number"><button class="btn send" style="width:auto;margin:0" onclick="searchPinMember()">Search</button></div><div id="pinMemberResults"></div><label class="small">Leader</label><select id="leader"><option value="">Select Member / Leader</option></select>
+<label class="small">Leader</label><select id="leader"><option value="">Select Member / Leader</option></select>
 <label class="small" style="display:block;margin-top:10px">Quantity</label><select id="qty"><option>10</option><option>20</option><option>50</option><option>100</option></select>
 <button class="btn send" onclick="generatePins()">Generate & Assign PINs</button>
 <div id="pinResult"></div>
@@ -191,7 +136,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)
 
 <section id="tree" class="card panel hidden"><span class="pill">FULL REFERRAL TREE</span><h3>All Members Downline</h3><div id="fullTree"><div class="small">இன்னும் உறுப்பினர்கள் பதிவு செய்யப்படவில்லை.</div></div></section>
 
-<section id="pwreset" class="panel hidden"><div class="card"><h2>Password Reset Requests</h2><div id="pwResetList">Loading...</div></div></section>
 <section id="settings" class="card panel hidden">
 <span class="pill">ADMIN SETTINGS</span><h3>System Settings</h3>
 <div class="msgbox"><b> Mode</b><p class="small">Production version-ல் Admin authentication, database, SMS OTP, Drive storage மற்றும் audit log இணைக்கப்படும்.</p></div>
@@ -208,7 +152,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)
 
 <script>
 async function api(u,o={}){const r=await fetch(u,{headers:{'Content-Type':'application/json'},...o});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Request failed');return d}
-function tab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.add('hidden'));document.getElementById(id)?.classList.remove('hidden'); if(id==='pwreset')loadPwReset();}
+function tab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.add('hidden'));document.getElementById(id)?.classList.remove('hidden');}
 async function b5AdminLogin(){try{await api('/api/admin/login',{method:'POST',body:JSON.stringify({password:document.getElementById('B5_ADMIN_PASSWORD').value})});localStorage.setItem('B5_ADMIN_LOGIN','1');document.getElementById('B5_ADMIN_GATE').style.display='none';loadAdminData()}catch(e){const x=document.getElementById('B5_ADMIN_ERR');x.textContent=e.message;x.style.display='block'}}
 function adminLogout(){localStorage.removeItem('B5_ADMIN_LOGIN');location.reload()}
 async function adminRefresh(){await loadAdminData()}
@@ -221,15 +165,12 @@ async function memberSearch(){try{const d=await api('/api/admin/members?q='+enco
 async function showMemberDetails(id){try{const d=await api('/api/admin/member-details/'+encodeURIComponent(id)),m=d.details||d.member;const rows=Object.entries(m).filter(([k])=>!['pin'].includes(k)).map(([k,v])=>`<div><small>${k}</small><b>${String(v??'').replace(/</g,'&lt;')}</b></div>`).join('');document.getElementById('memberDetail').innerHTML=`<div class="member-detail"><h3 style="margin-top:0">${m.name} — Full Details</h3><div class="detail-grid">${rows}</div></div>`}catch(e){alert(e.message)}}
 async function findTarget(){try{const d=await api('/api/admin/members?q='+encodeURIComponent(document.getElementById('targetMobile').value.trim())),m=d.members[0],el=document.getElementById('target');if(m){el.dataset.memberId=m.memberId;el.innerHTML=`<div class="member"><b>✓ ${m.name}</b><div class="small">${m.memberId} • ${m.mobile}</div></div>`}else el.innerHTML='<div class="msgbox">Member not found.</div>'}catch(e){alert(e.message)}}
 async function sendMessage(){const msg=document.getElementById('message').value.trim(),to=document.getElementById('msgTo').value,memberId=document.getElementById('target')?.dataset?.memberId||'';if(!msg)return alert('Message எழுதுங்கள்');if(to==='mobile'&&!memberId)return alert('முதலில் Member search செய்யுங்கள்');try{await api('/api/admin/message',{method:'POST',body:JSON.stringify({to:to==='all'?'all':'mobile',memberId,message:msg})});document.getElementById('msgResult').innerHTML='<div class="msgbox" style="margin-top:10px">✓ Message sent successfully.</div>';document.getElementById('message').value=''}catch(e){alert(e.message)}}
-
-async function searchPinMember(){const q=document.getElementById('pinMemberSearch').value.trim();if(!q)return alert('Enter Member ID or Mobile Number');try{const d=await api('/api/admin/members?q='+encodeURIComponent(q));const el=document.getElementById('pinMemberResults');el.innerHTML=(d.members||[]).map(m=>`<div class="member" style="cursor:pointer" onclick="selectPinMember('${m.memberId}')"><b>${m.name}</b><div class="small">${m.memberId} • ${m.mobile}</div></div>`).join('')||'<div class="small">Member not found.</div>'}catch(e){alert(e.message)}}
-function selectPinMember(id){const s=document.getElementById('leader');if(s){s.value=id;if(!s.value){const o=document.createElement('option');o.value=id;o.textContent=id;s.appendChild(o);s.value=id}}document.getElementById('pinMemberResults').innerHTML='<div class="success" style="margin-bottom:8px">✓ Member selected: '+id+'</div>'}
 async function generatePins(){const quantity=Math.max(1,Number(document.getElementById('qty').value)||1),memberId=document.getElementById('leader').value;if(!memberId)return alert('Select Member / Leader');try{const d=await api('/api/admin/pins/generate',{method:'POST',body:JSON.stringify({memberId,quantity})});document.getElementById('pinResult').innerHTML=`<div class="msgbox"><b>✓ ${d.pins.length} PINs generated & assigned</b><p class="small">${d.member.name} — ${d.member.memberId}<br>Available: ${d.available} • Used: ${d.used}</p><details><summary>Show PINs</summary><div class="pinbox">${d.pins.map(x=>`<div class="pin"><b>${x.pin}</b><span class="small">AVAILABLE</span></div>`).join('')}</div></details></div>`;await loadAdminData()}catch(e){alert(e.message)}}
 function renderPinReport(report){const el=document.getElementById('leaders');if(el)el.innerHTML=report.map(x=>`<div class="leader"><div class="lh"><div><b>${x.name}</b><div class="small">${x.memberId}</div></div><span class="pill green">Assigned</span></div><div class="grid" style="margin-top:9px"><div class="box"><b>${x.received}</b><small>Total Received</small></div><div class="box"><b>${x.available}</b><small>Available</small></div><div class="box"><b>${x.used}</b><small>Used</small></div><div class="box"><b>${x.received?Math.round(x.used/x.received*100):0}%</b><small>Activated</small></div></div></div>`).join('')||'<div class="small">இன்னும் PIN data இல்லை.</div>'}
 function drawTree(list){const el=document.getElementById('fullTree');if(!el)return;const children=id=>list.filter(m=>m.referral===id).map(m=>({name:m.name,id:m.memberId,referral:m.referral,children:children(m.memberId)}));const roots=list.filter(m=>!m.referral||m.referral==='FIRST MEMBER');el.innerHTML=roots.length?roots.map(r=>makeAdminTree({name:r.name,id:r.memberId,children:children(r.memberId)},0)).join(''):'<div class="small">இன்னும் உறுப்பினர்கள் பதிவு செய்யப்படவில்லை.</div>'}
 function makeAdminTree(n,l){return `<div class="node"><b>L${l} — ${n.name}</b><div class="small">${n.id}</div>${n.children?.length?'<div class="children">'+n.children.map(x=>makeAdminTree(x,l+1)).join('')+'</div>':''}</div>`}
 document.getElementById('rq')?.addEventListener('input',drawReview);window.addEventListener('load',loadAdminData);
-</script><script id="b5-splash-script">window.addEventListener('load',function(){setTimeout(function(){document.getElementById('b5Splash')?.classList.add('hide')},900)});</script></body></html><style>.nav button.active{background:#075B35!important;color:#fff!important;border-color:#075B35!important}</style>
+</script></body></html><style>.nav button.active{background:#075B35!important;color:#fff!important;border-color:#075B35!important}</style>
 <script>
 (function(){
  const oldTab=window.tab;
@@ -321,12 +262,6 @@ main.wrap > .card:has(.nav){display:none!important}
 #unifiedAdminFrame{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147482997;background:#fff}
 #unifiedAdminFrame.show{display:block}
 @media(max-width:520px){#unifiedAdminMenuBtn{top:9px;left:9px}.top{padding-left:66px}.wrap{padding-left:10px;padding-right:10px}}
-
-/* V11 sidebar contrast fix */
-#unifiedAdminSidebar .uitem{color:#20312a!important;background:#f4f7f4!important;text-shadow:none!important;opacity:1!important}
-#unifiedAdminSidebar .uitem.active{color:#fff!important;background:linear-gradient(135deg,#075B35,#0b7654)!important}
-#unifiedAdminSidebar .b5-subitem{color:#20312a!important;background:#f8faf8!important}
-#unifiedAdminSidebar .b5-subitem.active{color:#fff!important;background:#075B35!important}
 </style>
 <button id="unifiedAdminMenuBtn" onclick="uAdminToggle()" aria-label="Open Admin menu">☰</button>
 <div id="unifiedAdminOverlay" onclick="uAdminToggle()"></div>
@@ -337,27 +272,17 @@ main.wrap > .card:has(.nav){display:none!important}
   <button class="uitem" data-main="members" onclick="uAdminMain('members',this)">👥 Members</button>
   <button class="uitem" data-main="msg" onclick="uAdminMain('msg',this)">📢 Messages</button>
   <button class="uitem" data-main="pin" onclick="uAdminMain('pin',this)">🔐 PIN Management</button>
-  <button class="uitem" data-main="pwreset" onclick="uAdminMain('pwreset',this)">🔑 Password Reset</button>
   <button class="uitem" data-main="pinreport" onclick="uAdminMain('pinreport',this)">📊 Admin PIN Report</button>
   <button class="uitem" data-main="tree" onclick="uAdminMain('tree',this)">🌳 Referral Tree</button>
   <button class="uitem" data-main="settings" onclick="uAdminMain('settings',this)">⚙️ Settings</button>
-  <div class="ustitle b5-lt-title" style="margin-top:14px">Level Tracking</div>
-  <button class="uitem b5-lt-toggle" type="button" onclick="uAdminLevelTrackToggle(this)">📊 Level Tracking <span>⌄</span></button>
-  <div id="b5AdminLTOptions" class="b5-lt-options">
-    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('dashboard',this)">⌂ Dashboard</button>
-    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('requests',this)">◈ Requests & Approval</button>
-    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('payments',this)">₹ Payment Details</button>
-    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('accounts',this)">▣ Payment Accounts</button>
-    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('seniority',this)">♛ Seniority Queue</button>
-    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('reports',this)">▤ Reports / Schedule</button>
-    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('history',this)">◷ Upgrade History</button>
-  </div>
+  <div class="ustitle" style="margin-top:12px">Level Tracking</div>
+  <button class="uitem" onclick="uAdminLevelTrack(this)">📊 Level Tracking</button>
 </aside>
 <iframe id="unifiedAdminFrame" title="LevelTrack Admin Portal"></iframe>
 <script id="unified-admin-menu-script">
 (function(){
  const btn=document.getElementById('unifiedAdminMenuBtn'),side=document.getElementById('unifiedAdminSidebar'),ov=document.getElementById('unifiedAdminOverlay'),frame=document.getElementById('unifiedAdminFrame');
- const panels=['review','members','msg','pin','pinreport','tree','settings','pwreset'];
+ const panels=['review','members','msg','pin','pinreport','tree','settings'];
  function logged(){return localStorage.getItem('B5_ADMIN_LOGIN')==='1' && getComputedStyle(document.getElementById('B5_ADMIN_GATE')).display!=='flex'}
  function ready(){const ok=logged();[btn,side].forEach(x=>x&&x.classList.toggle('ready',ok));if(!ok){frame.classList.remove('show');side.classList.remove('open');ov.classList.remove('show');}}
  window.uAdminToggle=function(){if(!btn.classList.contains('ready'))return;side.classList.toggle('open');ov.classList.toggle('show')}
@@ -375,22 +300,15 @@ main.wrap > .card:has(.nav){display:none!important}
    document.getElementById(id)?.classList.remove('hidden');
    window.scrollTo({top:0,behavior:'smooth'});
  }
- window.uAdminLevelTrackToggle=function(b){const box=document.getElementById('b5AdminLTOptions');box.classList.toggle('open');b.classList.toggle('open');};
- window.uAdminLevelTrack=function(section,b){
-   document.querySelectorAll('#unifiedAdminSidebar .uitem').forEach(x=>x.classList.remove('active'));
-   if(b)b.classList.add('active');
-   close();
-   if(hero) hero.style.display='none';
-   if(statsCard) statsCard.style.display='none';
-   hideMainPanels();
-   frame.classList.add('show');
-   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section:section||'dashboard'},location.origin);
-   if(frame.src.indexOf('/leveltrack-admin.html')<0){frame.src='/leveltrack-admin.html?v=FINAL';frame.addEventListener('load',send,{once:true});} else send();
+ window.uAdminLevelTrack=function(b){
+   document.querySelectorAll('#unifiedAdminSidebar .uitem').forEach(x=>x.classList.remove('active')); if(b)b.classList.add('active'); close();
+   if(hero) hero.style.display='none'; if(statsCard) statsCard.style.display='none'; hideMainPanels(); frame.classList.add('show');
+   if(!frame.dataset.v26Loaded){
+     frame.srcdoc="<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>V26 Level Tracking - Admin</title><style>*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#172033;font-family:system-ui,-apple-system,\"Noto Sans Tamil\",sans-serif}.demo{background:#171c2b;color:#fff;text-align:center;padding:7px;font-size:11px}.top{height:64px;background:#fff;border-bottom:1px solid #e5e8ef;display:flex;align-items:center;gap:10px;padding:0 14px;position:sticky;top:0;z-index:5}.logo{width:39px;height:39px;border-radius:12px;background:linear-gradient(135deg,#034A2B,#d39a42);color:#fff;display:grid;place-items:center;font-size:23px;font-weight:800}.brand b{display:block;font-size:15px}.brand small{display:block;color:#7b8496;font-size:10px}.wrap{max-width:760px;margin:auto;padding:15px 12px 35px}.hero{background:linear-gradient(135deg,#681733,#a82d53);color:#fff;border-radius:19px;padding:20px 18px;margin-bottom:13px}.hero h1{margin:8px 0 4px;font-size:27px}.hero p{margin:0;color:#f8e9ed;font-size:11px}.card{background:#fff;border:1px solid #e3e7ef;border-radius:18px;padding:16px;margin-bottom:13px;box-shadow:0 5px 20px #00000008}.nav{display:grid;grid-template-columns:1fr 1fr;gap:8px}.nav button,.btn{border:0;border-radius:10px;padding:11px;font-weight:750;cursor:pointer;font-size:12px;background:#f0f1f6;color:#30384d}.nav button.active{background:#075B35;color:#fff}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{text-align:center;border:1px solid #e5e8ef;border-radius:13px;padding:10px}.stat b{display:block;font-size:23px;color:#075B35}.stat span{font-size:10px;color:#788196}.member{border:1px solid #e4e8ef;border-radius:13px;padding:12px;margin-top:9px}.small{font-size:10px;color:#7b8496}.pill{display:inline-block;background:#eee1e6;color:#075B35;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}.info{background:#fff8fb;border-left:4px solid #075B35;padding:11px;border-radius:10px;font-size:11px;line-height:1.5}.success{background:#e1f4e7;color:#227442;border-radius:10px;padding:11px;font-size:11px;line-height:1.5}.warn{background:#fff0c2;color:#806000;border-radius:10px;padding:11px;font-size:11px;line-height:1.5;margin-top:9px}.primary,.send{background:#075B35;color:#fff;width:100%;margin-top:10px}.secondary{background:#fff;color:#075B35;border:1px solid #075B35;width:100%;padding:11px;border-radius:10px;font-weight:800}input,textarea{width:100%;padding:11px;border:1px solid #dfe3ec;border-radius:10px;font:inherit;background:#fff;margin:5px 0 10px}label{font-size:10px;font-weight:800}.hidden{display:none}.row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #eee;font-size:12px}.row:last-child{border-bottom:0}.badge{padding:5px 9px;border-radius:20px;background:#e1f4e7;color:#227442;font-weight:800;font-size:10px}.sectionTitle{display:flex;justify-content:space-between;align-items:center}.level{border:1px solid #e4e8ef;border-radius:12px;margin:8px 0;overflow:hidden}.lh{display:flex;justify-content:space-between;padding:11px;background:#fafbfe;font-weight:800;font-size:11px;color:#075B35}.pay{padding:9px;border-top:1px solid #eee;font-size:11px}@media(max-width:480px){.nav{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr 1fr}}</style></head><body><div class=\"demo\">V26 FINAL LEVEL TRACKING • V15 ADMIN DESIGN</div><header class=\"top\"><div class=\"logo\">B5</div><div class=\"brand\"><b>BORNTOWIN5 ADMIN</b><small>Level Tracking • Control Center</small></div></header><main class=\"wrap\"><section class=\"hero\"><span class=\"pill\" style=\"background:#fff2;color:#fff\">LEVEL TRACKING</span><h1>Sequential Upgrade Control</h1><p>V26 flow styled to match V15 Admin design.</p></section><div class=\"card\"><div class=\"stats\"><div class=\"stat\"><b id=\"aLevel\">L1</b><span>Current Level</span></div><div class=\"stat\"><b id=\"aRefs\">0</b><span>Direct Referrals</span></div><div class=\"stat\"><b id=\"aNext\">L2</b><span>Next Level</span></div></div></div><section class=\"card\"><div class=\"title\">Upgrade Request & Approval</div><div id=\"adminRequest\"></div></section><section class=\"card\"><div class=\"title\">Send Payment To This Member</div><label>Receiver Name</label><input id=\"receiverName\" value=\"Kumar\"><label>Receiver Member ID</label><input id=\"receiverIdInput\" value=\"L1-025\"><label>Receiver Phone</label><input id=\"receiverPhone\" value=\"9876543210\"><label>Account Holder</label><input id=\"accountHolder\" value=\"Kumar\"><label>Bank Name</label><input id=\"bankName\" value=\"ABC Bank\"><label>Account Number</label><input id=\"accountNumber\" value=\"XXXXXX1234\"><label>IFSC</label><input id=\"ifsc\" value=\"ABCD0001234\"><label>UPI</label><input id=\"upi\" value=\"kumar@upi\"><label>Amount</label><input id=\"amount\" value=\"1000\"><label>Admin Message</label><textarea id=\"adminMessage\" rows=\"3\">Please make the payment to the receiver shown above and submit your UTR.</textarea><button class=\"primary\" onclick=\"sendDetails()\">SEND PAYMENT DETAILS TO MEMBER</button></section><section class=\"card\"><div class=\"title\">Upgrade History</div><div id=\"history\"></div></section><section class=\"card\"><button class=\"secondary\" onclick=\"resetTest()\">RESET TEST DATA</button></section></main><script>const KEY='LT_SEQUENTIAL_UPGRADE_TEST_V26';const milestones={1:3,2:6,3:9,4:12,5:15,6:18};const fresh={member:{name:'Test Member',mobile:'9876543210',id:'L1-001',level:1},referrals:[],upgrade:null,upgradeHistory:[]};const earningsMembers={1:[['Payment 1','Arun','L1-002','₹500','COMPLETED'],['Payment 2','Bala','L1-003','₹500','COMPLETED'],['Payment 3','Chitra','L1-004','₹500','PENDING']],2:[['Payment 1','Dinesh','L2-002','₹1,000','COMPLETED'],['Payment 2','Ezhil','L2-003','₹1,000','COMPLETED'],['Payment 3','Fathima','L2-004','₹1,000','PENDING'],['Payment 4','Gokul','L2-005','₹1,000','PENDING'],['Payment 5','Harish','L2-006','₹1,000','PENDING']],3:[['Payment 1','Ilamaran','L3-002','₹2,000','COMPLETED'],['Payment 2','Jaya','L3-003','₹2,000','COMPLETED'],['Payment 3','Kannan','L3-004','₹2,000','PENDING'],['Payment 4','Latha','L3-005','₹2,000','PENDING'],['Payment 5','Mani','L3-006','₹2,000','PENDING'],['Payment 6','Naveen','L3-007','₹2,000','PENDING'],['Payment 7','Priya','L3-008','₹2,000','PENDING'],['Payment 8','Ravi','L3-009','₹2,000','PENDING'],['Payment 9','Sangeetha','L3-010','₹2,000','PENDING'],['Payment 10','Tamil','L3-011','₹2,000','PENDING']],4:Array.from({length:10},(_,i)=>['Payment '+(i+1),'Level 4 Member '+(i+1),'L4-'+String(i+2).padStart(3,'0'),'TEST AMOUNT',i<2?'COMPLETED':'PENDING']),5:Array.from({length:5},(_,i)=>['Payment '+(i+1),'Level 5 Member '+(i+1),'L5-'+String(i+2).padStart(3,'0'),'TEST AMOUNT',i<1?'COMPLETED':'PENDING']),6:Array.from({length:5},(_,i)=>['Payment '+(i+1),'Level 6 Member '+(i+2),'L6-'+String(i+2).padStart(3,'0'),'TEST AMOUNT',i<1?'COMPLETED':'PENDING']),7:Array.from({length:5},(_,i)=>['Payment '+(i+1),'Level 7 Member '+(i+1),'L7-'+String(i+2).padStart(3,'0'),'TEST AMOUNT','PENDING'])};function clone(x){return JSON.parse(JSON.stringify(x))}function getData(){try{return JSON.parse(localStorage.getItem(KEY))||clone(fresh)}catch(e){return clone(fresh)}}function save(d){localStorage.setItem(KEY,JSON.stringify(d));render()}function esc(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[m]))}function detail(k,v){return '<div class=\"row\"><span>'+esc(k)+'</span><b>'+esc(v||'-')+'</b></div>'}function addReferral(){const d=getData();const n=d.referrals.length+1;d.referrals.push({name:'Referral '+n,id:'L'+d.member.level+'-'+String(n+1).padStart(3,'0')});save(d)}function targetLevel(d){const l=d.member.level;return l<7&&d.referrals.length>=milestones[l]?l+1:null}function requestUpgrade(){const d=getData(),to=targetLevel(d);if(!to||d.upgrade)return;d.upgrade={from:d.member.level,to,payerMemberId:d.member.id,payment:null,paid:false,utr:'',receiverConfirmed:false};save(d);alert('Level '+d.member.level+' → Level '+to+' upgrade request sent to Admin.')}function markPaid(){const d=getData(),u=d.upgrade,value=(document.getElementById('utrInput')?.value||'').trim();if(!u||!u.payment)return alert('Admin payment details are required first.');if(!value)return alert('Enter Transaction ID / UTR.');u.paid=true;u.utr=value;save(d);alert('UTR submitted. Receiver can now confirm.')}function receiverConfirm(){const d=getData(),u=d.upgrade;if(!u||!u.paid)return alert('UTR not submitted yet.');u.receiverConfirmed=true;save(d);alert('Receiver confirmed. Admin can do final approval.')}function receiverReject(){const d=getData(),u=d.upgrade;if(!u)return;u.receiverConfirmed=false;save(d);alert('Receiver marked payment as NOT RECEIVED.')}function finalApprove(){const d=getData(),u=d.upgrade;if(!u||!u.receiverConfirmed)return alert('Receiver confirmation is required first.');d.upgradeHistory.push({from:u.from,to:u.to,payerMemberId:u.payerMemberId,receiverMemberId:u.payment.receiverId,amount:u.payment.amount,utr:u.utr});d.member.level=u.to;d.member.id='L'+u.to+'-001';d.upgrade=null;save(d);alert('L'+u.to+' activated. Now add referrals until the next milestone.')}function toggleEarningLevel(l){const el=document.getElementById('earningBody'+l);if(el)el.style.display=el.style.display==='none'?'block':'none'}function renderEarnings(){let all=[];for(let l=1;l<=7;l++)all=all.concat(earningsMembers[l]);const done=all.filter(x=>x[4]==='COMPLETED'),pending=all.filter(x=>x[4]==='PENDING');document.getElementById('earnSummary').innerHTML='<div class=\"row\"><span>Confirmed Earnings</span><b>TEST DATA</b></div><div class=\"row\"><span>Payments Confirmed</span><b>'+done.length+'</b></div><div class=\"row\"><span>Pending Payments</span><b>'+pending.length+'</b></div>';document.getElementById('earnings').innerHTML='<div class=\"info\">Tap LEVEL 1–7. Only that Level’s payment details will open.</div>'+[1,2,3,4,5,6,7].map(l=>{const arr=earningsMembers[l],c=arr.filter(x=>x[4]==='COMPLETED').length;return '<div class=\"level\"><div class=\"lh\" onclick=\"toggleEarningLevel('+l+')\"><span>LEVEL '+l+'</span><span>'+c+' / '+arr.length+' COMPLETED ▾</span></div><div id=\"earningBody'+l+'\" style=\"display:none;padding:10px\"><div class=\"row\"><span>People / Payments</span><b>'+arr.length+'</b></div>'+arr.map(x=>'<div class=\"pay\"><b>'+esc(x[0])+' — '+esc(x[1])+'</b><br><span class=\"small\">Member ID: '+esc(x[2])+' • Amount: '+esc(x[3])+' • <b>'+esc(x[4])+'</b></span></div>').join('')+'</div></div>'}).join('')}function sendDetails(){const d=getData(),u=d.upgrade;if(!u)return alert('No active upgrade request.');u.payment={receiverName:receiverName.value.trim(),receiverId:receiverIdInput.value.trim(),receiverPhone:receiverPhone.value.trim(),accountHolder:accountHolder.value.trim(),bankName:bankName.value.trim(),accountNumber:accountNumber.value.trim(),ifsc:ifsc.value.trim(),upi:upi.value.trim(),amount:amount.value.trim(),message:adminMessage.value.trim()};save(d);alert('Payment details sent to Member.')}function resetTest(){localStorage.setItem(KEY,JSON.stringify(clone(fresh)));render();alert('Test data reset.')}function render(){const d=getData(),u=d.upgrade;aLevel.textContent='L'+d.member.level;aRefs.textContent=d.referrals.length;aNext.textContent=d.member.level>=7?'-':'L'+(d.member.level+1);if(!u){adminRequest.innerHTML='<div class=\"warn\">No active upgrade request.<br>Add referrals until the current level milestone is completed.</div>'}else if(!u.payment){adminRequest.innerHTML='<div class=\"success\"><b>NEW UPGRADE REQUEST</b><br>'+esc(d.member.name)+'<br><b>PAYMENT SENT BY MEMBER ID:</b> '+esc(u.payerMemberId)+'<br>Upgrade: L'+u.from+' → L'+u.to+'<br>Direct Referrals: '+d.referrals.length+'</div>'}else if(!u.paid){adminRequest.innerHTML='<div class=\"success\"><b>REQUEST RECEIVED</b><br><b>PAYMENT SENT BY MEMBER ID:</b> '+esc(u.payerMemberId)+'<br><b>PAYMENT RECEIVED BY MEMBER ID:</b> '+esc(u.payment.receiverId)+'<br>Upgrade: L'+u.from+' → L'+u.to+'</div><div class=\"warn\">Waiting for Member UTR.</div>'}else if(!u.receiverConfirmed){adminRequest.innerHTML='<div class=\"success\"><b>UTR SUBMITTED</b><br>UTR: '+esc(u.utr)+'<br><br><b>PAYMENT SENT BY MEMBER ID:</b> '+esc(u.payerMemberId)+'<br><b>PAYMENT RECEIVED BY MEMBER ID:</b> '+esc(u.payment.receiverId)+'<br>Upgrade: L'+u.from+' → L'+u.to+'</div><div class=\"warn\">Waiting for Receiver confirmation.</div>'}else{adminRequest.innerHTML='<div class=\"success\"><b>RECEIVER CONFIRMED PAYMENT</b><br>UTR: '+esc(u.utr)+'<br><br><b>PAYMENT SENT BY MEMBER ID:</b> '+esc(u.payerMemberId)+'<br><b>PAYMENT RECEIVED BY MEMBER ID:</b> '+esc(u.payment.receiverId)+'<br>Upgrade: L'+u.from+' → L'+u.to+'</div><button class=\"primary\" onclick=\"finalApprove()\">FINAL APPROVE → ACTIVATE L'+u.to+'</button>'}history.innerHTML=d.upgradeHistory.length?d.upgradeHistory.slice().reverse().map(h=>'<div class=\"member\"><b>L'+h.from+' → L'+h.to+'</b><div class=\"small\">Sent by: '+esc(h.payerMemberId)+' • Received by: '+esc(h.receiverMemberId)+' • UTR: '+esc(h.utr)+'</div></div>').join(''):'<div class=\"small\">No upgrade history yet.</div>'}render();<\/script></body></html>";
+     frame.dataset.v26Loaded='1';
+   }
    window.scrollTo({top:0,behavior:'smooth'});
  }
- async function loadPwReset(){const el=document.getElementById('pwResetList');if(!el)return;try{const d=await fetch('/api/admin/password-reset-requests').then(r=>r.json());if(!d.requests.length){el.innerHTML='<div class="small">No pending password reset requests.</div>';return}el.innerHTML=d.requests.map(r=>`<div class="card" style="margin-top:10px"><b>${String(r.name).replace(/</g,'&lt;')}</b><div class="small">${r.memberId} • ${r.mobile}</div><button class="primary" style="margin-top:10px" onclick="approvePwReset('${r.id}')">APPROVE & RESET PASSWORD</button></div>`).join('')}catch(e){el.textContent='Failed to load requests'}}
-window.approvePwReset=async function(id){let temp=prompt('Temporary password (minimum 6 characters). Leave blank for auto-generate:','');if(temp!==null&&temp&&temp.length<6)return alert('Minimum 6 characters');try{const r=await fetch('/api/admin/password-reset/'+encodeURIComponent(id),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({temporaryPassword:temp||''})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Reset failed');alert('Temporary password: '+d.temporaryPassword);loadPwReset()}catch(e){alert(e.message)}};
-
-ready();setInterval(ready,500);
+ ready();setInterval(ready,500);
 })();
 </script>

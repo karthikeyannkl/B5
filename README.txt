@@ -1,35 +1,94 @@
-BORNTOWIN5 - FINAL V10 SENIORITY AUTO FLOW
+BORNTOWIN5 — PRODUCTION SAFE BASE V1
+====================================
 
-This package keeps the existing BORNTOWIN5 design and payment split flow and adds the final seniority verification layer.
+PURPOSE
+-------
+This package is the deployment-safe base for BORNTOWIN5.
 
-ADMIN SENIORITY
-- L2 through L7 are displayed separately in the Level-wise Seniority Queue.
-- Each level has independent #1, #2, #3... seniority positions.
-- Seniority is based on the server timestamp when the member reaches that level.
-- Each level shows member name, Member ID, mobile, reached time, earnings progress and status.
-- The first ACTIVE position is shown as the next automatic receiver.
+IMPORTANT RULE
+--------------
+CODE and DATABASE are separate.
 
-AUTOMATIC PAYMENT RECEIVER
-- When an upgrade request is selected, the system automatically loads the next eligible seniority receiver for the target level.
-- Admin does not manually choose the receiver.
-- Before sending payment details, the server re-checks the current next seniority receiver.
-- The same receiver remains ACTIVE until the required approved payments for that level are completed; then the next seniority position becomes ACTIVE.
+Future small UI/code corrections must NOT replace the production database.
+This package intentionally does NOT contain data/db.json.
 
-PAYMENT SPLIT
-L1 -> L2: Member 1000
-L2 -> L3: Member 3000
-L3 -> L4: Member 15600 + Trust 2400 + Admin 2000
-L4 -> L5: Member 72000 + Trust 16000 + Admin 12000
-L5 -> L6: Member 148000 + Trust 32000 + Admin 20000
-L6 -> L7: Member 240000 + Trust 160000 + Admin 100000
+DATABASE
+--------
+Preferred production storage: AIC Cloud Managed PostgreSQL.
+Set the AIC App Hosting environment variable:
+  DATABASE_URL = <AIC Managed PostgreSQL connection string>
+Optional:
+  DATABASE_SSL=true
 
-ADMIN ACCOUNT ROTATION
-Admin accounts rotate automatically A -> B -> C -> A.
-Old transaction snapshots remain stored with the transaction.
+The server automatically creates one PostgreSQL table:
+  borntown5_state
 
-RUN
-1. Upload the project to the Node.js hosting/server used for BORNTOWIN5.
-2. Keep the existing data/db.json database with the deployment if your environment uses it.
-3. Open Level Tracking from the Admin/Member interface.
+The current application state is stored in PostgreSQL JSONB. This keeps the
+existing BORNTOWIN5 API/data model while moving the important data outside the
+application code deployment.
 
-V10 change is focused on seniority display and automatic receiver verification; other existing functionality is preserved.
+LOCAL TEST MODE
+---------------
+If DATABASE_URL is not set, the app falls back to data/db.json and also writes
+ data/db.backup.json. This is only for local/testing use, not recommended for
+production.
+
+DEPLOYMENT RULE FOR FUTURE UPDATES
+----------------------------------
+1. Do NOT upload or replace a production data/db.json.
+2. Do NOT delete the PostgreSQL database.
+3. Update code only through GitHub/AIC deployment.
+4. Keep DATABASE_URL unchanged.
+5. After deployment, check /api/health.
+6. Existing members, referrals, PINs, messages, Level Tracking, payments and
+   approvals remain in PostgreSQL.
+
+BACKUPS
+-------
+AIC's terms state that customers are responsible for their own backups and
+recommend independent/off-site copies for production data. Do not rely only on
+AIC internal backups.
+
+For production, keep at least one independent copy of the database export.
+AIC also offers S3-compatible Object Storage with versioning/daily backups on
+eligible plans; this can be used as an off-site backup destination.
+
+EMAIL BACKUP
+------------
+Email should not be treated as the primary database backup. A JSON export can
+be downloaded and stored in email/Drive manually, but production backups should
+be kept in proper storage such as object storage plus a separate offline copy.
+
+MIGRATION
+---------
+Because the database is external, the same DATABASE_URL can be used after a
+server migration. The application code can be deployed to another host and
+pointed to the same PostgreSQL database.
+
+FILES
+-----
+server.js                 Express server + persistent DB adapter
+member.html               Member UI
+admin.html                Admin UI
+leveltrack-member.html    Member Level Tracking UI
+leveltrack-admin.html     Admin Level Tracking UI
+b5-logo.jpg               B5 logo
+package.json              Node.js dependencies
+
+data/                    intentionally contains no production database
+
+test checklist
+-------------
+1. /api/health
+2. Register test member
+3. Login
+4. Save profile
+5. Refresh / logout / login again
+6. Admin message -> member
+7. Admin PIN -> member PIN wallet
+8. Referral link
+9. Level Tracking
+10. Upgrade/payment/receiver/admin approval
+11. Restart/redeploy test: data must still exist
+
+Do not connect borntown5.com until this persistence test passes.
