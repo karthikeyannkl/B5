@@ -61,6 +61,8 @@ await save(db);
 
 
 function id(){return 'B5-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
+function hashPassword(password,salt=crypto.randomBytes(16).toString('hex')){return salt+':'+crypto.scryptSync(String(password),salt,64).toString('hex')}
+function verifyPassword(password,stored){if(!stored||!String(stored).includes(':'))return false;const [salt,hash]=String(stored).split(':');const actual=crypto.scryptSync(String(password),salt,64).toString('hex');return crypto.timingSafeEqual(Buffer.from(actual,'hex'),Buffer.from(hash,'hex'))}
 function pin(){return 'B5-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
 function memberPublic(m){return {memberId:m.memberId,name:m.name,mobile:m.mobile,status:(m.status==='Rejected'?'Rejected':'ACTIVE'),referral:m.referral,level:Number(m.level||1),levelMemberId:m.levelMemberId||null,joinedAt:m.joinedAt||m.registeredAt||null,upgradeDate:m.upgradeDate||null,profile:m.profile||{},profileSavedAt:m.profileSavedAt||null}}
 function findMember(q){q=String(q||'').toLowerCase();return db.members.filter(m=>(m.name+' '+m.memberId+' '+m.mobile).toLowerCase().includes(q))}
@@ -101,6 +103,15 @@ app.get('/api/admin/member-details/:id',async (req,res)=>{
  if(!m)return res.status(404).json({error:'Member not found'});
  const kids=(id)=>db.members.filter(x=>x.referral===id).map(x=>({memberId:x.memberId,name:x.name,mobile:x.mobile,status:x.status,level:Number(x.level||1),levelMemberId:x.levelMemberId||null,children:kids(x.memberId)}));
  res.json({member:memberPublic(m),details:m,referralTree:{memberId:m.memberId,name:m.name,mobile:m.mobile,status:m.status,level:Number(m.level||1),levelMemberId:m.levelMemberId||null,children:kids(m.memberId)},directReferrals:db.members.filter(x=>x.referral===m.memberId).length,totalDownline:downlineCount(m.memberId)});
+});
+app.post('/api/admin/member-password-reset',async (req,res)=>{
+ const m=db.members.find(x=>x.memberId===String(req.body.memberId||''));
+ if(!m)return res.status(404).json({error:'Member not found'});
+ const password=String(req.body.newPassword||'');
+ if(password.length<6)return res.status(400).json({error:'Password must be at least 6 characters'});
+ m.passwordHash=hashPassword(password);
+ await save(db);
+ res.json({ok:true,member:memberPublic(m)});
 });
 app.post('/api/admin/member-status',async (req,res)=>{
  const m=db.members.find(x=>x.memberId===req.body.memberId);
@@ -144,17 +155,25 @@ app.get('/api/member/referral-info/:id',async (req,res)=>{
  if(!m)return res.status(404).json({valid:false,error:'Referral ID not found'});
  res.json({valid:true,member:{memberId:m.memberId,name:m.name,mobile:m.mobile,level:Number(m.level||1)}});
 });
-app.post('/api/member/send-otp',async (req,res)=>{if(!/^\d{10}$/.test(String(req.body.mobile||'')))return res.status(400).json({error:'Invalid mobile number'});res.json({ok:true,otp:'123456'})});
-app.post('/api/member/login',async (req,res)=>{const m=db.members.find(x=>x.mobile===req.body.mobile);if(req.body.otp!=='123456')return res.status(401).json({error:'OTP சரியாக இல்லை'});if(!m)return res.status(404).json({error:'Member not found. Please register first.'});res.json({member:memberPublic(m)})});
+app.post('/api/member/login',async (req,res)=>{
+ const mobile=String(req.body.mobile||'').trim(), password=String(req.body.password||'');
+ if(!/^\d{10}$/.test(mobile))return res.status(400).json({error:'Invalid mobile number'});
+ const m=db.members.find(x=>x.mobile===mobile);
+ if(!m)return res.status(404).json({error:'Member not found. Please register first.'});
+ if(!m.passwordHash)return res.status(401).json({error:'Password not set for this member. Admin must reset/set the password.'});
+ if(!verifyPassword(password,m.passwordHash))return res.status(401).json({error:'Incorrect password'});
+ res.json({member:memberPublic(m)});
+});
 app.post('/api/member/check-pin',async (req,res)=>{const p=String(req.body.pin||'').toUpperCase();if(!db.pins.some(x=>x.pin===p&&x.status==='AVAILABLE'))return res.status(400).json({error:'Invalid or unavailable Joining PIN'});res.json({ok:true})});
 app.post('/api/member/register',async (req,res)=>{
  const b=req.body;
  if(db.members.some(m=>m.mobile===b.mobile))return res.status(409).json({error:'Mobile number already registered'});
+ if(String(b.password||'').length<6)return res.status(400).json({error:'Password must be at least 6 characters'});
  const p=String(b.pin||'').toUpperCase(),pr=db.pins.find(x=>x.pin===p&&x.status==='AVAILABLE');
  if(!pr)return res.status(400).json({error:'Invalid or unavailable Joining PIN'});
  if(b.referral!=='FIRST MEMBER'&&!db.members.some(m=>m.memberId===b.referral))return res.status(400).json({error:'Invalid Referral ID'});
- const m={...b,memberId:id(),status:'Pending',registeredAt:new Date().toISOString()};
- delete m.pin;db.members.push(m);pr.status='USED';pr.usedBy=m.memberId;pr.usedAt=new Date().toISOString();await save(db);res.json({member:memberPublic(m)});
+ const m={...b,memberId:id(),status:'Pending',registeredAt:new Date().toISOString(),passwordHash:hashPassword(b.password)};
+ delete m.pin; delete m.password;db.members.push(m);pr.status='USED';pr.usedBy=m.memberId;pr.usedAt=new Date().toISOString();await save(db);res.json({member:memberPublic(m)});
 });
 app.get('/api/member/dashboard/:id',async (req,res)=>{
  const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});
