@@ -9,9 +9,21 @@ const SMTP_USER=process.env.SMTP_USER||'';
 const SMTP_PASS=process.env.SMTP_PASS||'';
 const EMAIL_FROM=process.env.EMAIL_FROM||SMTP_USER;
 const mailer=SMTP_USER&&SMTP_PASS?nodemailer.createTransport({host:SMTP_HOST,port:SMTP_PORT,secure:false,requireTLS:true,auth:{user:SMTP_USER,pass:SMTP_PASS}}):null;
-function sendRegistrationEmail(member){
- if(!mailer||!member.email)return;
- mailer.sendMail({from:EMAIL_FROM,to:member.email,subject:'BORNTOWIN5 - Registration Successful',text:`Hello ${member.name},\n\nYour BORNTOWIN5 registration was successful.\n\nMember ID: ${member.memberId}\nMobile: ${member.mobile}\n\nThank you for joining BORNTOWIN5.`}).catch(err=>console.error('Registration email failed:',err.message));
+async function sendRegistrationEmail(member){
+ if(!member.email){console.error('Registration email skipped: member email is missing');return false;}
+ if(!mailer){console.error('Registration email skipped: SMTP credentials are not configured');return false;}
+ try{
+  await mailer.sendMail({from:EMAIL_FROM,to:String(member.email).trim(),subject:'BORNTOWIN5 - Registration Successful',text:`Hello ${member.name},\n\nYour BORNTOWIN5 registration was successful.\n\nMember ID: ${member.memberId}\nMobile: ${member.mobile}\n\nThank you for joining BORNTOWIN5.`});
+  console.log('Registration email sent to '+String(member.email).trim());
+  return true;
+ }catch(err){
+  console.error('Registration email failed:',err.message);
+  return false;
+ }
+}
+
+if(mailer){
+ mailer.verify().then(()=>console.log('AIC Cloud SMTP connection verified')).catch(err=>console.error('AIC Cloud SMTP verification failed:',err.message));
 }
 
 const app=express();
@@ -115,7 +127,7 @@ app.post('/api/member/login',(req,res)=>{const m=db.members.find(x=>x.mobile===S
 app.post('/api/member/forgot-password',(req,res)=>{const mobile=String(req.body.mobile||'').trim();const m=db.members.find(x=>x.mobile===mobile);if(!m)return res.status(404).json({error:'Mobile number not found'});const pending=db.passwordResetRequests.find(x=>x.memberId===m.memberId&&x.status==='Pending');if(pending)return res.json({ok:true,message:'Password reset request already sent to Admin.'});db.passwordResetRequests.push({id:'PR-'+crypto.randomBytes(4).toString('hex').toUpperCase(),memberId:m.memberId,mobile:m.mobile,name:m.name,status:'Pending',createdAt:new Date().toISOString()});save(db);res.json({ok:true,message:'Password reset request sent to Admin. Please contact Admin after approval.'})});
 app.post('/api/member/password/:id',(req,res)=>{const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});if(!m.passwordHash||hashPassword(req.body.oldPassword)!==m.passwordHash)return res.status(401).json({error:'Current password is incorrect'});const np=String(req.body.newPassword||'');if(np.length<6)return res.status(400).json({error:'New password must be at least 6 characters'});m.passwordHash=hashPassword(np);m.mustChangePassword=false;save(db);res.json({ok:true})});
 app.post('/api/member/check-pin',(req,res)=>{const p=String(req.body.pin||'').toUpperCase();if(!db.pins.some(x=>x.pin===p&&x.status==='AVAILABLE'))return res.status(400).json({error:'Invalid or unavailable Joining PIN'});res.json({ok:true})});
-app.post('/api/member/register',(req,res)=>{
+app.post('/api/member/register',async (req,res)=>{
  const b=req.body;
  if(db.members.some(m=>m.mobile===b.mobile))return res.status(409).json({error:'Mobile number already registered'});
  const p=String(b.pin||'').toUpperCase(),pr=db.pins.find(x=>x.pin===p&&x.status==='AVAILABLE');
@@ -124,7 +136,7 @@ app.post('/api/member/register',(req,res)=>{
  if(String(b.referral||'FIRST MEMBER').toUpperCase()!=='FIRST MEMBER'){const ref=String(b.referral||'').trim().toUpperCase();const parent=db.members.find(x=>x.memberId===ref||x.referralId===ref||referralCode(x.memberId)===ref);if(!parent)return res.status(400).json({error:'Invalid Referral ID'});parentId=parent.memberId;}
  const memberId=id();
  const m={...b,memberId,referralId:referralCode(memberId),referral:parentId,status:'Pending',registeredAt:new Date().toISOString(),passwordHash:hashPassword(b.password)};
- delete m.pin;delete m.password;db.members.push(m);pr.status='USED';pr.usedBy=m.memberId;pr.usedAt=new Date().toISOString();save(db);sendRegistrationEmail(m);res.json({member:memberPublic(m)});
+ delete m.pin;delete m.password;db.members.push(m);pr.status='USED';pr.usedBy=m.memberId;pr.usedAt=new Date().toISOString();save(db);await sendRegistrationEmail(m);res.json({member:memberPublic(m)});
 });
 app.post('/api/admin/member-profile/:id',(req,res)=>{const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});const b=req.body||{};for(const k of ['name','place','accountHolder','bank','account','ifsc','branch','upi'])if(b[k]!==undefined)m[k]=String(b[k]).trim();if(!m.name||!m.place||!m.accountHolder||!m.bank||!m.account||!m.ifsc||!m.branch||!m.upi)return res.status(400).json({error:'Please complete all profile and bank details'});m.profileLocked=true;save(db);res.json({ok:true,member:memberPublic(m),profile:memberProfile(m)});});
 app.get('/api/member/profile/:id',(req,res)=>{const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});res.json({profile:memberProfile(m)})});
