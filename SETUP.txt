@@ -1,24 +1,46 @@
-BORNTOWIN5 — SUPABASE DATA API PERSISTENCE
+BORNTOWIN5 — FINAL PERMANENT DATABASE BUILD
 
-This build replaces the PostgreSQL/5432 connection with Supabase HTTPS Data API.
-It does NOT delete/reset existing BORNTOWIN5 member data.
+Purpose
+-------
+AIC Cloud remains the web/server host. Supabase is the permanent database.
+The existing Member/Admin UI is preserved. This package changes the persistence layer only.
 
-AIC Environment Variables:
-1. SUPABASE_URL = your Supabase Project URL (https://<project-ref>.supabase.co)
-2. SUPABASE_SECRET_KEY = Supabase Secret Key from Project Settings > API
-3. SUPABASE_SEED_FROM_LOCAL = true ONLY for the one-time migration when the deployed local db.json contains the exact current data you want to preserve. Otherwise leave it unset/false.
+AIC Environment Variables required
+----------------------------------
+SUPABASE_URL=https://<your-project-ref>.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_...   (backend only; never put in HTML/GitHub)
 
-Do NOT add the Secret Key to HTML or GitHub.
+Existing SMTP variables remain unchanged:
+SMTP_HOST
+SMTP_PORT
+SMTP_USER
+SMTP_PASS
+EMAIL_FROM
 
-Supabase:
-1. Run SUPABASE_SETUP.sql in SQL Editor.
-2. Ensure Data API is enabled and public.app_state is exposed to the Data API.
-3. Do not create/replace the app_state row manually with empty data.
+Do NOT add /rest/v1/ to SUPABASE_URL.
+Do NOT use DATABASE_URL for this build.
+Do NOT delete/reset the Supabase app_state table.
 
-SAFE MIGRATION RULE:
-The server refuses to create an empty app_state row by default. If app_state already has a row, it loads that row and preserves it.
-If the row does not exist, set SUPABASE_SEED_FROM_LOCAL=true only when the current deployment's data/db.json is confirmed to contain the production/testing data that must be preserved. After the first successful migration, remove SUPABASE_SEED_FROM_LOCAL.
+Supabase one-time SQL (already done if app_state exists and is exposed)
+-----------------------------------------------------------------------
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON TABLE public.app_state
+TO service_role;
 
-Health check after deploy:
-https://YOUR-AIC-HOST/api/db-status
-It should return persistence=supabase-api.
+Deployment
+----------
+Replace server.js, member.html, admin.html and package.json in the existing AIC project.
+Keep the existing repository data/db.json if it contains the current testing data.
+
+First startup behavior
+----------------------
+1. If Supabase already has real app_state data, it loads it and preserves it.
+2. If Supabase app_state is empty but the existing local db.json has real testing data, it seeds Supabase ONCE.
+3. If both are empty, startup stops instead of creating an empty database.
+4. Future writes update Supabase; local db.json is only a local cache.
+5. No automatic delete/reset is performed.
+
+Verification
+------------
+Open /api/db-status after deployment. It should return ok:true and persistence:"supabase-api".
+Then test one existing member login and one new test write before launch.

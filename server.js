@@ -30,57 +30,66 @@ if(mailer){
 
 app.use(express.json({limit:'12mb'}));
 app.use(express.static(__dirname));
-app.get('/api/db-status',(req,res)=>res.json({ok:true,persistence:'supabase-api',configured:!!(SUPABASE_URL&&SUPABASE_SECRET_KEY),members:Array.isArray(db.members)?db.members.length:0}));
 
 const DB_FILE=process.env.DB_FILE || path.join(__dirname,'data','db.json');
 fs.mkdirSync(path.dirname(DB_FILE),{recursive:true});
 function freshDB(){return {adminPassword:'ADMIN',members:[],pins:[],messages:[],passwordResetRequests:[],leveltrackRequests:[],leveltrackUpgrades:[],leveltrackPayments:[],leveltrackMessages:[],paymentSettings:{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}}};}
 function load(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch(e){return freshDB()}}
 
-// Permanent database via Supabase Data API (HTTPS).
-// This intentionally avoids PostgreSQL/5432 password authentication and keeps
-// Supabase as the source of truth. Never log the secret key.
+// Permanent persistence: AIC hosts the app; Supabase stores the single source of truth.
 const SUPABASE_URL=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
 const SUPABASE_SECRET_KEY=String(process.env.SUPABASE_SECRET_KEY||'');
-let apiWriteQueue=Promise.resolve();
-function supabaseHeaders(){return {'apikey':SUPABASE_SECRET_KEY,'Authorization':'Bearer '+SUPABASE_SECRET_KEY,'Content-Type':'application/json','Prefer':'return=minimal'}}
+let supabaseReady=false;
+let supabaseSaveQueue=Promise.resolve();
+function supabaseHeaders(extra={}){return {'apikey':SUPABASE_SECRET_KEY,'Authorization':'Bearer '+SUPABASE_SECRET_KEY,'Content-Type':'application/json','Accept':'application/json',...extra}}
 async function supabaseFetch(pathname,options={}){
-  if(!SUPABASE_URL||!SUPABASE_SECRET_KEY)throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required');
+  if(!SUPABASE_URL||!SUPABASE_SECRET_KEY) throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required');
   const r=await fetch(SUPABASE_URL+'/rest/v1/'+pathname,{...options,headers:{...supabaseHeaders(),...(options.headers||{})}});
-  const text=await r.text();
-  if(!r.ok)throw new Error('Supabase API '+r.status+': '+text.slice(0,300));
-  return text?JSON.parse(text):null;
+  const body=await r.text();
+  if(!r.ok) throw new Error('Supabase API '+r.status+': '+body);
+  try{return body?JSON.parse(body):null}catch{return body}
+}
+function localSave(d){fs.writeFileSync(DB_FILE,JSON.stringify(d,null,2))}
+function hasRealData(d){
+  return !!(d && ((d.members||[]).length || (d.messages||[]).length || (d.passwordResetRequests||[]).length || (d.leveltrackRequests||[]).length || (d.leveltrackUpgrades||[]).length || (d.leveltrackPayments||[]).length || (d.leveltrackMessages||[]).length || (d.pins||[]).some(x=>x && !x.system)));
 }
 function save(d){
-  fs.writeFileSync(DB_FILE,JSON.stringify(d,null,2));
-  if(SUPABASE_URL&&SUPABASE_SECRET_KEY){
-    const snapshot=JSON.stringify(d);
-    apiWriteQueue=apiWriteQueue.then(async()=>{
-      try{
-        await supabaseFetch('app_state?id=eq.1',{method:'PATCH',body:JSON.stringify({data:snapshot})});
-      }catch(e){console.error('Supabase API save failed:',e.message)}
-    });
-  }
+  localSave(d);
+  if(!supabaseReady)return;
+  const snapshot=JSON.parse(JSON.stringify(d));
+  supabaseSaveQueue=supabaseSaveQueue.then(async()=>{
+    try{
+      await supabaseFetch('app_state?id=eq.1',{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({data:snapshot})});
+    }catch(e){console.error('Supabase API save failed:',e.message);}
+  });
 }
 
 let db=load();
 
 async function initPersistentDatabase(){
-  if(!SUPABASE_URL||!SUPABASE_SECRET_KEY)throw new Error('Supabase API is not configured. Add SUPABASE_URL and SUPABASE_SECRET_KEY.');
+  if(!SUPABASE_URL||!SUPABASE_SECRET_KEY) throw new Error('Supabase API is not configured. Add SUPABASE_URL and SUPABASE_SECRET_KEY.');
   const rows=await supabaseFetch('app_state?select=data&id=eq.1');
-  if(rows&&rows.length){
-    db=typeof rows[0].data==='string'?JSON.parse(rows[0].data):rows[0].data;
-    console.log('Supabase API persistence loaded; existing data preserved');
-  }else if(process.env.SUPABASE_SEED_FROM_LOCAL==='true'){
-    const payload={id:1,data:db};
-    await supabaseFetch('app_state',{method:'POST',headers:{'Prefer':'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify(payload)});
-    const check=await supabaseFetch('app_state?select=data&id=eq.1');
-    if(!check||!check.length)throw new Error('Supabase app_state row was not created');
-    db=typeof check[0].data==='string'?JSON.parse(check[0].data):check[0].data;
-    console.log('Supabase API persistence initialized from existing local data');
-  }else{
-    throw new Error('Supabase app_state is empty. Refusing to create an empty database. Set SUPABASE_SEED_FROM_LOCAL=true only when the current local db.json is the data you want to preserve.');
+  if(Array.isArray(rows) && rows.length){
+    const remote=typeof rows[0].data==='string'?JSON.parse(rows[0].data):rows[0].data;
+    if(hasRealData(remote)){
+      db=remote;
+      supabaseReady=true;
+      localSave(db);
+      console.log('PERMANENT DATABASE: Supabase loaded; existing data preserved');
+      return;
+    }
+    if(hasRealData(db)){
+      await supabaseFetch('app_state?id=eq.1',{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({data:db})});
+      supabaseReady=true;
+      console.log('PERMANENT DATABASE: empty Supabase state initialized from existing local data');
+      return;
+    }
+    throw new Error('Supabase app_state is empty and no existing local data is available. Refusing to create an empty database.');
   }
+  if(!hasRealData(db)) throw new Error('Supabase app_state is empty and no existing local data is available. Refusing to create an empty database.');
+  await supabaseFetch('app_state',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({id:1,data:db})});
+  supabaseReady=true;
+  console.log('PERMANENT DATABASE: initialized Supabase from existing local data');
 }
 
 // Backward-compatible defaults for existing db.json files.
@@ -100,8 +109,8 @@ function referralCode(memberId){return 'REF-'+String(memberId||'').replace(/^B5-
 function pin(){return 'PIN-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
 db.members.forEach(m=>{if(!m.referralId)m.referralId=referralCode(m.memberId)});save(db);
 function hashPassword(v){return crypto.createHash('sha256').update(String(v||'')).digest('hex')}
-function memberPublic(m){return {memberId:m.memberId,referralId:m.referralId||referralCode(m.memberId),name:m.name,mobile:m.mobile,status:(m.status==='Rejected'?'Rejected':'ACTIVE'),referral:m.referral,level:Number(m.level||1),levelMemberId:m.levelMemberId||null,joinedAt:m.joinedAt||m.registeredAt||null,upgradeDate:m.upgradeDate||null,profileLocked:!!m.profileLocked}}
-function memberProfile(m){return {memberId:m.memberId,referralId:m.referralId||referralCode(m.memberId),name:m.name||'',place:m.place||'',mobile:m.mobile||'',referral:m.referral||'FIRST MEMBER',accountHolder:m.accountHolder||m.name||'',bank:m.bank||'',account:m.account||'',ifsc:m.ifsc||'',branch:m.branch||'',upi:m.upi||'',photo:m.photo||'',profileLocked:!!m.profileLocked}}
+function memberPublic(m){return {memberId:m.memberId,referralId:m.referralId||referralCode(m.memberId),name:m.name,mobile:m.mobile,email:m.email||m.rEmail||'',status:(m.status==='Rejected'?'Rejected':'ACTIVE'),referral:m.referral,level:Number(m.level||1),levelMemberId:m.levelMemberId||null,joinedAt:m.joinedAt||m.registeredAt||null,upgradeDate:m.upgradeDate||null,profileLocked:!!m.profileLocked}}
+function memberProfile(m){return {memberId:m.memberId,referralId:m.referralId||referralCode(m.memberId),name:m.name||'',place:m.place||'',mobile:m.mobile||'',email:m.email||m.rEmail||'',referral:m.referral||'FIRST MEMBER',accountHolder:m.accountHolder||m.name||'',bank:m.bank||'',account:m.account||'',ifsc:m.ifsc||'',branch:m.branch||'',upi:m.upi||'',photo:m.photo||'',profileLocked:!!m.profileLocked}}
 function findMember(q){q=String(q||'').toLowerCase();return db.members.filter(m=>(m.name+' '+m.memberId+' '+m.mobile).toLowerCase().includes(q))}
 function descendants(rootId){
  let levels={1:[],2:[],3:[],4:[],5:[],6:[],7:[]}, current=[rootId];
@@ -192,7 +201,7 @@ app.get('/api/member/dashboard/:id',(req,res)=>{
  const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});
  const lv=descendants(m.memberId),w=wallet(m.memberId);
  const levels={};for(let i=1;i<=7;i++)levels[i]=lv[i].map(memberPublic);
- const messages=[...db.messages.filter(x=>x.to===m.memberId||x.to==='ALL'),...db.leveltrackMessages.filter(x=>x.to===m.memberId)].sort((a,b)=>String(b.at).localeCompare(String(a.at))).map(x=>({to:x.to,message:x.message,at:x.at}));
+ const messages=[...db.messages.filter(x=>x.to===m.memberId||x.to==='ALL'),...db.leveltrackMessages.filter(x=>x.to===m.memberId)].sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,2).map(x=>({to:x.to,message:x.message,at:x.at}));
  res.json({member:memberPublic(m),profile:memberProfile(m),levels,tree:tree(m.memberId),wallet:w,messages});
 });
 app.get('/api/member/level/:id/:level',(req,res)=>{
@@ -336,10 +345,11 @@ app.get('/api/leveltrack/member/messages/:id',(req,res)=>{
 });
 
 const PORT=process.env.PORT||10000;
+app.get('/api/db-status',(req,res)=>res.json({ok:supabaseReady,persistence:'supabase-api',members:Array.isArray(db.members)?db.members.length:0}));
+
 initPersistentDatabase()
   .then(()=>{
-    // Persist only after the permanent database has been loaded/initialized.
-    fs.writeFileSync(DB_FILE,JSON.stringify(db,null,2));
+    localSave(db);
     app.listen(PORT,'0.0.0.0',()=>console.log('BORNTOWIN5 running on '+PORT));
   })
   .catch(err=>{
