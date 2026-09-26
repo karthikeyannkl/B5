@@ -1,7 +1,7 @@
 {
-  "name":"borntowin5-db-test-v2",
+  "name":"borntowin5",
   "version":"1.0.0",
   "private":true,
   "scripts":{"start":"node server.js"},
-  "dependencies":{"express":"^4.21.2","pg":"^8.16.3"}
+  "dependencies":{"express":"^4.21.2","nodemailer":"^7.0.6"}
 }

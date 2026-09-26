@@ -1,11 +1,24 @@
-BORNTOWIN5 – ONLY 2 NEW CORRECTIONS
+BORNTOWIN5 — SUPABASE DATA API PERSISTENCE
 
-1. Referral link click opens the Registration page directly and keeps the Referral ID.
-2. Registration page now has a required Email ID field; the email is sent to / stored for the existing email notification flow.
+This build replaces the PostgreSQL/5432 connection with Supabase HTTPS Data API.
+It does NOT delete/reset existing BORNTOWIN5 member data.
 
-IMPORTANT:
-- No database reset or clearing is included.
-- Existing sample/test member IDs and data must be preserved.
-- Keep the existing permanent PostgreSQL DATABASE_URL configuration.
-- Do not delete or reset the database during deployment.
-- The server.js in this package is the already verified 11-correction server with only the above member-page corrections applied.
+AIC Environment Variables:
+1. SUPABASE_URL = your Supabase Project URL (https://<project-ref>.supabase.co)
+2. SUPABASE_SECRET_KEY = Supabase Secret Key from Project Settings > API
+3. SUPABASE_SEED_FROM_LOCAL = true ONLY for the one-time migration when the deployed local db.json contains the exact current data you want to preserve. Otherwise leave it unset/false.
+
+Do NOT add the Secret Key to HTML or GitHub.
+
+Supabase:
+1. Run SUPABASE_SETUP.sql in SQL Editor.
+2. Ensure Data API is enabled and public.app_state is exposed to the Data API.
+3. Do not create/replace the app_state row manually with empty data.
+
+SAFE MIGRATION RULE:
+The server refuses to create an empty app_state row by default. If app_state already has a row, it loads that row and preserves it.
+If the row does not exist, set SUPABASE_SEED_FROM_LOCAL=true only when the current deployment's data/db.json is confirmed to contain the production/testing data that must be preserved. After the first successful migration, remove SUPABASE_SEED_FROM_LOCAL.
+
+Health check after deploy:
+https://YOUR-AIC-HOST/api/db-status
+It should return persistence=supabase-api.
