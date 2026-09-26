@@ -1,9 +1,22 @@
-BORNTOWIN5 Neon SSL Fix
+BORNTOWIN5 DATABASE_URL DIAGNOSTIC
 
-Replace ONLY server.js in GitHub with this file.
-Keep the existing package.json (it already includes pg).
+Purpose:
+This package adds ONLY a safe diagnostic log for DATABASE_URL.
+It never prints the database password and does not change or delete database data.
 
-This correction fixes the Neon/node-postgres SSL connection error caused by sslmode/channel_binding parameters in the DATABASE_URL overriding the explicit TLS settings.
+It reports:
+- host
+- database name
+- username
+- password length
+- whether password has leading/trailing whitespace
+- sslmode
+- channel_binding
 
-DO NOT delete, reset, clear, or replace any existing database/member data.
-After upload, Redeploy in AIC Cloud and check Logs.
+Upload/replace ONLY server.js in the GitHub repository.
+Do not change member.html, admin.html, or database files.
+
+After AIC Redeploy, check Logs for:
+DATABASE_URL diagnostic: {...}
+
+Do NOT paste the password into chat or screenshots.

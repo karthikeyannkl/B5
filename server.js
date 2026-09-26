@@ -37,6 +37,29 @@ fs.mkdirSync(path.dirname(DB_FILE),{recursive:true});
 function freshDB(){return {adminPassword:'ADMIN',members:[],pins:[],messages:[],passwordResetRequests:[],leveltrackRequests:[],leveltrackUpgrades:[],leveltrackPayments:[],leveltrackMessages:[],paymentSettings:{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}}};}
 function load(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch(e){return freshDB()}}
 const pool=process.env.DATABASE_URL?new Pool({connectionString:String(process.env.DATABASE_URL).replace(/([?&])sslmode=[^&]*&?/i,'$1').replace(/([?&])channel_binding=[^&]*&?/i,'$1').replace(/[?&]$/,''),ssl:process.env.DATABASE_SSL==='false'?false:{rejectUnauthorized:false},enableChannelBinding:true}):null;
+if(process.env.DATABASE_URL){
+  try{
+    const u=new URL(String(process.env.DATABASE_URL));
+    const rawPassword=u.password||'';
+    console.log('DATABASE_URL diagnostic:',JSON.stringify({
+      configured:true,
+      protocol:u.protocol,
+      host:u.hostname,
+      port:u.port||'(default)',
+      database:u.pathname.replace(/^\//,''),
+      user:decodeURIComponent(u.username||''),
+      passwordLength:rawPassword.length,
+      passwordHasLeadingOrTrailingWhitespace:/^\s|\s$/.test(rawPassword),
+      sslmode:u.searchParams.get('sslmode')||'(none)',
+      channelBinding:u.searchParams.get('channel_binding')||'(none)'
+    }));
+  }catch(e){
+    console.error('DATABASE_URL diagnostic: INVALID URL:',e.message);
+  }
+}else{
+  console.log('DATABASE_URL diagnostic: NOT CONFIGURED');
+}
+
 function save(d){fs.writeFileSync(DB_FILE,JSON.stringify(d,null,2));if(pool)pool.query('UPDATE app_state SET data=$1 WHERE id=1',[JSON.stringify(d)]).catch(e=>console.error('Database save failed:',e.message))}
 let db=load();
 async function initPersistentDatabase(){if(!pool)return;await pool.query('CREATE TABLE IF NOT EXISTS app_state (id INTEGER PRIMARY KEY, data JSONB NOT NULL)');const r=await pool.query('SELECT data FROM app_state WHERE id=1');if(r.rows.length){try{db=typeof r.rows[0].data==='string'?JSON.parse(r.rows[0].data):r.rows[0].data;console.log('Persistent database loaded');}catch(e){throw new Error('Persistent database data is invalid')}}else{await pool.query('INSERT INTO app_state(id,data) VALUES(1,$1)',[JSON.stringify(db)]);console.log('Persistent database initialized from current db.json')}}
