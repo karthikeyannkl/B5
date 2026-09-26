@@ -1,13 +1,16 @@
-BORNTOWIN5 Neon connection diagnostic - channel binding disabled
+BORNTOWIN5 – EXPLICIT POSTGRES AUTH TEST
 
-Purpose: test the existing Neon DATABASE_URL without PostgreSQL channel binding.
+Purpose: diagnose Neon authentication without resetting, deleting, or recreating any database data.
 
-IMPORTANT:
-- Do NOT reset/delete/recreate the Neon database or branch.
-- Do NOT clear or overwrite existing member data.
-- Keep the existing DATABASE_URL; no password reset is required for this test.
-- This is a temporary diagnostic build. After the connection is confirmed, return to the production server build and remove diagnostic logging.
+This build parses DATABASE_URL and passes host/user/database/password explicitly to node-postgres.
+It disables channel binding and uses SSL with certificate verification disabled, matching the previous test.
+It runs a SELECT current_user/current_database authentication test before the normal app_state initialization.
 
-Deploy the included server.js + package.json to the existing AIC Cloud BORNTOWIN5 app and redeploy. Then check logs for either:
-- Persistent database loaded / initialized, or
-- the exact remaining PostgreSQL connection error.
+Do NOT reset the Neon password again. Do NOT delete/recreate the Neon database or branch.
+
+Expected useful log:
+DATABASE AUTH TEST: SUCCESS ...
+
+If it still says:
+DATABASE AUTH TEST: FAILED password authentication failed for user "neondb_owner"
+then the PostgreSQL server itself is rejecting the credential supplied by AIC, and we should investigate the credential/role value rather than changing application code or data.
