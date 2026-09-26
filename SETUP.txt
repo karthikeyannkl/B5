@@ -1,0 +1,23 @@
+BORNTOWIN5 - 11 CORRECTIONS
+
+Files:
+- server.js
+- member.html
+- package.json
+
+Permanent database:
+Set AIC environment variable DATABASE_URL to the managed PostgreSQL connection string BEFORE deploying this batch.
+Optional: DATABASE_SSL=false only if the database provider explicitly requires no SSL.
+The app creates table app_state automatically. If app_state is empty, it initializes it from the current data/db.json. If app_state already exists, it loads that data and does not reset it.
+
+Existing SMTP variables remain required:
+SMTP_HOST
+SMTP_PORT
+SMTP_USER
+SMTP_PASS
+EMAIL_FROM
+Optional admin notification:
+ADMIN_EMAIL
+
+IMPORTANT:
+Do not deploy this batch until DATABASE_URL points to the intended permanent database. Do not delete data/db.json or reset the database.
