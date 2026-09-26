@@ -25,33 +25,33 @@ function safeDbInfo() {
 }
 
 const rawUrl = process.env.DATABASE_URL;
-let pool = null;
-if (rawUrl) {
-  pool = new Pool({
-    connectionString: rawUrl,
-    ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 10000,
-    idleTimeoutMillis: 10000,
-    max: 1
-  });
-}
+const pool = rawUrl ? new Pool({
+  connectionString: rawUrl,
+  ssl: { rejectUnauthorized: false },
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 10000,
+  max: 1
+}) : null;
 
-console.log('=== BORNTOWIN5 DATABASE CONNECTION TEST ===');
+console.log('=== BORNTOWIN5 DATABASE CONNECTION TEST V2 ===');
 console.log('DATABASE_URL diagnostic:', JSON.stringify(safeDbInfo()));
 
-app.get('/', (req, res) => res.json({ ok: true, service: 'BORNTOWIN5 DB TEST', databaseConfigured: !!pool }));
-
-app.get('/db-test', async (req, res) => {
-  if (!pool) return res.status(500).json({ ok: false, error: 'DATABASE_URL is not configured' });
+async function dbCheck(req, res) {
+  if (!pool) return res.status(500).json({ ok:false, error:'DATABASE_URL is not configured' });
   try {
     const r = await pool.query('SELECT 1 AS ok');
     console.log('DATABASE TEST: SUCCESS SELECT 1');
-    res.json({ ok: true, message: 'PostgreSQL authentication and connection successful', result: r.rows[0] });
+    return res.json({ ok:true, message:'PostgreSQL authentication and connection successful', result:r.rows[0] });
   } catch (e) {
     console.error('DATABASE TEST: FAILED', e.message);
-    res.status(500).json({ ok: false, error: e.message, diagnostic: safeDbInfo() });
+    return res.status(500).json({ ok:false, error:e.message, diagnostic:safeDbInfo() });
   }
-});
+}
+
+// AIC Cloud may rewrite/strip a path before forwarding. Therefore the ROOT path
+// also performs the real DB test. This does not create, update, or delete anything.
+app.get('/', dbCheck);
+app.get('/db-test', dbCheck);
 
 const port = process.env.PORT || 10000;
-app.listen(port, '0.0.0.0', () => console.log('BORNTOWIN5 DB TEST running on ' + port));
+app.listen(port, '0.0.0.0', () => console.log('BORNTOWIN5 DB TEST V2 running on ' + port));
