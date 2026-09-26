@@ -1,22 +1,13 @@
-BORNTOWIN5 DATABASE_URL DIAGNOSTIC
+BORNTOWIN5 Neon connection diagnostic - channel binding disabled
 
-Purpose:
-This package adds ONLY a safe diagnostic log for DATABASE_URL.
-It never prints the database password and does not change or delete database data.
+Purpose: test the existing Neon DATABASE_URL without PostgreSQL channel binding.
 
-It reports:
-- host
-- database name
-- username
-- password length
-- whether password has leading/trailing whitespace
-- sslmode
-- channel_binding
+IMPORTANT:
+- Do NOT reset/delete/recreate the Neon database or branch.
+- Do NOT clear or overwrite existing member data.
+- Keep the existing DATABASE_URL; no password reset is required for this test.
+- This is a temporary diagnostic build. After the connection is confirmed, return to the production server build and remove diagnostic logging.
 
-Upload/replace ONLY server.js in the GitHub repository.
-Do not change member.html, admin.html, or database files.
-
-After AIC Redeploy, check Logs for:
-DATABASE_URL diagnostic: {...}
-
-Do NOT paste the password into chat or screenshots.
+Deploy the included server.js + package.json to the existing AIC Cloud BORNTOWIN5 app and redeploy. Then check logs for either:
+- Persistent database loaded / initialized, or
+- the exact remaining PostgreSQL connection error.

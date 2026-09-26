@@ -36,12 +36,12 @@ const DB_FILE=process.env.DB_FILE || path.join(__dirname,'data','db.json');
 fs.mkdirSync(path.dirname(DB_FILE),{recursive:true});
 function freshDB(){return {adminPassword:'ADMIN',members:[],pins:[],messages:[],passwordResetRequests:[],leveltrackRequests:[],leveltrackUpgrades:[],leveltrackPayments:[],leveltrackMessages:[],paymentSettings:{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}}};}
 function load(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch(e){return freshDB()}}
-const pool=process.env.DATABASE_URL?new Pool({connectionString:String(process.env.DATABASE_URL).replace(/([?&])sslmode=[^&]*&?/i,'$1').replace(/([?&])channel_binding=[^&]*&?/i,'$1').replace(/[?&]$/,''),ssl:process.env.DATABASE_SSL==='false'?false:{rejectUnauthorized:false},enableChannelBinding:true}):null;
+const pool=process.env.DATABASE_URL?new Pool({connectionString:String(process.env.DATABASE_URL).replace(/([?&])sslmode=[^&]*&?/i,'$1').replace(/([?&])channel_binding=[^&]*&?/i,'$1').replace(/[?&]$/,''),ssl:process.env.DATABASE_SSL==='false'?false:{rejectUnauthorized:false},enableChannelBinding:false}):null;
 if(process.env.DATABASE_URL){
   try{
     const u=new URL(String(process.env.DATABASE_URL));
     const rawPassword=u.password||'';
-    console.log('DATABASE_URL diagnostic:',JSON.stringify({
+    console.log('DATABASE_URL diagnostic (channel binding disabled):',JSON.stringify({
       configured:true,
       protocol:u.protocol,
       host:u.hostname,
