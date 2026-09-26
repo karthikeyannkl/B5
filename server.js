@@ -9,9 +9,14 @@ app.use(express.static(__dirname));
 
 const mailer=nodemailer.createTransport({host:process.env.SMTP_HOST||'mail.aiccloud.in',port:Number(process.env.SMTP_PORT||587),secure:false,auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}});
 const EMAIL_FROM=process.env.EMAIL_FROM||process.env.SMTP_USER;
+console.log('SMTP diagnostic: HOST='+(process.env.SMTP_HOST?'configured':'missing')+' PORT='+(process.env.SMTP_PORT?'configured':'missing')+' USER='+(process.env.SMTP_USER?'configured':'missing')+' PASS='+(process.env.SMTP_PASS?'configured':'missing')+' FROM='+(process.env.EMAIL_FROM?'configured':'missing'));
+mailer.verify().then(()=>console.log('AIC Cloud SMTP connection verified')).catch(err=>console.error('AIC Cloud SMTP verification failed:',err.message));
 function sendRegistrationEmail(member){
-  if(!member.email||!EMAIL_FROM||!process.env.SMTP_USER||!process.env.SMTP_PASS)return;
-  mailer.sendMail({from:EMAIL_FROM,to:member.email,subject:'BORNTOWIN5 - Registration Successful',text:`Hello ${member.name},\n\nYour BORNTOWIN5 registration was successful.\n\nMember ID: ${member.memberId}\nMobile: ${member.mobile}\n\nThank you for joining BORNTOWIN5.`}).catch(err=>console.error('Registration email failed:',err.message));
+  if(!member.email){console.error('Registration email skipped: member email is missing');return;}
+  if(!EMAIL_FROM||!process.env.SMTP_USER||!process.env.SMTP_PASS){console.error('Registration email skipped: SMTP credentials are not configured');return;}
+  mailer.sendMail({from:EMAIL_FROM,to:member.email,subject:'BORNTOWIN5 - Registration Successful',text:`Hello ${member.name},\n\nYour BORNTOWIN5 registration was successful.\n\nMember ID: ${member.memberId}\nMobile: ${member.mobile}\n\nThank you for joining BORNTOWIN5.`})
+    .then(info=>console.log('Registration email sent to '+member.email+' messageId='+info.messageId))
+    .catch(err=>console.error('Registration email failed:',err.message));
 }
 
 const DB_FILE=path.join(__dirname,'data','db.json');
