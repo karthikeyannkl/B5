@@ -1,16 +1,17 @@
-BORNTOWIN5 – EXPLICIT POSTGRES AUTH TEST
+BORNTOWIN5 - SAFE DATABASE CONNECTION TEST
 
-Purpose: diagnose Neon authentication without resetting, deleting, or recreating any database data.
+IMPORTANT:
+This test server does NOT create, update, or delete any database table or data.
+It only runs SELECT 1 against DATABASE_URL.
+It never logs the database password.
 
-This build parses DATABASE_URL and passes host/user/database/password explicitly to node-postgres.
-It disables channel binding and uses SSL with certificate verification disabled, matching the previous test.
-It runs a SELECT current_user/current_database authentication test before the normal app_state initialization.
+AIC deployment:
+1. Do NOT replace the production BORNTOWIN5 main deployment unless you intentionally want a temporary test.
+2. If possible, deploy this as a separate test app/repository/branch.
+3. Keep the same DATABASE_URL environment variable.
+4. Open /db-test on the deployed test URL.
+5. A successful response is:
+   {"ok":true,"message":"PostgreSQL authentication and connection successful","result":{"ok":1}}
+6. If it fails, the response/log will show the exact PostgreSQL error without exposing the password.
 
-Do NOT reset the Neon password again. Do NOT delete/recreate the Neon database or branch.
-
-Expected useful log:
-DATABASE AUTH TEST: SUCCESS ...
-
-If it still says:
-DATABASE AUTH TEST: FAILED password authentication failed for user "neondb_owner"
-then the PostgreSQL server itself is rejecting the credential supplied by AIC, and we should investigate the credential/role value rather than changing application code or data.
+After testing, restore the production server.js. No database reset is required.
