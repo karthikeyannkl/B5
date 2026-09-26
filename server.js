@@ -137,7 +137,9 @@ app.post('/api/member/register',(req,res)=>{
  if(String(b.referral||'FIRST MEMBER').toUpperCase()!=='FIRST MEMBER'){const ref=String(b.referral||'').trim().toUpperCase();const parent=db.members.find(x=>x.memberId===ref||x.referralId===ref||referralCode(x.memberId)===ref);if(!parent)return res.status(400).json({error:'Invalid Referral ID'});parentId=parent.memberId;}
  const memberId=id();
  const m={...b,memberId,referralId:referralCode(memberId),referral:parentId,status:'Pending',registeredAt:new Date().toISOString(),passwordHash:hashPassword(b.password)};
- delete m.pin;delete m.password;db.members.push(m);pr.status='USED';pr.usedBy=m.memberId;pr.usedAt=new Date().toISOString();save(db);res.json({member:memberPublic(m)});
+ delete m.pin;delete m.password;db.members.push(m);pr.status='USED';pr.usedBy=m.memberId;pr.usedAt=new Date().toISOString();save(db);
+ if(m.email){sendEmail(m.email,'BORNTOWIN5 - Registration Successful',`Hello ${m.name},\n\nYour BORNTOWIN5 registration was successful.\n\nMember ID: ${m.memberId}\nMobile: ${m.mobile}\n\nThank you for joining BORNTOWIN5.`).then(()=>console.log('Registration email sent: '+m.email)).catch(err=>console.error('Registration email failed:',err.message));}
+ res.json({member:memberPublic(m)});
 });
 app.post('/api/admin/member-profile/:id',(req,res)=>{const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});const b=req.body||{};for(const k of ['name','place','accountHolder','bank','account','ifsc','branch','upi'])if(b[k]!==undefined)m[k]=String(b[k]).trim();if(!m.name||!m.place||!m.accountHolder||!m.bank||!m.account||!m.ifsc||!m.branch||!m.upi)return res.status(400).json({error:'Please complete all profile and bank details'});m.profileLocked=true;save(db);res.json({ok:true,member:memberPublic(m),profile:memberProfile(m)});});
 app.get('/api/member/profile/:id',(req,res)=>{const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});res.json({profile:memberProfile(m)})});
