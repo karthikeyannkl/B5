@@ -1,14 +1,12 @@
-BORNTOWIN5 - Payment Proof + Admin Request Fix
+BORNTOWIN5 SAFE LEVELTRACK FIX
 
-1. Member payment proof form:
-   - UTR / Transaction ID and screenshot inputs no longer disappear while typing/uploading.
-   - Background refresh will not rebuild the payment form while a payment proof draft is being edited.
-   - After successful submission, the draft lock is cleared and the latest server state loads.
-   - Existing server endpoint /api/leveltrack/member/upgrade/:id/pay is used; no database schema change.
+IMPORTANT:
+Replace ONLY these two existing files:
+1. leveltrack-admin.html
+2. leveltrack-member.html
 
-2. Admin Upgrade Request & Approval:
-   - Before processing: SELECT REQUEST.
-   - After payment details are sent: SELECT REQUEST changes to a checked REQUEST SENT state.
-   - Existing ADMIN APPROVE & COMPLETE flow remains available when receiver confirmation is complete.
+DO NOT replace admin.html, member.html, server.js, or any other file.
 
-Deploy the updated member.html and admin.html with the existing server.js.
+Fixes only:
+- Member payment UTR/screenshot fields no longer get wiped by the 5-second auto refresh while a payment proof is being entered/selected.
+- Admin Upgrade Request & Approval now shows SELECT REQUEST for a new request and ✓ REQUEST SENT after payment details are sent, without changing the existing page design/layout.
