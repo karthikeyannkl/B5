@@ -1,22 +1,14 @@
-BORNTOWIN5 - SENIORITY + REQUEST UI CORRECTION
+BORNTOWIN5 - Payment Proof + Admin Request Fix
 
-ONLY THESE CORRECTIONS:
-1. MANUAL/AUTO Seniority mode and Starting Member IDs are saved in existing paymentSettings and remain after reload.
-2. MANUAL mode uses the configured starting Member ID when that member is ACTIVE; if completed/unavailable, the next eligible seniority member is used.
-3. Admin next-receiver API now returns the active mode so the UI can display MANUAL or AUTO correctly.
-4. When an Admin clicks SELECT REQUEST, the payment panel immediately shows REQUEST SELECTED / pending status and scrolls to the panel.
-5. The receiver box clearly shows MANUAL SENIORITY RECEIVER or AUTO SENIORITY RECEIVER.
-6. If MANUAL starting member is unavailable, the UI clearly explains the fallback instead of looking unchanged.
+1. Member payment proof form:
+   - UTR / Transaction ID and screenshot inputs no longer disappear while typing/uploading.
+   - Background refresh will not rebuild the payment form while a payment proof draft is being edited.
+   - After successful submission, the draft lock is cleared and the latest server state loads.
+   - Existing server endpoint /api/leveltrack/member/upgrade/:id/pay is used; no database schema change.
 
-NOT CHANGED:
-- Supabase persistence
-- Existing database/data
-- Email system
-- Member/referral data
-- Payment/approval flow
-- Other Admin/Member functions
-- No reset/delete/seed operation
+2. Admin Upgrade Request & Approval:
+   - Before processing: SELECT REQUEST.
+   - After payment details are sent: SELECT REQUEST changes to a checked REQUEST SENT state.
+   - Existing ADMIN APPROVE & COMPLETE flow remains available when receiver confirmation is complete.
 
-FILES TO REPLACE:
-- server.js
-- leveltrack-admin.html
+Deploy the updated member.html and admin.html with the existing server.js.
