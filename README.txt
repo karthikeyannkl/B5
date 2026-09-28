@@ -1,24 +1,22 @@
-BORNTOWIN5 – CONFIRMED CORRECTIONS ONLY
+BORNTOWIN5 - SENIORITY + REQUEST UI CORRECTION
 
-1. Email notifications connected for the existing SMTP flow:
-   - Registration Successful
-   - Password Reset Approved
-   - Password Changed
-   - Level Upgrade Request Received
-   - Payment Proof Submitted
-   - Payment Accepted
-   - Level Upgrade Completed
+ONLY THESE CORRECTIONS:
+1. MANUAL/AUTO Seniority mode and Starting Member IDs are saved in existing paymentSettings and remain after reload.
+2. MANUAL mode uses the configured starting Member ID when that member is ACTIVE; if completed/unavailable, the next eligible seniority member is used.
+3. Admin next-receiver API now returns the active mode so the UI can display MANUAL or AUTO correctly.
+4. When an Admin clicks SELECT REQUEST, the payment panel immediately shows REQUEST SELECTED / pending status and scrolls to the panel.
+5. The receiver box clearly shows MANUAL SENIORITY RECEIVER or AUTO SENIORITY RECEIVER.
+6. If MANUAL starting member is unavailable, the UI clearly explains the fallback instead of looking unchanged.
 
-2. Level Upgrade Request status:
-   - Member sees a clear PENDING message after submitting a request.
-   - Re-opening the Level Tracking page continues to show the pending state until Admin processing is completed.
-   - Duplicate pending requests remain blocked.
+NOT CHANGED:
+- Supabase persistence
+- Existing database/data
+- Email system
+- Member/referral data
+- Payment/approval flow
+- Other Admin/Member functions
+- No reset/delete/seed operation
 
-3. Seniority receiver control:
-   - Admin can set a starting receiver Member ID for each target level.
-   - MANUAL mode uses that starting Member ID while it is active.
-   - Once that starting receiver completes its required earnings, the system falls back to the next eligible seniority member automatically.
-   - AUTO mode uses seniority order automatically.
-
-No database reset/delete/clear operation is included.
-Existing data is not intentionally modified by this correction package.
+FILES TO REPLACE:
+- server.js
+- leveltrack-admin.html
