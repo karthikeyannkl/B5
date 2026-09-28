@@ -1,12 +1,9 @@
-BORNTOWIN5 SAFE LEVELTRACK FIX
+BORNTOWIN5 DB CONNECTION TEST V2
 
-IMPORTANT:
-Replace ONLY these two existing files:
-1. leveltrack-admin.html
-2. leveltrack-member.html
+Purpose: test only whether AIC Cloud can authenticate to PostgreSQL using DATABASE_URL.
 
-DO NOT replace admin.html, member.html, server.js, or any other file.
+The ROOT URL (/) and /db-test both execute SELECT 1.
+No table is created. No data is inserted, updated, or deleted.
+The password is never logged.
 
-Fixes only:
-- Member payment UTR/screenshot fields no longer get wiped by the 5-second auto refresh while a payment proof is being entered/selected.
-- Admin Upgrade Request & Approval now shows SELECT REQUEST for a new request and ✓ REQUEST SENT after payment details are sent, without changing the existing page design/layout.
+Deploy this temporary test instead of production only for diagnosis.

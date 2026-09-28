@@ -109,22 +109,8 @@ function renderHistory(){const a=state.lt.upgradeHistory||[];$('history').innerH
 async function loadReceiver(){const mid=id();if(!mid)return;try{const d=await api('/api/leveltrack/member/dashboard/'+encodeURIComponent(mid));const p=(d.incomingPayments||[]).find(x=>!x.memberAccepted&&!x.adminApproved);if(!p){$('receiverContent').innerHTML='<div class="note">No incoming payment confirmation is waiting for you.</div>';$('receiverButtons').innerHTML='';return}$('receiverContent').innerHTML='<div class="success"><b>PAYMENT TO CONFIRM</b></div>'+detail('Payment Sent By Member ID',p.fromMemberId)+detail('Upgrade','L'+p.from+' → L'+p.to)+detail('Amount','₹ '+(p.amount||'—'))+detail('UTR',p.utr||'—');$('receiverButtons').innerHTML='<button class="primary" onclick="receiverAction(\''+p.id+'\')">✓ PAYMENT RECEIVED</button>'}catch(e){$('receiverContent').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}}
 async function receiverAction(pid){try{await api('/api/leveltrack/member/incoming/'+encodeURIComponent(pid)+'/accept',{method:'POST',body:JSON.stringify({memberId:id()})});alert('Payment received confirmed.');await load();await loadReceiver()}catch(e){alert(e.message)}}
 function copyReferral(){navigator.clipboard?.writeText($('refLink').value);alert('Referral link copied.')}
-function b5HasPaymentDraft(){
-  const box=$('memberPayment');
-  if(!box)return false;
-  const inputs=box.querySelectorAll('input');
-  for(const el of inputs){
-    if(el.type==='file' && el.files && el.files.length)return true;
-    if(el.type!=='file' && String(el.value||'').trim())return true;
-  }
-  return false;
-}
-function b5SafeAutoRefresh(){
-  if(b5HasPaymentDraft())return;
-  load();
-}
-setInterval(b5SafeAutoRefresh,5000);
-setInterval(()=>{if(!$('receiver').classList.contains('hidden'))loadReceiver()},5000);load();
+function hasUnsavedPaymentProofs(){return Array.from(document.querySelectorAll('#memberPayment input[id^=\"utr_\"]')).some(x=>x.value.trim())||Array.from(document.querySelectorAll('#memberPayment input[type=\"file\"]')).some(x=>x.files&&x.files.length>0)}
+setInterval(()=>{if(!hasUnsavedPaymentProofs())load()},5000);setInterval(()=>{if(!$('receiver').classList.contains('hidden'))loadReceiver()},5000);load();
 </script><script id="b5-unified-accordion">
 (function(){
   function makeCardAccordion(card){
