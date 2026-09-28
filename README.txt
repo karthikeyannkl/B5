@@ -1,9 +1,21 @@
-BORNTOWIN5 DB CONNECTION TEST V2
+BORNTOWIN5 – Registration Email Only Fix
 
-Purpose: test only whether AIC Cloud can authenticate to PostgreSQL using DATABASE_URL.
+Replace only the existing server.js in the live BORNTOWIN5 project with this server.js.
 
-The ROOT URL (/) and /db-test both execute SELECT 1.
-No table is created. No data is inserted, updated, or deleted.
-The password is never logged.
+This correction adds only the Registration Successful email after the member is saved.
+No database reset/delete, Supabase persistence, member data, UI, or other application logic is changed.
 
-Deploy this temporary test instead of production only for diagnosis.
+Required existing AIC Cloud environment variables (do not change them):
+SMTP_HOST
+SMTP_PORT
+SMTP_USER
+SMTP_PASS
+EMAIL_FROM
+SUPABASE_URL
+SUPABASE_SECRET_KEY
+
+After deployment, register a test member using a valid email and check the inbox.
+AIC Logs should show either:
+Registration Successful email sent: B5-...
+or
+Registration email failed: ...
