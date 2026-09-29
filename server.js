@@ -33,7 +33,7 @@ app.use(express.static(__dirname));
 
 const DB_FILE=process.env.DB_FILE || path.join(__dirname,'data','db.json');
 fs.mkdirSync(path.dirname(DB_FILE),{recursive:true});
-function freshDB(){return {adminPassword:'ADMIN',backupMeta:{lastBackupAt:null},members:[],pins:[],messages:[],passwordResetRequests:[],leveltrackRequests:[],leveltrackUpgrades:[],leveltrackPayments:[],leveltrackMessages:[],paymentSettings:{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}}};}
+function freshDB(){return {adminPassword:'ADMIN',members:[],pins:[],messages:[],passwordResetRequests:[],leveltrackRequests:[],leveltrackUpgrades:[],leveltrackPayments:[],leveltrackMessages:[],paymentSettings:{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}}};}
 function load(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch(e){return freshDB()}}
 
 // Permanent persistence: AIC hosts the app; Supabase stores the single source of truth.
@@ -95,7 +95,7 @@ async function initPersistentDatabase(){
 // Backward-compatible defaults for existing db.json files.
 db.members=db.members||[];db.pins=db.pins||[];db.messages=db.messages||[];db.passwordResetRequests=db.passwordResetRequests||[];
 db.leveltrackRequests=db.leveltrackRequests||[];db.leveltrackUpgrades=db.leveltrackUpgrades||[];
-db.leveltrackPayments=db.leveltrackPayments||[];db.leveltrackMessages=db.leveltrackMessages||[];db.backupMeta=db.backupMeta||{lastBackupAt:null};db.paymentSettings=db.paymentSettings||{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}};db.paymentSettings.admins=db.paymentSettings.admins||[];db.paymentSettings.trust=db.paymentSettings.trust||{name:'Registered Trust',account:'TEMP-TRUST-001'};db.paymentSettings.adminRotationIndex=Number(db.paymentSettings.adminRotationIndex||0);
+db.leveltrackPayments=db.leveltrackPayments||[];db.leveltrackMessages=db.leveltrackMessages||[];db.paymentSettings=db.paymentSettings||{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}};db.paymentSettings.admins=db.paymentSettings.admins||[];db.paymentSettings.trust=db.paymentSettings.trust||{name:'Registered Trust',account:'TEMP-TRUST-001'};db.paymentSettings.adminRotationIndex=Number(db.paymentSettings.adminRotationIndex||0);
 // First Joining PIN required by the original BORNTOWIN5 registration flow.
 if(!db.pins.some(x=>(x.pin==='PIN-START1'||x.pin==='B5-FMUXNF') && x.status==='AVAILABLE')){
   const old=db.pins.find(x=>x.pin==='PIN-START1')||db.pins.find(x=>x.pin==='B5-FMUXNF');
@@ -192,7 +192,7 @@ app.post('/api/member/register',(req,res)=>{
  if(String(b.referral||'FIRST MEMBER').toUpperCase()!=='FIRST MEMBER'){const ref=String(b.referral||'').trim().toUpperCase();const parent=db.members.find(x=>x.memberId===ref||x.referralId===ref||referralCode(x.memberId)===ref);if(!parent)return res.status(400).json({error:'Invalid Referral ID'});parentId=parent.memberId;}
  const memberId=id();
  const m={...b,memberId,referralId:referralCode(memberId),referral:parentId,status:'Pending',registeredAt:new Date().toISOString(),passwordHash:hashPassword(b.password)};
- delete m.pin;delete m.password;db.members.push(m);pr.status='USED';pr.usedBy=m.memberId;pr.usedAt=new Date().toISOString();save(db);res.json({member:memberPublic(m)});
+ delete m.pin;delete m.password;db.members.push(m);pr.status='USED';pr.usedBy=m.memberId;pr.usedAt=new Date().toISOString();save(db);sendEmail(m.email||m.rEmail,'BORNTOWIN5 - Registration Successful',`Hello ${m.name},\n\nYour BORNTOWIN5 registration was successful.\nMember ID: ${m.memberId}\nMobile: ${m.mobile}\n\nThank you for joining BORNTOWIN5.`).then(()=>console.log('Registration Successful email sent:',m.memberId)).catch(e=>console.error('Registration email failed:',e.message));res.json({member:memberPublic(m)});
 });
 app.post('/api/admin/member-profile/:id',(req,res)=>{const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});const b=req.body||{};for(const k of ['name','place','accountHolder','bank','account','ifsc','branch','upi'])if(b[k]!==undefined)m[k]=String(b[k]).trim();if(!m.name||!m.place||!m.accountHolder||!m.bank||!m.account||!m.ifsc||!m.branch||!m.upi)return res.status(400).json({error:'Please complete all profile and bank details'});m.profileLocked=true;save(db);res.json({ok:true,member:memberPublic(m),profile:memberProfile(m)});});
 app.get('/api/member/profile/:id',(req,res)=>{const m=db.members.find(x=>x.memberId===req.params.id);if(!m)return res.status(404).json({error:'Member not found'});res.json({profile:memberProfile(m)})});
@@ -228,26 +228,7 @@ function splitRule(from){const r=LEVEL_RULES[Number(from)]||{upgrade:0,member:0,
 function activeAdminAccounts(){return (db.paymentSettings.admins||[]).filter(x=>x.active!==false);}
 function allocateAdminAccount(){const a=activeAdminAccounts();if(!a.length)return null;const idx=Number(db.paymentSettings.adminRotationIndex||0)%a.length;const chosen=a[idx];db.paymentSettings.adminRotationIndex=(idx+1)%a.length;return {...chosen};}
 function earningsRequired(level){return ({2:5,3:10,4:10,5:5,6:5,7:5})[Number(level)]||0;}
-function seniorityQueue(level){
-  const target=Number(level);
-  const root=db.members.find(m=>String(m.referral||'').toUpperCase()==='FIRST MEMBER');
-  const members=db.members.filter(m=>{
-    if(root&&m.memberId===root.memberId)return true;
-    const reached=m.levelReachedAt&&m.levelReachedAt[target];
-    return !!reached || Number(m.level||1)>=target;
-  }).sort((a,b)=>{
-    if(root){
-      if(a.memberId===root.memberId)return -1;
-      if(b.memberId===root.memberId)return 1;
-    }
-    return String((a.levelReachedAt&&a.levelReachedAt[target])||a.upgradeDate||a.joinedAt||a.registeredAt||'').localeCompare(String((b.levelReachedAt&&b.levelReachedAt[target])||b.upgradeDate||b.joinedAt||b.registeredAt||''));
-  });
-  return members.map((m,i)=>{
-    const completed=db.leveltrackPayments.filter(p=>p.receiverMemberId===m.memberId&&p.adminApproved&&Number(db.leveltrackUpgrades.find(u=>u.id===p.upgradeId)?.to)===target).length;
-    const required=earningsRequired(target);
-    return {position:i+1,memberId:m.memberId,name:m.name,mobile:m.mobile,completed,required,status:completed>=required?'COMPLETED':'ACTIVE'};
-  });
-}
+function seniorityQueue(level){const target=Number(level);const members=db.members.filter(m=>{const reached=m.levelReachedAt&&m.levelReachedAt[target];return !!reached || Number(m.level||1)>=target;}).sort((a,b)=>String((a.levelReachedAt&&a.levelReachedAt[target])||a.upgradeDate||a.joinedAt||a.registeredAt||'').localeCompare(String((b.levelReachedAt&&b.levelReachedAt[target])||b.upgradeDate||b.joinedAt||b.registeredAt||'')));return members.map((m,i)=>{const completed=db.leveltrackPayments.filter(p=>p.receiverMemberId===m.memberId&&p.adminApproved&&Number(db.leveltrackUpgrades.find(u=>u.id===p.upgradeId)?.to)===target).length;const required=earningsRequired(target);return {position:i+1,memberId:m.memberId,name:m.name,mobile:m.mobile,completed,required,status:completed>=required?'COMPLETED':'ACTIVE'};});}
 function nextSeniorReceiver(level){return seniorityQueue(level).find(x=>x.status==='ACTIVE')||null;}
 function nextLevelMemberId(level){
   const prefix='L'+level+'-';
@@ -277,9 +258,12 @@ function ltDashboard(memberId){
   if(!m.level)m.level=1;
   if(m.status==='Verified'&&!m.levelMemberId)m.levelMemberId=nextLevelMemberId(m.level);
   const requests=db.leveltrackRequests.filter(r=>r.memberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
-  const latestRequest=requests[0]||null;
+  // Only an active/incomplete request for the member's CURRENT level may drive the upgrade UI.
+  // Completed requests must never block the next-level upgrade.
+  const currentFrom=Number(m.level||1);
+  const latestRequest=requests.find(r=>String(r.status||'').toLowerCase()!=='completed' && Number(r.from)===currentFrom && Number(r.to)===currentFrom+1) || null;
   const relatedUpgrades=db.leveltrackUpgrades.filter(u=>u.memberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
-  let upgrade=(latestRequest && db.leveltrackUpgrades.find(u=>u.requestId===latestRequest.id)) || relatedUpgrades[0] || null;
+  let upgrade=(latestRequest && db.leveltrackUpgrades.find(u=>u.requestId===latestRequest.id && !u.adminApproved && Number(u.from)===currentFrom && Number(u.to)===currentFrom+1)) || null;
   if(upgrade && latestRequest){ upgrade={...latestRequest,...upgrade}; }
   if(!upgrade && latestRequest && latestRequest.status==='Assigned'){ upgrade={...latestRequest}; }
   if(upgrade && String(upgrade.status||'').toLowerCase()==='assigned') { const saved=db.leveltrackPayments.find(p=>p.upgradeId===upgrade.id); upgrade={...upgrade,payment:saved||{payee:upgrade.payee||'',payeeId:upgrade.payeeId||'',payeePhone:upgrade.payeePhone||'',accountHolder:upgrade.accountHolder||'',bank:upgrade.bank||'',account:upgrade.account||'',ifsc:upgrade.ifsc||'',branch:upgrade.branch||'',upi:upgrade.upi||'',amount:upgrade.amount||0,parts:upgrade.paymentParts||[]}}; }
@@ -299,37 +283,6 @@ app.get('/api/leveltrack/admin/dashboard',(req,res)=>{
   res.json({levels,members:db.members.map(memberPublic),requests:db.leveltrackRequests.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),upgrades:db.leveltrackUpgrades.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),payments:db.leveltrackPayments.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),paymentSettings:db.paymentSettings,seniority:{2:seniorityQueue(2),3:seniorityQueue(3),4:seniorityQueue(4),5:seniorityQueue(5),6:seniorityQueue(6),7:seniorityQueue(7)}});
 });
 app.get('/api/leveltrack/admin/members',(req,res)=>res.json({members:findMember(req.query.q).map(memberPublic)}));
-// Admin backup: keep full member/profile/referral/level/payment-status data, but intentionally omit payment screenshots and authentication secrets.
-function backupClean(value,key=''){
-  if(Array.isArray(value)) return value.map(v=>backupClean(v,key));
-  if(value && typeof value==='object'){
-    const out={};
-    for(const [k,v] of Object.entries(value)){
-      const lk=k.toLowerCase();
-      if(lk==='screenshot' || lk==='paymentscreenshot' || lk==='passwordhash' || lk==='password' || lk==='pin') continue;
-      out[k]=backupClean(v,k);
-    }
-    return out;
-  }
-  return value;
-}
-app.get('/api/leveltrack/admin/backup',(req,res)=>{
-  const createdAt=new Date().toISOString();
-  db.backupMeta={...(db.backupMeta||{}),lastBackupAt:createdAt};
-  save(db);
-  const backup={backupVersion:1,createdAt,scope:'BORNTOWIN5 Level Tracking + Member Data (payment screenshots excluded)',data:backupClean(db)};
-  res.setHeader('Content-Disposition',`attachment; filename=borntowin5-leveltrack-backup-${createdAt.slice(0,10)}.json`);
-  res.type('application/json').send(JSON.stringify(backup,null,2));
-});
-app.get('/api/leveltrack/admin/storage-status',(req,res)=>{
-  try{
-    const snapshot=JSON.stringify(backupClean(db));
-    const usedMB=Number((Buffer.byteLength(snapshot,'utf8')/1024/1024).toFixed(4));
-    const totalMB=500;
-    const pct=Number(((usedMB/totalMB)*100).toFixed(2));
-    res.json({ok:true,usedMB,totalMB,percent:pct,supabaseConnected:!!supabaseReady,backupStatus:db.backupMeta?.lastBackupAt?'AVAILABLE':'NOT YET BACKED UP',lastBackupAt:db.backupMeta?.lastBackupAt||null,measurement:'Application backup snapshot size; Supabase project quota usage is not exposed by the REST API.'});
-  }catch(e){res.status(500).json({error:e.message})}
-});
 app.get('/api/leveltrack/admin/member-details/:id',(req,res)=>{
   const m=ltMember(req.params.id);if(!m)return res.status(404).json({error:'Member not found'});
   res.json({member:{...memberPublic(m),accountHolder:m.accountHolder||m.name||'',account:m.account||'',ifsc:m.ifsc||'',bank:m.bank||'',branch:m.branch||'',upi:m.upi||''},directReferrals:direct(m.memberId).length,totalDownline:downlineCount(m.memberId),tree:ltTree(m.memberId)});
@@ -380,9 +333,8 @@ app.get('/api/leveltrack/member/dashboard/:id',(req,res)=>{
 app.post('/api/leveltrack/member/upgrade-request',(req,res)=>{
   const m=ltMember(req.body.memberId);if(!m)return res.status(404).json({error:'Member not found'});
   const from=Number(m.level||1),to=from+1;if(from>=7)return res.status(400).json({error:'Level 7 is the final level'});
-  const required=LEVEL_RULES[from]?.required||0;const directCount=direct(m.memberId).length;if(required&&directCount<required)return res.status(400).json({error:`Need ${required-directCount} more direct referrals`});
   const pending=db.leveltrackRequests.find(r=>r.memberId===m.memberId&&r.status!=='Completed');if(pending)return res.status(400).json({error:'Upgrade request already pending'});
-  const r={id:'LTR-'+crypto.randomBytes(4).toString('hex').toUpperCase(),memberId:m.memberId,from,to,status:'Requested',directReferralCount:directCount,date:new Date().toISOString().slice(0,10),createdAt:new Date().toISOString()};db.leveltrackRequests.push(r);db.leveltrackMessages.push({to:'ADMIN',message:`New LevelTrack upgrade request: ${m.name} — L${from} → L${to}.`,at:new Date().toISOString()});save(db);res.json({ok:true,request:r});
+  const r={id:'LTR-'+crypto.randomBytes(4).toString('hex').toUpperCase(),memberId:m.memberId,from,to,status:'Requested',date:new Date().toISOString().slice(0,10),createdAt:new Date().toISOString()};db.leveltrackRequests.push(r);db.leveltrackMessages.push({to:'ADMIN',message:`New LevelTrack upgrade request: ${m.name} — L${from} → L${to}.`,at:new Date().toISOString()});save(db);res.json({ok:true,request:r});
 });
 app.post('/api/leveltrack/member/upgrade/:id/pay',(req,res)=>{const u=db.leveltrackUpgrades.find(x=>x.id===req.params.id);if(!u)return res.status(404).json({error:'Upgrade not found'});if(u.memberId!==req.body.memberId)return res.status(403).json({error:'Not your upgrade'});const p=db.leveltrackPayments.find(x=>x.upgradeId===u.id);if(!p)return res.status(404).json({error:'Payment instructions not found'});const proofs=Array.isArray(req.body.parts)?req.body.parts:[];if(!proofs.length)return res.status(400).json({error:'Payment proof required'});for(const proof of proofs){const part=p.parts.find(x=>x.type===proof.type);if(!part)continue;const utr=String(proof.utr||'').trim();if(!utr)return res.status(400).json({error:`UTR required for ${part.label}`});if(!proof.screenshot)return res.status(400).json({error:`Screenshot required for ${part.label}`});part.utr=utr;part.screenshot=proof.screenshot;part.submittedAt=new Date().toISOString();part.status='SUBMITTED';}const all=p.parts.every(x=>['SUBMITTED','CONFIRMED','APPROVED'].includes(x.status));if(!all)return res.status(400).json({error:'Upload payment proof for every payment section'});u.memberPaid=true;u.utr=p.parts.find(x=>x.type==='member')?.utr||'';u.paidAt=new Date().toISOString();p.utr=u.utr;p.memberPaid=true;p.submittedAt=new Date().toISOString();db.leveltrackMessages.push({to:u.payeeId,message:`Payment proofs submitted for L${u.from} → L${u.to}. Please confirm the receiver payment.`,at:new Date().toISOString()});save(db);res.json({ok:true,upgrade:u,payment:p});});
 app.post('/api/leveltrack/member/incoming/:id/accept',(req,res)=>{
@@ -400,23 +352,6 @@ app.get('/api/db-status',(req,res)=>res.json({ok:supabaseReady,persistence:'supa
 
 initPersistentDatabase()
   .then(()=>{
-    // First Company / First Member: only create when the database is genuinely empty.
-    // This member is the fixed seniority root (Rank #1) for Levels 1–7 without changing normal referral logic.
-    if(!Array.isArray(db.members)) db.members=[];
-    if(db.members.length===0){
-      const joinedAt=new Date().toISOString();
-      const firstMemberId=id();
-      db.members.push({
-        memberId:firstMemberId,referralId:referralCode(firstMemberId),
-        name:'BORNTOWIN',place:'Namakkal',mobile:'9345151709',email:'ksp.nkl@gmail.com',
-        referral:'FIRST MEMBER',status:'ACTIVE',level:1,levelMemberId:null,
-        registeredAt:joinedAt,joinedAt,levelReachedAt:{'1':joinedAt,'2':joinedAt,'3':joinedAt,'4':joinedAt,'5':joinedAt,'6':joinedAt,'7':joinedAt},
-        passwordHash:hashPassword('admin123'),mustChangePassword:false
-      });
-      db.backupMeta=db.backupMeta||{lastBackupAt:null};
-      save(db);
-      console.log('FIRST COMPANY MEMBER CREATED:',firstMemberId);
-    }
     localSave(db);
     app.listen(PORT,'0.0.0.0',()=>console.log('BORNTOWIN5 running on '+PORT));
   })
