@@ -228,7 +228,7 @@ function splitRule(from){const r=LEVEL_RULES[Number(from)]||{upgrade:0,member:0,
 function activeAdminAccounts(){return (db.paymentSettings.admins||[]).filter(x=>x.active!==false);}
 function allocateAdminAccount(){const a=activeAdminAccounts();if(!a.length)return null;const idx=Number(db.paymentSettings.adminRotationIndex||0)%a.length;const chosen=a[idx];db.paymentSettings.adminRotationIndex=(idx+1)%a.length;return {...chosen};}
 function earningsRequired(level){return ({2:5,3:10,4:10,5:5,6:5,7:5})[Number(level)]||0;}
-function seniorityQueue(level){const target=Number(level);const members=db.members.filter(m=>{const reached=m.levelReachedAt&&m.levelReachedAt[target];return !!reached || Number(m.level||1)>=target;}).sort((a,b)=>String((a.levelReachedAt&&a.levelReachedAt[target])||a.upgradeDate||a.joinedAt||a.registeredAt||'').localeCompare(String((b.levelReachedAt&&b.levelReachedAt[target])||b.upgradeDate||b.joinedAt||b.registeredAt||'')));return members.map((m,i)=>{const completed=db.leveltrackPayments.filter(p=>p.receiverMemberId===m.memberId&&p.adminApproved&&Number(db.leveltrackUpgrades.find(u=>u.id===p.upgradeId)?.to)===target).length;const required=earningsRequired(target);return {position:i+1,memberId:m.memberId,name:m.name,mobile:m.mobile,completed,required,status:completed>=required?'COMPLETED':'ACTIVE'};});}
+function seniorityQueue(level){const target=Number(level);const members=db.members.filter(m=>{const reached=m.levelReachedAt&&m.levelReachedAt[target];return !!reached || Number(m.level||1)>=target;}).sort((a,b)=>{const aFirst=String(a.memberId||'').toUpperCase()==='B5-958D0B',bFirst=String(b.memberId||'').toUpperCase()==='B5-958D0B';if(aFirst!==bFirst)return aFirst?-1:1;return String((a.levelReachedAt&&a.levelReachedAt[target])||a.upgradeDate||a.joinedAt||a.registeredAt||'').localeCompare(String((b.levelReachedAt&&b.levelReachedAt[target])||b.upgradeDate||b.joinedAt||b.registeredAt||''));});return members.map((m,i)=>{const completed=db.leveltrackPayments.filter(p=>p.receiverMemberId===m.memberId&&p.adminApproved&&Number(db.leveltrackUpgrades.find(u=>u.id===p.upgradeId)?.to)===target).length;const required=earningsRequired(target);return {position:i+1,memberId:m.memberId,name:m.name,mobile:m.mobile,completed,required,status:completed>=required?'COMPLETED':'ACTIVE'};});}
 function nextSeniorReceiver(level){return seniorityQueue(level).find(x=>x.status==='ACTIVE')||null;}
 function nextLevelMemberId(level){
   const prefix='L'+level+'-';
@@ -299,19 +299,27 @@ app.get('/api/leveltrack/admin/backup',(req,res)=>{
   res.setHeader('Content-Disposition',`attachment; filename=borntowin5-leveltrack-backup-${new Date().toISOString().slice(0,10)}.json`);
   res.type('application/json').send(JSON.stringify(backup,null,2));
 });
+app.get('/api/leveltrack/admin/usage',(req,res)=>{
+  let dataBytes=0;
+  try{dataBytes=Buffer.byteLength(JSON.stringify(db),'utf8')}catch{}
+  const softLimitBytes=500*1024*1024;
+  res.json({dataBytes,softLimitBytes,members:db.members.length,requests:db.leveltrackRequests.length,supabaseConfigured:!!(SUPABASE_URL&&SUPABASE_SECRET_KEY)});
+});
 app.get('/api/leveltrack/admin/member-details/:id',(req,res)=>{
   const m=ltMember(req.params.id);if(!m)return res.status(404).json({error:'Member not found'});
   res.json({member:{...memberPublic(m),accountHolder:m.accountHolder||m.name||'',account:m.account||'',ifsc:m.ifsc||'',bank:m.bank||'',branch:m.branch||'',upi:m.upi||''},directReferrals:direct(m.memberId).length,totalDownline:downlineCount(m.memberId),tree:ltTree(m.memberId)});
 });
 app.get('/api/leveltrack/admin/next-receiver/:level',(req,res)=>{
  const level=Number(req.params.level);if(![2,3,4,5,6,7].includes(level))return res.status(400).json({error:'Invalid target level'});
+ const check=String(req.query.check||'').trim();
+ if(check){const q=seniorityQueue(level);const found=q.find(x=>x.memberId===check&&x.status==='ACTIVE');const m=ltMember(check);return res.json({valid:!!found&&!!m&&m.status!=='Rejected',receiver:found||null});}
  const receiver=nextSeniorReceiver(level);
  if(!receiver)return res.json({receiver:null});
  res.json({receiver});
 });
 app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
  const r=db.leveltrackRequests.find(x=>x.id===req.params.id);if(!r)return res.status(404).json({error:'Upgrade request not found'});if(r.status!=='Requested')return res.status(400).json({error:'Request is not pending'});
- const m=ltMember(r.memberId);if(!m)return res.status(404).json({error:'Member not found'});const rule=LEVEL_RULES[r.from];const amount=Number(rule?.upgrade||0);if(!amount)return res.status(400).json({error:'Upgrade amount not configured'});const autoReceiver=nextSeniorReceiver(r.to);const receiver=autoReceiver?ltMember(autoReceiver.memberId):null;if(!receiver)return res.status(400).json({error:'No eligible seniority receiver is available for this level. Add a member to the level queue first.'});
+ const m=ltMember(r.memberId);if(!m)return res.status(404).json({error:'Member not found'});const rule=LEVEL_RULES[r.from];const amount=Number(rule?.upgrade||0);if(!amount)return res.status(400).json({error:'Upgrade amount not configured'});const requestedReceiverId=String(req.body?.receiverMemberId||'').trim();const queue=seniorityQueue(r.to);const autoReceiver=nextSeniorReceiver(r.to);const selectedReceiverId=requestedReceiverId||autoReceiver?.memberId||'';const selected=queue.find(x=>x.memberId===selectedReceiverId&&x.status==='ACTIVE');const receiver=selected?ltMember(selected.memberId):null;if(!receiver||receiver.status==='Rejected')return res.status(400).json({error:'Selected receiver is not an eligible ACTIVE senior for this level. Choose the next eligible senior.'});
  const sr=splitRule(r.from);const parts=sr.parts;const rec=parts.find(x=>x.type==='member');if(rec)rec.accountDetails={name:receiver.name,memberId:receiver.memberId,mobile:receiver.mobile,accountHolder:receiver.accountHolder||receiver.name||'',bank:receiver.bank||'',account:receiver.account||'',ifsc:receiver.ifsc||'',branch:receiver.branch||'',upi:receiver.upi||''};
  const tr=parts.find(x=>x.type==='trust');if(tr)tr.accountDetails={...db.paymentSettings.trust};const ap=parts.findIndex(x=>x.type==='admin');if(ap>=0){const aa=allocateAdminAccount();if(!aa)return res.status(400).json({error:'No active Admin account configured'});parts[ap].accountDetails=aa;}
  const now=new Date().toISOString();Object.assign(r,{status:'Assigned',assignedAt:now,payee:receiver.name||'',accountHolder:receiver.accountHolder||receiver.name||'',payeeId:receiver.memberId,payeePhone:receiver.mobile||'',amount,account:receiver.account||'',bank:receiver.bank||'',ifsc:receiver.ifsc||'',branch:receiver.branch||'',upi:receiver.upi||'',paymentParts:parts});
