@@ -398,7 +398,7 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('dashboard',this)">⌂ Dashboard</button>
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('membership',this)">◈ My Membership</button>
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('referrals',this)">↗ Direct Referrals</button>
-    <button class="uitem b5-subitem" onclick="uMemberLevelTrack('upgrade',this)">◆ Level Upgrade</button>
+    <button class="uitem b5-subitem" onclick="uMemberLevelTrackGuarded('upgrade',this)">◆ Level Upgrade</button>
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('earnings',this)">₹ My Earnings</button>
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('history',this)">◷ Upgrade History</button>
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('payment',this)">✓ Payment Confirmation</button>
@@ -436,7 +436,17 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
    window.scrollTo({top:0,behavior:'smooth'});
  }
  window.uMemberLevelTrackToggle=function(b){const box=document.getElementById('b5MemberLTOptions');box.classList.toggle('open');b.classList.toggle('open');};
- window.uMemberLevelTrack=function(section,b){document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');close();hideMemberContent();frame.classList.add('show');
+ window.uMemberLevelTrackGuarded=async function(section,b){
+ if(section!=='upgrade'){return window.uMemberLevelTrack(section,b);}
+ const mid=localStorage.getItem('BORNTOWIN5_MEMBER_ID');if(!mid)return;
+ try{
+  const r=await fetch('/api/member/profile/'+encodeURIComponent(mid));const d=await r.json();
+  const p=d.profile||{};const complete=!!(p.accountHolder&&p.bank&&p.account&&p.ifsc&&p.branch&&p.upi);
+  if(!complete){alert('Please complete your Bank Details in Profile before upgrading.');return;}
+  window.uMemberLevelTrack(section,b);
+ }catch(e){alert('Please complete your Bank Details in Profile before upgrading.');}
+}
+window.uMemberLevelTrack=function(section,b){document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');close();hideMemberContent();frame.classList.add('show');
    const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section},location.origin);
    if(frame.src.indexOf('/leveltrack-member.html')<0){frame.src='/leveltrack-member.html?v=13';frame.addEventListener('load',send,{once:true});} else send();
  }

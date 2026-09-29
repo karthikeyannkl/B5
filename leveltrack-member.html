@@ -66,7 +66,7 @@ body{background:radial-gradient(circle at 15% 0,#eef6f0 0,#f6f8f5 35%,#f3f4f1 10
 </main>
 <script>
 const milestones={1:3,2:6,3:9,4:12,5:15,6:18};
-let state={lt:null,memberDashboard:null,paymentDirty:false};
+let state={lt:null,memberDashboard:null};
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function id(){return localStorage.getItem('BORNTOWIN5_MEMBER_ID')||''}
@@ -90,7 +90,9 @@ function renderUpgrade(level,count){
  const u=state.lt.upgrade;const need=milestones[level]||0;
  if(level>=7){$('memberStatus').innerHTML='<div class="success"><b>✓ L7 ACTIVE</b><br>Final level completed.</div>';$('memberPayment').innerHTML='';return}
  if(!u&&count<need){const left=need-count;$('memberStatus').innerHTML=`<div class="warn">Need ${left} more direct referral${left===1?'':'s'} to unlock L${level} → L${level+1}.</div>`;$('memberPayment').innerHTML='';return}
- if(!u&&count>=need){$('memberStatus').innerHTML='<div class="success"><b>✓ Requirement Completed</b><br>You can request the next level.</div><button class="primary" onclick="requestUpgrade()">REQUEST L'+level+' → L'+(level+1)+' UPGRADE</button>';$('memberPayment').innerHTML='';return}
+ if(!u&&count>=need){
+   if(!state.lt.bankDetailsComplete){$('memberStatus').innerHTML='<div class="warn"><b>Bank Details Required</b><br>Please complete your Bank Details in Profile before upgrading.</div><button class="secondary" onclick="window.parent?.postMessage({type:&quot;LEVELTRACK_NAV&quot;,section:&quot;membership&quot;},location.origin)">GO TO PROFILE</button>';$('memberPayment').innerHTML='';return}
+   $('memberStatus').innerHTML='<div class="success"><b>✓ Requirement Completed</b><br>You can request the next level.</div><button class="primary" onclick="requestUpgrade()">REQUEST L'+level+' → L'+(level+1)+' UPGRADE</button>';$('memberPayment').innerHTML='';return}
  const p=u.payment;
  $('memberStatus').innerHTML=String(u.status||'').toLowerCase()==='assigned'?'<div class="success">✓ Payment details received from Admin for L'+u.from+' → L'+u.to+'</div>':'<div class="success">✓ Upgrade request: L'+u.from+' → L'+u.to+'</div>';
  if(!p){$('memberPayment').innerHTML='<div class="warn">Waiting for Admin to send payment details.</div>';return}
@@ -100,7 +102,7 @@ function renderUpgrade(level,count){
  if(p.adminApproved)h+='<div class="success"><b>✓ PAYMENT APPROVED</b><br>Level upgrade completed.</div>';else if(u.memberPaid)h+='<div class="success">✓ All payment proofs submitted. Waiting for Receiver confirmation and Admin approval.</div>';else h+='<button class="primary" onclick="submitPaymentProofs()">SUBMIT ALL PAYMENT PROOFS</button>';
  $('memberPayment').innerHTML=h;
 }
-async function submitPaymentProofs(){const u=state.lt.upgrade,p=u?.payment;if(!u||!p)return;const parts=Array.isArray(p.parts)?p.parts:[];const proofs=[];for(let i=0;i<parts.length;i++){const x=parts[i];if(['SUBMITTED','CONFIRMED','APPROVED'].includes(x.status)){proofs.push({type:x.type,utr:x.utr,screenshot:x.screenshot||'existing'});continue}const utr=document.getElementById('utr_'+i)?.value.trim();const file=document.getElementById('shot_'+i)?.files?.[0];if(!utr||!file)return alert('Please enter UTR and upload screenshot for '+x.label);if(file.size>2500000)return alert('Each screenshot must be 2.5 MB or less.');const screenshot=await readImage(file);proofs.push({type:x.type,utr,screenshot});}try{await api('/api/leveltrack/member/upgrade/'+encodeURIComponent(u.id)+'/pay',{method:'POST',body:JSON.stringify({memberId:id(),parts:proofs})});alert('Payment proofs submitted successfully.');state.paymentDirty=false;await load()}catch(e){alert(e.message)}}
+async function submitPaymentProofs(){const u=state.lt.upgrade,p=u?.payment;if(!u||!p)return;const parts=Array.isArray(p.parts)?p.parts:[];const proofs=[];for(let i=0;i<parts.length;i++){const x=parts[i];if(['SUBMITTED','CONFIRMED','APPROVED'].includes(x.status)){proofs.push({type:x.type,utr:x.utr,screenshot:x.screenshot||'existing'});continue}const utr=document.getElementById('utr_'+i)?.value.trim();const file=document.getElementById('shot_'+i)?.files?.[0];if(!utr||!file)return alert('Please enter UTR and upload screenshot for '+x.label);if(file.size>2500000)return alert('Each screenshot must be 2.5 MB or less.');const screenshot=await readImage(file);proofs.push({type:x.type,utr,screenshot});}try{await api('/api/leveltrack/member/upgrade/'+encodeURIComponent(u.id)+'/pay',{method:'POST',body:JSON.stringify({memberId:id(),parts:proofs})});alert('Payment proofs submitted successfully.');await load()}catch(e){alert(e.message)}}
 function readImage(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
 async function requestUpgrade(){try{await api('/api/leveltrack/member/upgrade-request',{method:'POST',body:JSON.stringify({memberId:id()})});alert('Upgrade request sent to Admin.');await load()}catch(e){alert(e.message)}}
 async function submitUTR(){const u=state.lt.upgrade,v=$('utrInput')?.value.trim();if(!u||!v)return alert('Enter UTR.');try{await api('/api/leveltrack/member/upgrade/'+encodeURIComponent(u.id)+'/pay',{method:'POST',body:JSON.stringify({memberId:id(),utr:v})});alert('UTR submitted. Receiver can now confirm.');await load()}catch(e){alert(e.message)}}
@@ -109,7 +111,7 @@ function renderHistory(){const a=state.lt.upgradeHistory||[];$('history').innerH
 async function loadReceiver(){const mid=id();if(!mid)return;try{const d=await api('/api/leveltrack/member/dashboard/'+encodeURIComponent(mid));const p=(d.incomingPayments||[]).find(x=>!x.memberAccepted&&!x.adminApproved);if(!p){$('receiverContent').innerHTML='<div class="note">No incoming payment confirmation is waiting for you.</div>';$('receiverButtons').innerHTML='';return}$('receiverContent').innerHTML='<div class="success"><b>PAYMENT TO CONFIRM</b></div>'+detail('Payment Sent By Member ID',p.fromMemberId)+detail('Upgrade','L'+p.from+' → L'+p.to)+detail('Amount','₹ '+(p.amount||'—'))+detail('UTR',p.utr||'—');$('receiverButtons').innerHTML='<button class="primary" onclick="receiverAction(\''+p.id+'\')">✓ PAYMENT RECEIVED</button>'}catch(e){$('receiverContent').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}}
 async function receiverAction(pid){try{await api('/api/leveltrack/member/incoming/'+encodeURIComponent(pid)+'/accept',{method:'POST',body:JSON.stringify({memberId:id()})});alert('Payment received confirmed.');await load();await loadReceiver()}catch(e){alert(e.message)}}
 function copyReferral(){navigator.clipboard?.writeText($('refLink').value);alert('Referral link copied.')}
-document.addEventListener('input',e=>{if(e.target.closest&&e.target.closest('#memberPayment'))state.paymentDirty=true});document.addEventListener('change',e=>{if(e.target.closest&&e.target.closest('#memberPayment'))state.paymentDirty=true});setInterval(()=>{if(!state.paymentDirty)load()},15000);setInterval(()=>{if(!$('receiver').classList.contains('hidden'))loadReceiver()},15000);load();
+setInterval(()=>{const editing=document.querySelector('#memberPayment input:not([readonly]):not([disabled]),#memberPayment textarea');if(!editing)load()},15000);setInterval(()=>{if(!$('receiver').classList.contains('hidden'))loadReceiver()},15000);load();
 </script><script id="b5-unified-accordion">
 (function(){
   function makeCardAccordion(card){
