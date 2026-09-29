@@ -33,7 +33,7 @@ app.use(express.static(__dirname));
 
 const DB_FILE=process.env.DB_FILE || path.join(__dirname,'data','db.json');
 fs.mkdirSync(path.dirname(DB_FILE),{recursive:true});
-function freshDB(){return {adminPassword:'ADMIN',members:[],pins:[],messages:[],passwordResetRequests:[],leveltrackRequests:[],leveltrackUpgrades:[],leveltrackPayments:[],leveltrackMessages:[],paymentSettings:{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}}};}
+function freshDB(){return {adminPassword:'ADMIN',backupMeta:{lastBackupAt:null},members:[],pins:[],messages:[],passwordResetRequests:[],leveltrackRequests:[],leveltrackUpgrades:[],leveltrackPayments:[],leveltrackMessages:[],paymentSettings:{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}}};}
 function load(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch(e){return freshDB()}}
 
 // Permanent persistence: AIC hosts the app; Supabase stores the single source of truth.
@@ -95,7 +95,7 @@ async function initPersistentDatabase(){
 // Backward-compatible defaults for existing db.json files.
 db.members=db.members||[];db.pins=db.pins||[];db.messages=db.messages||[];db.passwordResetRequests=db.passwordResetRequests||[];
 db.leveltrackRequests=db.leveltrackRequests||[];db.leveltrackUpgrades=db.leveltrackUpgrades||[];
-db.leveltrackPayments=db.leveltrackPayments||[];db.leveltrackMessages=db.leveltrackMessages||[];db.paymentSettings=db.paymentSettings||{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}};db.paymentSettings.admins=db.paymentSettings.admins||[];db.paymentSettings.trust=db.paymentSettings.trust||{name:'Registered Trust',account:'TEMP-TRUST-001'};db.paymentSettings.adminRotationIndex=Number(db.paymentSettings.adminRotationIndex||0);
+db.leveltrackPayments=db.leveltrackPayments||[];db.leveltrackMessages=db.leveltrackMessages||[];db.backupMeta=db.backupMeta||{lastBackupAt:null};db.paymentSettings=db.paymentSettings||{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}};db.paymentSettings.admins=db.paymentSettings.admins||[];db.paymentSettings.trust=db.paymentSettings.trust||{name:'Registered Trust',account:'TEMP-TRUST-001'};db.paymentSettings.adminRotationIndex=Number(db.paymentSettings.adminRotationIndex||0);
 // First Joining PIN required by the original BORNTOWIN5 registration flow.
 if(!db.pins.some(x=>(x.pin==='PIN-START1'||x.pin==='B5-FMUXNF') && x.status==='AVAILABLE')){
   const old=db.pins.find(x=>x.pin==='PIN-START1')||db.pins.find(x=>x.pin==='B5-FMUXNF');
@@ -295,30 +295,21 @@ function backupClean(value,key=''){
   return value;
 }
 app.get('/api/leveltrack/admin/backup',(req,res)=>{
-  const now=new Date().toISOString();
-  const backup={backupVersion:1,createdAt:now,scope:'BORNTOWIN5 Level Tracking + Member Data (payment screenshots excluded)',data:backupClean(db)};
-  db.backupMeta={lastBackupAt:now,status:'SUCCESS',scope:'Member + Level Tracking data; payment screenshots excluded'};
-  localSave(db);
-  if(supabaseReady){
-    const snapshot=JSON.parse(JSON.stringify(db));
-    supabaseSaveQueue=supabaseSaveQueue.then(async()=>{try{await supabaseFetch('app_state?id=eq.1',{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({data:snapshot})});}catch(e){console.error('Supabase backup-status save failed:',e.message);}});
-  }
-  const payload=JSON.stringify(backup,null,2);
-  res.setHeader('Content-Disposition',`attachment; filename=borntowin5-leveltrack-backup-${now.slice(0,10)}.json`);
-  res.type('application/json').send(payload);
+  const createdAt=new Date().toISOString();
+  db.backupMeta={...(db.backupMeta||{}),lastBackupAt:createdAt};
+  save(db);
+  const backup={backupVersion:1,createdAt,scope:'BORNTOWIN5 Level Tracking + Member Data (payment screenshots excluded)',data:backupClean(db)};
+  res.setHeader('Content-Disposition',`attachment; filename=borntowin5-leveltrack-backup-${createdAt.slice(0,10)}.json`);
+  res.type('application/json').send(JSON.stringify(backup,null,2));
 });
-app.get('/api/leveltrack/admin/storage-usage',(req,res)=>{
+app.get('/api/leveltrack/admin/storage-status',(req,res)=>{
   try{
-    const raw=JSON.stringify(db);
-    const usedBytes=Buffer.byteLength(raw,'utf8');
-    const limitBytes=500*1024*1024;
-    const percent=Math.min(100,(usedBytes/limitBytes)*100);
-    const filesDir=path.join(__dirname,'data');
-    let fileBytes=0;
-    if(fs.existsSync(filesDir)){for(const name of fs.readdirSync(filesDir)){const f=path.join(filesDir,name);try{if(fs.statSync(f).isFile())fileBytes+=fs.statSync(f).size}catch{}}}
-    const backupMeta=db.backupMeta||null;
-    res.json({ok:true,usedBytes,usedMB:Number((usedBytes/1048576).toFixed(3)),limitBytes,limitMB:500,percent:Number(percent.toFixed(4)),warning:percent>=80,critical:percent>=95,supabaseConfigured:!!(SUPABASE_URL&&SUPABASE_SECRET_KEY),supabaseReady,localDataBytes:fileBytes,backup:backupMeta});
-  }catch(e){res.status(500).json({ok:false,error:e.message});}
+    const snapshot=JSON.stringify(backupClean(db));
+    const usedMB=Number((Buffer.byteLength(snapshot,'utf8')/1024/1024).toFixed(4));
+    const totalMB=500;
+    const pct=Number(((usedMB/totalMB)*100).toFixed(2));
+    res.json({ok:true,usedMB,totalMB,percent:pct,supabaseConnected:!!supabaseReady,backupStatus:db.backupMeta?.lastBackupAt?'AVAILABLE':'NOT YET BACKED UP',lastBackupAt:db.backupMeta?.lastBackupAt||null,measurement:'Application backup snapshot size; Supabase project quota usage is not exposed by the REST API.'});
+  }catch(e){res.status(500).json({error:e.message})}
 });
 app.get('/api/leveltrack/admin/member-details/:id',(req,res)=>{
   const m=ltMember(req.params.id);if(!m)return res.status(404).json({error:'Member not found'});
@@ -390,6 +381,23 @@ app.get('/api/db-status',(req,res)=>res.json({ok:supabaseReady,persistence:'supa
 
 initPersistentDatabase()
   .then(()=>{
+    // First Company / First Member: only create when the database is genuinely empty.
+    // This member is the fixed seniority root (Rank #1) for Levels 1–7 without changing normal referral logic.
+    if(!Array.isArray(db.members)) db.members=[];
+    if(db.members.length===0){
+      const joinedAt=new Date().toISOString();
+      const firstMemberId=id();
+      db.members.push({
+        memberId:firstMemberId,referralId:referralCode(firstMemberId),
+        name:'BORNTOWIN',place:'Namakkal',mobile:'9345151709',email:'ksp.nkl@gmail.com',
+        referral:'FIRST MEMBER',status:'ACTIVE',level:1,levelMemberId:null,
+        registeredAt:joinedAt,joinedAt,levelReachedAt:{'1':joinedAt,'2':joinedAt,'3':joinedAt,'4':joinedAt,'5':joinedAt,'6':joinedAt,'7':joinedAt},
+        passwordHash:hashPassword('admin123'),mustChangePassword:false
+      });
+      db.backupMeta=db.backupMeta||{lastBackupAt:null};
+      save(db);
+      console.log('FIRST COMPANY MEMBER CREATED:',firstMemberId);
+    }
     localSave(db);
     app.listen(PORT,'0.0.0.0',()=>console.log('BORNTOWIN5 running on '+PORT));
   })
