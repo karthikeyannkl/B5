@@ -23,7 +23,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)
 .b5-accordion-head:after,.b5-account-card>h4:after{content:'⌄';font-size:16px;color:var(--b5-gold);transition:transform .2s ease}
 .b5-accordion-card.is-collapsed>.b5-accordion-head:after,.b5-account-card.is-collapsed>h4:after{transform:rotate(-90deg)}
 .b5-accordion-body{overflow:hidden;max-height:5000px;opacity:1;transition:max-height .25s ease,opacity .18s ease,padding .2s ease}
-.copy-pay-btn{margin-left:8px;padding:4px 9px;border:1px solid #0b644b;background:#fff;color:#075b45;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer}.copy-pay-btn:active{transform:scale(.97)}.b5-payment-detail{display:flex;align-items:center;justify-content:space-between;gap:8px}.b5-payment-detail>b{word-break:break-all;text-align:right}
+.copy-pay-btn{margin-left:5px;padding:2px 6px;border:1px solid #0b644b;background:#fff;color:#075b45;border-radius:5px;font-size:9px;line-height:16px;font-weight:800;cursor:pointer;min-width:38px;height:20px}.copy-pay-btn:active{transform:scale(.97)}.b5-payment-detail{display:flex;align-items:center;justify-content:space-between;gap:8px}.b5-payment-detail>b{word-break:break-all;text-align:right}
 .b5-accordion-card.is-collapsed>.b5-accordion-body,.b5-account-card.is-collapsed>.b5-account-body{max-height:0;opacity:0;overflow:hidden;padding-top:0!important;padding-bottom:0!important}
 .b5-accordion-card>.b5-accordion-head{padding:2px 0 8px;margin-bottom:2px}
 .b5-accordion-card.is-collapsed>.b5-accordion-head{margin-bottom:0}
@@ -71,7 +71,7 @@ let state={lt:null,memberDashboard:null};
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function id(){return localStorage.getItem('BORNTOWIN5_MEMBER_ID')||''}
-async function api(url,opt={}){const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opt});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.error||'Request failed');return d}
+async function api(url,opt={}){const method=String(opt.method||'GET').toUpperCase();const finalUrl=method==='GET'?(url+(url.includes('?')?'&':'?')+'_ts='+Date.now()):url;const r=await fetch(finalUrl,{cache:method==='GET'?'no-store':undefined,headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},...opt});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.error||'Request failed');return d}
 function view(v){$('member').classList.toggle('hidden',v!=='member');$('receiver').classList.toggle('hidden',v!=='receiver');document.querySelectorAll('.topnav button').forEach((b,i)=>b.classList.toggle('active',(i===0&&v==='member')||(i===1&&v==='receiver')));if(v==='receiver')loadReceiver()}
 function detail(k,v){return '<div class="row"><span>'+esc(k)+'</span><b>'+esc(v||'—')+'</b></div>'}
 function detailCopy(k,v){const val=String(v||'').trim();return '<div class="row b5-payment-detail"><span>'+esc(k)+'</span><b>'+esc(val||'—')+(val?'<button type="button" class="copy-pay-btn" data-copy="'+esc(val)+'">COPY</button>':'')+'</b></div>'}
@@ -123,7 +123,7 @@ function renderHistory(){const a=state.lt.upgradeHistory||[];$('history').innerH
 async function loadReceiver(){const mid=id();if(!mid)return;try{const d=await api('/api/leveltrack/member/dashboard/'+encodeURIComponent(mid));const p=(d.incomingPayments||[]).find(x=>!x.memberAccepted&&!x.adminApproved);if(!p){$('receiverContent').innerHTML='<div class="note">No incoming payment confirmation is waiting for you.</div>';$('receiverButtons').innerHTML='';return}$('receiverContent').innerHTML='<div class="success"><b>PAYMENT TO CONFIRM</b></div>'+detail('Payment Sent By Member ID',p.fromMemberId)+detail('Upgrade','L'+p.from+' → L'+p.to)+detail('Amount','₹ '+(p.amount||'—'))+detail('UTR',p.utr||'—');$('receiverButtons').innerHTML='<button class="primary" onclick="receiverAction(\''+p.id+'\')">✓ PAYMENT RECEIVED</button>'}catch(e){$('receiverContent').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}}
 async function receiverAction(pid){try{await api('/api/leveltrack/member/incoming/'+encodeURIComponent(pid)+'/accept',{method:'POST',body:JSON.stringify({memberId:id()})});alert('Payment received confirmed.');await load();await loadReceiver()}catch(e){alert(e.message)}}
 function copyReferral(){navigator.clipboard?.writeText($('refLink').value);alert('Referral link copied.')}
-setInterval(()=>{if(!paymentFormHasUnsavedData())load()},5000);setInterval(()=>{if(!$('receiver').classList.contains('hidden'))loadReceiver()},5000);load();
+setInterval(()=>{if(!paymentFormHasUnsavedData())load()},3000);setInterval(()=>{if(!$('receiver').classList.contains('hidden'))loadReceiver()},3000);load();
 </script><script id="b5-unified-accordion">
 (function(){
   function makeCardAccordion(card){
