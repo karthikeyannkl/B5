@@ -410,7 +410,15 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
 (function(){
  const btn=document.getElementById('unifiedMemberMenuBtn'),side=document.getElementById('unifiedMemberSidebar'),ov=document.getElementById('unifiedMemberOverlay'),frame=document.getElementById('unifiedMemberFrame');
  function logged(){const g=document.getElementById('B5_MEMBER_GATE');return !!localStorage.getItem('BORNTOWIN5_MEMBER_ID') && g && getComputedStyle(g).display==='none'}
- function ready(){const ok=logged();[btn,side].forEach(x=>x&&x.classList.toggle('ready',ok));if(!ok){frame.classList.remove('show');side.classList.remove('open');ov.classList.remove('show');}}
+ let levelTrackLoaded=false,levelTrackReady=false,pendingLevelTrackSection='dashboard';
+ function postLevelTrack(section){pendingLevelTrackSection=section||'dashboard';if(levelTrackReady&&frame.contentWindow){frame.contentWindow.postMessage({type:'LEVELTRACK_NAV',section:pendingLevelTrackSection},location.origin);}}
+ function ensureLevelTrack(){
+   if(levelTrackLoaded)return;
+   levelTrackLoaded=true;
+   frame.addEventListener('load',()=>{levelTrackReady=true;postLevelTrack(pendingLevelTrackSection)},{once:true});
+   frame.src='/leveltrack-member.html?v=14';
+ }
+ function ready(){const ok=logged();[btn,side].forEach(x=>x&&x.classList.toggle('ready',ok));if(!ok){frame.classList.remove('show');side.classList.remove('open');ov.classList.remove('show');}else{ensureLevelTrack();}}
  window.uMemberToggle=function(){if(!btn.classList.contains('ready'))return;side.classList.toggle('open');ov.classList.toggle('show')}
  function close(){side.classList.remove('open');ov.classList.remove('show')}
  const memberProfile=document.querySelector('main > .profile');
@@ -436,20 +444,7 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
    window.scrollTo({top:0,behavior:'smooth'});
  }
  window.uMemberLevelTrackToggle=function(b){const box=document.getElementById('b5MemberLTOptions');box.classList.toggle('open');b.classList.toggle('open');};
- window.uMemberLevelTrack=function(section,b){
-   document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));
-   if(b)b.classList.add('active');
-   close();
-   hideMemberContent();
-   frame.classList.add('show');
-   const message={type:'LEVELTRACK_NAV',section:String(section||'dashboard')};
-   const send=()=>{try{frame.contentWindow.postMessage(message,location.origin)}catch(e){}};
-   /* Reload the Level Tracking page for every selection so the selected section is
-      applied after the iframe listener is definitely ready. Cache-busting here
-      only affects the Level Tracking iframe; the main Member page is unchanged. */
-   frame.onload=()=>{send();setTimeout(send,80);};
-   frame.src='/leveltrack-member.html?v=13&nav='+encodeURIComponent(message.section)+'&t='+Date.now();
- }
+ window.uMemberLevelTrack=function(section,b){document.querySelectorAll('#unifiedMemberSidebar .uitem').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');close();hideMemberContent();frame.classList.add('show');ensureLevelTrack();postLevelTrack(section);}
  const style=document.createElement('style');style.textContent='.u-hidden{display:none!important}';document.head.appendChild(style);
  showMemberContent([memberProfile,memberStats]);
  ready();setInterval(ready,500);
