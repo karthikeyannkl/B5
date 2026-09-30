@@ -334,6 +334,10 @@ main.wrap > .card:has(.nav){display:none!important}
 #unifiedAdminSidebar .b5-subitem{color:#20312a!important;background:#f8faf8!important}
 #unifiedAdminSidebar .b5-subitem.active{color:#fff!important;background:#075B35!important}
 </style>
+<style id="b5-admin-leveltrack-clean">
+/* Single Level Tracking engine: no legacy embedded V26 frame. */
+#v26AdminFrame,#integratedFrame{display:none!important}
+</style>
 <button id="unifiedAdminMenuBtn" onclick="uAdminToggle()" aria-label="Open Admin menu">☰</button>
 <div id="unifiedAdminOverlay" onclick="uAdminToggle()"></div>
 <aside id="unifiedAdminSidebar">
@@ -357,9 +361,6 @@ main.wrap > .card:has(.nav){display:none!important}
     <button class="uitem b5-subitem" onclick="uAdminLevelTrack('seniority',this)">♛ Seniority Queue</button>
     <button class="uitem b5-subitem" onclick="uAdminLevelTrack('reports',this)">▤ Reports / Schedule</button>
     <button class="uitem b5-subitem" onclick="uAdminLevelTrack('history',this)">◷ Upgrade History</button>
-    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('backup',this)">▣ Database Backup</button>
-    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('storage',this)">◫ Database / Storage Usage</button>
-    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('backupstatus',this)">✓ Backup Status</button>
   </div>
 </aside>
 <iframe id="unifiedAdminFrame" title="LevelTrack Admin Portal"></iframe>
@@ -385,7 +386,8 @@ main.wrap > .card:has(.nav){display:none!important}
    window.scrollTo({top:0,behavior:'smooth'});
  }
  window.uAdminLevelTrackToggle=function(b){const box=document.getElementById('b5AdminLTOptions');box.classList.toggle('open');b.classList.toggle('open');};
- window.uAdminLevelTrack=function(section,b){
+ let adminLTLoaded=false;
+window.uAdminLevelTrack=function(section,b){
    document.querySelectorAll('#unifiedAdminSidebar .uitem').forEach(x=>x.classList.remove('active'));
    if(b)b.classList.add('active');
    close();
@@ -393,8 +395,15 @@ main.wrap > .card:has(.nav){display:none!important}
    if(statsCard) statsCard.style.display='none';
    hideMainPanels();
    frame.classList.add('show');
-   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section:section||'dashboard'},location.origin);
-   if(frame.src.indexOf('/leveltrack-admin.html')<0){frame.src='/leveltrack-admin.html?v=FINAL';frame.addEventListener('load',send,{once:true});} else send();
+   const target=section||'dashboard';
+   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section:target},location.origin);
+   if(!adminLTLoaded){
+     adminLTLoaded=true;
+     frame.addEventListener('load',send,{once:true});
+     frame.src='/leveltrack-admin.html?v=FINAL-CLEAN';
+   } else {
+     send();
+   }
    window.scrollTo({top:0,behavior:'smooth'});
  }
  async function loadPwReset(){const el=document.getElementById('pwResetList');if(!el)return;try{const r=await fetch('/api/admin/password-reset-requests');const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');const requests=Array.isArray(d.requests)?d.requests:[];if(!requests.length){el.innerHTML='<div class="small">No pending password reset requests.</div>';return}el.innerHTML=requests.map(x=>`<div class="card" style="margin-top:10px"><b>${String(x.name).replace(/</g,'&lt;')}</b><div class="small">${x.memberId} • ${x.mobile}<br>Requested: ${x.createdAt?new Date(x.createdAt).toLocaleString():''}</div><button class="primary" style="margin-top:10px" onclick="approvePwReset('${x.id}')">APPROVE & RESET PASSWORD</button></div>`).join('')}catch(e){el.innerHTML='<div class="warn">Failed to load password reset requests: '+String(e.message).replace(/</g,'&lt;')+'</div>'}}
