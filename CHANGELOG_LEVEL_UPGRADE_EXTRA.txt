@@ -1,0 +1,18 @@
+BORNTOWIN5 Level Tracking – Extra Upgrade Cycle
+
+Added without changing the existing mobile Level Tracking design:
+- First 3 direct referrals: existing Level 1 -> Level 2 flow remains.
+- From the second 3-referral batch onward: one additional "Upgrade" action appears first.
+- The additional Upgrade uses the existing payment / receiver / admin approval workflow and ₹1,000 member-receiver amount.
+- The current user's own Member ID is excluded from the seniority receiver selection for that additional Upgrade.
+- Only after that additional Upgrade is fully approved does the next Level Upgrade become available.
+- The pattern repeats: Upgrade -> Level 2 -> 3, Upgrade -> Level 3 -> 4, etc.
+- Seniority remains level-specific: one User ID can have one position in each Level 2–7 queue, but cannot re-enter the same level queue.
+- Existing member/admin design is preserved.
+
+
+V1.1 REFERRAL MILESTONE CORRECTION (2026-10-02)
+- First Level milestone remains 3 direct referrals.
+- After Level 1->2, each subsequent level milestone is every 2 additional direct referrals: 3, 5, 7, 9, 11, 13.
+- The extra Upgrade remains sequential and must complete before the corresponding Level Upgrade opens.
+- Payment, receiver confirmation, admin approval, and seniority logic unchanged.
