@@ -28,7 +28,7 @@ if(mailer){
   mailer.verify().then(()=>console.log('AIC Cloud SMTP connection verified')).catch(err=>console.error('AIC Cloud SMTP verification failed:',err.message));
 }
 
-app.use(express.json({limit:'12mb'}));
+app.use(express.json({limit:'25mb'}));
 app.use(express.static(__dirname));
 
 const DB_FILE=process.env.DB_FILE || path.join(__dirname,'data','db.json');
