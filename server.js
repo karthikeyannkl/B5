@@ -66,6 +66,38 @@ function save(d){
 
 let db=load();
 
+
+// ---------------- OPTIONAL SENIORITY TEST DATA ----------------
+// Enable only when testing: B5_SENIORITY_TEST_MODE=1
+// Creates the supplied 10 test IDs and pins them to Seniority 1-10 for L2-L7.
+const SENIORITY_TEST_IDS=[
+  ['KARTHI01','7000000001'],['SATHYA02','7000000002'],['KARTHI03','7000000003'],['SATHYA04','7000000004'],['KARTHI05','7000000005'],
+  ['SATHYA06','7000000006'],['KARTHI07','7000000007'],['SATHYA08','7000000008'],['KARTHI09','7000000009'],['KARTHI10','7000000010']
+];
+const SENIORITY_TEST_REF='REF-FC329E';
+function seedSeniorityTestData(){
+  if(String(process.env.B5_SENIORITY_TEST_MODE||'')!=='1') return false;
+  let root=db.members.find(m=>String(m.referralId||'').toUpperCase()===SENIORITY_TEST_REF);
+  if(!root){
+    root={memberId:'B5-FC329E',referralId:SENIORITY_TEST_REF,name:'Seniority Test Root',mobile:'7999999999',email:'',status:'ACTIVE',referral:'FIRST MEMBER',level:7,levelMemberId:'L7-TEST',joinedAt:'2000-01-01T00:00:00.000Z',levelReachedAt:{2:'2000-01-01T00:00:00.000Z',3:'2000-01-01T00:00:00.000Z',4:'2000-01-01T00:00:00.000Z',5:'2000-01-01T00:00:00.000Z',6:'2000-01-01T00:00:00.000Z',7:'2000-01-01T00:00:00.000Z'},passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:'Seniority Test Root',bank:'TEST BANK',account:'TEST-ROOT',ifsc:'TEST0000001',branch:'TEST',upi:'testroot@upi',profileLocked:true};
+    db.members.push(root);
+  }
+  const rootId=root.memberId;
+  SENIORITY_TEST_IDS.forEach(([memberId,mobile],i)=>{
+    let m=db.members.find(x=>x.memberId===memberId);
+    const stamp=`2000-01-02T00:00:${String(i).padStart(2,'0')}.000Z`;
+    const reached={};for(let l=2;l<=7;l++)reached[l]=stamp;
+    if(!m){
+      m={memberId,mobile,name:memberId,referral:rootId,referralId:referralCode(memberId),status:'ACTIVE',level:7,levelMemberId:`L7-TEST-${String(i+1).padStart(2,'0')}`,joinedAt:stamp,registeredAt:stamp,levelReachedAt:reached,passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:memberId,bank:'TEST BANK',account:`TEST-${String(i+1).padStart(4,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};
+      db.members.push(m);
+    }else{
+      m.status='ACTIVE';m.referral=m.referral||rootId;m.level=7;m.levelMemberId=m.levelMemberId||`L7-TEST-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;m.levelReachedAt={...(m.levelReachedAt||{}),...reached};
+    }
+    m._seniorityTestOrder=i+1;
+  });
+  return true;
+}
+
 async function initPersistentDatabase(){
   if(!SUPABASE_URL||!SUPABASE_SECRET_KEY) throw new Error('Supabase API is not configured. Add SUPABASE_URL and SUPABASE_SECRET_KEY.');
   const rows=await supabaseFetch('app_state?select=data&id=eq.1');
@@ -235,8 +267,12 @@ function seniorityQueue(level){
   // The First Company / First Member is the permanent root position for every level.
   if(firstMember && target>=2 && !eligible.some(m=>m.memberId===firstMember.memberId)) eligible.push(firstMember);
   eligible.sort((a,b)=>{
-    if(firstMember && a.memberId===firstMember.memberId && b.memberId!==firstMember.memberId)return -1;
-    if(firstMember && b.memberId===firstMember.memberId && a.memberId!==firstMember.memberId)return 1;
+    if(String(process.env.B5_SENIORITY_TEST_MODE||'')==='1'){
+      const ao=Number(a._seniorityTestOrder||999999),bo=Number(b._seniorityTestOrder||999999);
+      if(ao!==bo)return ao-bo;
+    }
+    if(firstMember && a.memberId===firstMember.memberId && b.memberId!==firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder)return -1;
+    if(firstMember && b.memberId===firstMember.memberId && a.memberId!==firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder)return 1;
     const at=(m)=>String((m.levelReachedAt&&m.levelReachedAt[target])||m.upgradeDate||m.joinedAt||m.registeredAt||m.createdAt||'');
     return at(a).localeCompare(at(b));
   });
@@ -393,6 +429,8 @@ app.get('/api/db-status',(req,res)=>res.json({ok:supabaseReady,persistence:'supa
 
 initPersistentDatabase()
   .then(()=>{
+    const seeded=seedSeniorityTestData();
+    if(seeded) save(db);
     localSave(db);
     app.listen(PORT,'0.0.0.0',()=>console.log('BORNTOWIN5 running on '+PORT));
   })

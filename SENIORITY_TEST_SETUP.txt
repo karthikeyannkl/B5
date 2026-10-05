@@ -1,0 +1,33 @@
+SENIORITY TEST MODE
+===================
+
+Purpose:
+- Creates 10 test members in the exact requested order.
+- Makes them eligible for Seniority Levels L2, L3, L4, L5, L6 and L7.
+- In test mode they appear as Seniority 1 through 10 at each of those levels.
+- Existing Level Upgrade / payment / approval logic is not changed.
+
+Test IDs:
+1. KARTHI01 / 7000000001
+2. SATHYA02 / 7000000002
+3. KARTHI03 / 7000000003
+4. SATHYA04 / 7000000004
+5. KARTHI05 / 7000000005
+6. SATHYA06 / 7000000006
+7. KARTHI07 / 7000000007
+8. SATHYA08 / 7000000008
+9. KARTHI09 / 7000000009
+10. KARTHI10 / 7000000010
+
+Referral test code:
+REF-FC329E
+
+Enable on the test server with environment variable:
+B5_SENIORITY_TEST_MODE=1
+
+Test login password for these seeded users:
+B5@123456
+
+IMPORTANT:
+- This is test-only data. Do not enable B5_SENIORITY_TEST_MODE on the final production deployment.
+- Test bank/UPI details are dummy values; no real bank credentials are embedded in this seed.
