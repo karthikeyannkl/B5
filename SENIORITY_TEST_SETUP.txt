@@ -3,9 +3,10 @@ SENIORITY TEST MODE
 
 Purpose:
 - Creates 10 test members in the exact requested order.
-- Makes them eligible for Seniority Levels L2, L3, L4, L5, L6 and L7.
+- Makes them eligible for Seniority Levels L2, L3, L4, L5, L6 and L7 while keeping their CURRENT member level at L1.
 - In test mode they appear as Seniority 1 through 10 at each of those levels.
 - Existing Level Upgrade / payment / approval logic is not changed.
+- Seniority test eligibility is separate from current member level, so a test member will not appear as Level 7 merely because it is seeded into the L7 Seniority queue.
 
 Test IDs:
 1. KARTHI01 / 7000000001

@@ -16,3 +16,11 @@ V1.1 REFERRAL MILESTONE CORRECTION (2026-10-02)
 - After Level 1->2, each subsequent level milestone is every 2 additional direct referrals: 3, 5, 7, 9, 11, 13.
 - The extra Upgrade remains sequential and must complete before the corresponding Level Upgrade opens.
 - Payment, receiver confirmation, admin approval, and seniority logic unchanged.
+
+
+V1.2 FINAL UI/ADMIN FLOW FIXES (2026-10-05)
+- Added 3-second live Admin dashboard refresh so new requests appear without logout/login or manual refresh.
+- Added immediate REQUEST SENT / PAYMENT REQUEST SENT / APPROVAL SENT feedback across Member, Receiver and Admin actions.
+- Fixed Additional Upgrade display so ₹1,000 is clearly labeled as Additional Upgrade, not Level 1 payment.
+- Fixed mobile payment-card overflow so Member/Trust/Admin payment split remains fully scrollable/visible.
+- Existing Level Upgrade, Seniority, payment, receiver and approval logic unchanged.

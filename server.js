@@ -79,7 +79,7 @@ function seedSeniorityTestData(){
   if(String(process.env.B5_SENIORITY_TEST_MODE||'')!=='1') return false;
   let root=db.members.find(m=>String(m.referralId||'').toUpperCase()===SENIORITY_TEST_REF);
   if(!root){
-    root={memberId:'B5-FC329E',referralId:SENIORITY_TEST_REF,name:'Seniority Test Root',mobile:'7999999999',email:'',status:'ACTIVE',referral:'FIRST MEMBER',level:7,levelMemberId:'L7-TEST',joinedAt:'2000-01-01T00:00:00.000Z',levelReachedAt:{2:'2000-01-01T00:00:00.000Z',3:'2000-01-01T00:00:00.000Z',4:'2000-01-01T00:00:00.000Z',5:'2000-01-01T00:00:00.000Z',6:'2000-01-01T00:00:00.000Z',7:'2000-01-01T00:00:00.000Z'},passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:'Seniority Test Root',bank:'TEST BANK',account:'TEST-ROOT',ifsc:'TEST0000001',branch:'TEST',upi:'testroot@upi',profileLocked:true};
+    root={memberId:'B5-FC329E',referralId:SENIORITY_TEST_REF,name:'Seniority Test Root',mobile:'7999999999',email:'',status:'ACTIVE',referral:'FIRST MEMBER',level:1,levelMemberId:'L1-TEST-ROOT',joinedAt:'2000-01-01T00:00:00.000Z',levelReachedAt:{2:'2000-01-01T00:00:00.000Z',3:'2000-01-01T00:00:00.000Z',4:'2000-01-01T00:00:00.000Z',5:'2000-01-01T00:00:00.000Z',6:'2000-01-01T00:00:00.000Z',7:'2000-01-01T00:00:00.000Z'},passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:'Seniority Test Root',bank:'TEST BANK',account:'TEST-ROOT',ifsc:'TEST0000001',branch:'TEST',upi:'testroot@upi',profileLocked:true};
     db.members.push(root);
   }
   const rootId=root.memberId;
@@ -88,10 +88,10 @@ function seedSeniorityTestData(){
     const stamp=`2000-01-02T00:00:${String(i).padStart(2,'0')}.000Z`;
     const reached={};for(let l=2;l<=7;l++)reached[l]=stamp;
     if(!m){
-      m={memberId,mobile,name:memberId,referral:rootId,referralId:referralCode(memberId),status:'ACTIVE',level:7,levelMemberId:`L7-TEST-${String(i+1).padStart(2,'0')}`,joinedAt:stamp,registeredAt:stamp,levelReachedAt:reached,passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:memberId,bank:'TEST BANK',account:`TEST-${String(i+1).padStart(4,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};
+      m={memberId,mobile,name:memberId,referral:rootId,referralId:referralCode(memberId),status:'ACTIVE',level:1,levelMemberId:`L1-TEST-${String(i+1).padStart(2,'0')}`,joinedAt:stamp,registeredAt:stamp,levelReachedAt:reached,passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:memberId,bank:'TEST BANK',account:`TEST-${String(i+1).padStart(4,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};
       db.members.push(m);
     }else{
-      m.status='ACTIVE';m.referral=m.referral||rootId;m.level=7;m.levelMemberId=m.levelMemberId||`L7-TEST-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;m.levelReachedAt={...(m.levelReachedAt||{}),...reached};
+      m.status='ACTIVE';m.referral=m.referral||rootId;m.level=1;m.levelMemberId=m.levelMemberId&&String(m.levelMemberId).startsWith('L1-')?m.levelMemberId:`L1-TEST-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;m.levelReachedAt={...(m.levelReachedAt||{}),...reached};
     }
     m._seniorityTestOrder=i+1;
   });
