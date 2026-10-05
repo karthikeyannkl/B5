@@ -138,9 +138,7 @@ save(db);
 
 function id(){return 'B5-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
 function referralCode(memberId){return 'REF-'+String(memberId||'').replace(/^B5-/,'').toUpperCase()}
-function makePin(){return 'PIN-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
-// Backward-compatible alias for PIN generation.
-const pin=makePin;
+function pin(){return 'PIN-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
 db.members.forEach(m=>{if(!m.referralId)m.referralId=referralCode(m.memberId)});save(db);
 function hashPassword(v){return crypto.createHash('sha256').update(String(v||'')).digest('hex')}
 function memberPublic(m){return {memberId:m.memberId,referralId:m.referralId||referralCode(m.memberId),name:m.name,mobile:m.mobile,email:m.email||m.rEmail||'',status:(m.status==='Rejected'?'Rejected':'ACTIVE'),referral:m.referral,level:Number(m.level||1),levelMemberId:m.levelMemberId||null,joinedAt:m.joinedAt||m.registeredAt||null,upgradeDate:m.upgradeDate||null,profileLocked:!!m.profileLocked}}
@@ -398,7 +396,7 @@ app.get('/api/leveltrack/admin/daily-report',(req,res)=>{
   res.json({date,count:upgrades.length,upgrades});
 });
 app.get('/api/leveltrack/member/dashboard/:id',(req,res)=>{
-  const d=ltDashboard(req.params.id);if(!d)return res.status(404).json({error:'Member not found'});res.json(d);
+  const d=ltDashboard(req.params.id);if(!d)return res.status(404).json({error:'Member not found'});save(db);res.json(d);
 });
 app.post('/api/leveltrack/member/upgrade-request',(req,res)=>{
   const m=ltMember(req.body.memberId);if(!m)return res.status(404).json({error:'Member not found'});
