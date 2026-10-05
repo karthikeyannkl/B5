@@ -138,7 +138,9 @@ save(db);
 
 function id(){return 'B5-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
 function referralCode(memberId){return 'REF-'+String(memberId||'').replace(/^B5-/,'').toUpperCase()}
-function pin(){return 'PIN-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
+function makePin(){return 'PIN-'+crypto.randomBytes(3).toString('hex').toUpperCase()}
+// Backward-compatible alias for PIN generation.
+const pin=makePin;
 db.members.forEach(m=>{if(!m.referralId)m.referralId=referralCode(m.memberId)});save(db);
 function hashPassword(v){return crypto.createHash('sha256').update(String(v||'')).digest('hex')}
 function memberPublic(m){return {memberId:m.memberId,referralId:m.referralId||referralCode(m.memberId),name:m.name,mobile:m.mobile,email:m.email||m.rEmail||'',status:(m.status==='Rejected'?'Rejected':'ACTIVE'),referral:m.referral,level:Number(m.level||1),levelMemberId:m.levelMemberId||null,joinedAt:m.joinedAt||m.registeredAt||null,upgradeDate:m.upgradeDate||null,profileLocked:!!m.profileLocked}}
