@@ -1,0 +1,18 @@
+B5 Persistence & Recovery Fix
+
+Purpose:
+- Prevent temporary Supabase 500/504/timeout failures from stopping the Express server and causing HTTP 502.
+- Prevent an older Supabase snapshot from overwriting newer local data during startup.
+- Retry failed Supabase startup in the background.
+- Retry individual Supabase saves up to 3 times.
+- Remove the unnecessary database write from the member dashboard GET endpoint.
+
+Business logic intentionally unchanged:
+- Referral thresholds unchanged.
+- Level upgrade amounts unchanged.
+- Additional Upgrade amount unchanged.
+- Receiver/seniority selection unchanged.
+- Payment proof/approval flow unchanged.
+
+Important:
+- This is a persistence/infrastructure correction only.
