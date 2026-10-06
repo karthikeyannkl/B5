@@ -41,57 +41,26 @@ const SUPABASE_URL=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
 const SUPABASE_SECRET_KEY=String(process.env.SUPABASE_SECRET_KEY||'');
 let supabaseReady=false;
 let supabaseSaveQueue=Promise.resolve();
-let supabaseRetryTimer=null;
-let supabaseRetryInProgress=false;
 function supabaseHeaders(extra={}){return {'apikey':SUPABASE_SECRET_KEY,'Authorization':'Bearer '+SUPABASE_SECRET_KEY,'Content-Type':'application/json','Accept':'application/json',...extra}}
 async function supabaseFetch(pathname,options={}){
   if(!SUPABASE_URL||!SUPABASE_SECRET_KEY) throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required');
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),15000);
-  try{
-    const r=await fetch(SUPABASE_URL+'/rest/v1/'+pathname,{...options,signal:controller.signal,headers:{...supabaseHeaders(),...(options.headers||{})}});
-    const body=await r.text();
-    if(!r.ok) throw new Error('Supabase API '+r.status+': '+body);
-    try{return body?JSON.parse(body):null}catch{return body}
-  }catch(e){
-    if(e && e.name==='AbortError') throw new Error('Supabase request timed out after 15 seconds');
-    throw e;
-  }finally{clearTimeout(timeout)}
+  const r=await fetch(SUPABASE_URL+'/rest/v1/'+pathname,{...options,headers:{...supabaseHeaders(),...(options.headers||{})}});
+  const body=await r.text();
+  if(!r.ok) throw new Error('Supabase API '+r.status+': '+body);
+  try{return body?JSON.parse(body):null}catch{return body}
 }
 function localSave(d){fs.writeFileSync(DB_FILE,JSON.stringify(d,null,2))}
 function hasRealData(d){
   return !!(d && ((d.members||[]).length || (d.messages||[]).length || (d.passwordResetRequests||[]).length || (d.leveltrackRequests||[]).length || (d.leveltrackUpgrades||[]).length || (d.leveltrackPayments||[]).length || (d.leveltrackMessages||[]).length || (d.pins||[]).some(x=>x && !x.system)));
 }
-function dataWriteTime(d){return Date.parse(d?._meta?.lastWriteAt||'')||0}
-function markLocalWrite(d){
-  d._meta=d._meta||{};
-  d._meta.lastWriteAt=new Date().toISOString();
-}
-async function writeSnapshotToSupabase(snapshot){
-  let lastErr=null;
-  for(let attempt=1;attempt<=3;attempt++){
-    try{
-      await supabaseFetch('app_state?id=eq.1',{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({data:snapshot})});
-      return true;
-    }catch(e){
-      lastErr=e;
-      if(attempt<3) await new Promise(r=>setTimeout(r,1000*attempt));
-    }
-  }
-  throw lastErr||new Error('Supabase save failed');
-}
 function save(d){
-  markLocalWrite(d);
   localSave(d);
   if(!supabaseReady)return;
   const snapshot=JSON.parse(JSON.stringify(d));
   supabaseSaveQueue=supabaseSaveQueue.then(async()=>{
     try{
-      await writeSnapshotToSupabase(snapshot);
-      console.log('Supabase save: OK '+snapshot._meta.lastWriteAt);
-    }catch(e){
-      console.error('Supabase API save failed (will retry on next save/startup):',e.message);
-    }
+      await supabaseFetch('app_state?id=eq.1',{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({data:snapshot})});
+    }catch(e){console.error('Supabase API save failed:',e.message);}
   });
 }
 
@@ -134,25 +103,17 @@ async function initPersistentDatabase(){
   const rows=await supabaseFetch('app_state?select=data&id=eq.1');
   if(Array.isArray(rows) && rows.length){
     const remote=typeof rows[0].data==='string'?JSON.parse(rows[0].data):rows[0].data;
-    const localAt=dataWriteTime(db);
-    const remoteAt=dataWriteTime(remote);
-    if(hasRealData(db) && localAt>remoteAt){
-      supabaseReady=true;
-      await writeSnapshotToSupabase(JSON.parse(JSON.stringify(db)));
-      console.log('PERMANENT DATABASE: local data was newer; Supabase synchronized from local');
-      return;
-    }
     if(hasRealData(remote)){
       db=remote;
       supabaseReady=true;
       localSave(db);
-      console.log('PERMANENT DATABASE: Supabase loaded; latest data preserved');
+      console.log('PERMANENT DATABASE: Supabase loaded; existing data preserved');
       return;
     }
     if(hasRealData(db)){
+      await supabaseFetch('app_state?id=eq.1',{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({data:db})});
       supabaseReady=true;
-      await writeSnapshotToSupabase(JSON.parse(JSON.stringify(db)));
-      console.log('PERMANENT DATABASE: empty Supabase state initialized from local data');
+      console.log('PERMANENT DATABASE: empty Supabase state initialized from existing local data');
       return;
     }
     throw new Error('Supabase app_state is empty and no existing local data is available. Refusing to create an empty database.');
@@ -162,24 +123,6 @@ async function initPersistentDatabase(){
   supabaseReady=true;
   console.log('PERMANENT DATABASE: initialized Supabase from existing local data');
 }
-function scheduleSupabaseRetry(){
-  if(supabaseRetryTimer||supabaseReady||supabaseRetryInProgress)return;
-  supabaseRetryTimer=setTimeout(async()=>{
-    supabaseRetryTimer=null;
-    if(supabaseReady)return;
-    supabaseRetryInProgress=true;
-    try{
-      await initPersistentDatabase();
-      console.log('PERMANENT DATABASE: background recovery succeeded');
-    }catch(e){
-      console.error('PERMANENT DATABASE: background retry failed:',e.message);
-    }finally{
-      supabaseRetryInProgress=false;
-      if(!supabaseReady) scheduleSupabaseRetry();
-    }
-  },30000);
-}
-
 
 // Backward-compatible defaults for existing db.json files.
 db.members=db.members||[];db.pins=db.pins||[];db.messages=db.messages||[];db.passwordResetRequests=db.passwordResetRequests||[];
@@ -391,12 +334,13 @@ function ltDashboard(memberId){
   if(upgrade && String(upgrade.status||'').toLowerCase()==='assigned') { const saved=db.leveltrackPayments.find(p=>p.upgradeId===upgrade.id); upgrade={...pendingRequest,...upgrade,payment:saved||{payee:upgrade.payee||'',payeeId:upgrade.payeeId||'',payeePhone:upgrade.payeePhone||'',accountHolder:upgrade.accountHolder||'',bank:upgrade.bank||'',account:upgrade.account||'',ifsc:upgrade.ifsc||'',branch:upgrade.branch||'',upi:upgrade.upi||'',amount:upgrade.amount||0,parts:upgrade.paymentParts||[]}}; }
   const action=nextMemberAction(m);
   const payments=db.leveltrackPayments.filter(p=>p.receiverMemberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+  const incomingPayments=payments.filter(p=>p.memberPaid===true&&!p.adminApproved);
   const earningsRules={2:5,3:10,4:10,5:5,6:5,7:5};
   const earnings=Object.keys(earningsRules).map(l=>{const level=Number(l);const completed=payments.filter(p=>{const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);return u&&Number(u.to)===level&&p.memberAccepted&&u.adminApproved}).length;return {level,required:earningsRules[level],completed}});
   const directReferrals=direct(memberId).length;
   const requiredDirectReferrals={1:3,2:5,3:7,4:9,5:11,6:13}[Number(m.level||1)]||0;
   const msgs=[...db.messages.filter(x=>x.to===memberId||x.to==='ALL'),...db.leveltrackMessages.filter(x=>x.to===memberId)].sort((a,b)=>String(b.at).localeCompare(String(a.at))).map(x=>({message:x.message,at:x.at}));
-  return {member:memberPublic(m),directReferrals,totalDownline:downlineCount(memberId),tree:ltTree(memberId),upgrade,requests,incomingPayments:payments,history:ltHistory(memberId),earnings,seniority:seniorityQueue(Number(m.level||1)).find(x=>x.memberId===memberId)||null,requiredDirectReferrals,messages:msgs,action};
+  return {member:memberPublic(m),directReferrals,totalDownline:downlineCount(memberId),tree:ltTree(memberId),upgrade,requests,incomingPayments,history:ltHistory(memberId),earnings,seniority:seniorityQueue(Number(m.level||1)).find(x=>x.memberId===memberId)||null,requiredDirectReferrals,messages:msgs,action};
 }
 app.get('/leveltrack-admin.html',(req,res)=>res.sendFile(path.join(__dirname,'leveltrack-admin.html')));
 app.get('/leveltrack-member.html',(req,res)=>res.sendFile(path.join(__dirname,'leveltrack-member.html')));
@@ -453,7 +397,7 @@ app.get('/api/leveltrack/admin/daily-report',(req,res)=>{
   res.json({date,count:upgrades.length,upgrades});
 });
 app.get('/api/leveltrack/member/dashboard/:id',(req,res)=>{
-  const d=ltDashboard(req.params.id);if(!d)return res.status(404).json({error:'Member not found'});res.json(d);
+  const d=ltDashboard(req.params.id);if(!d)return res.status(404).json({error:'Member not found'});save(db);res.json(d);
 });
 app.post('/api/leveltrack/member/upgrade-request',(req,res)=>{
   const m=ltMember(req.body.memberId);if(!m)return res.status(404).json({error:'Member not found'});
@@ -482,21 +426,16 @@ app.get('/api/leveltrack/member/messages/:id',(req,res)=>{
 });
 
 const PORT=process.env.PORT||10000;
-app.get('/api/db-status',(req,res)=>res.json({ok:supabaseReady,persistence:'supabase-api',members:Array.isArray(db.members)?db.members.length:0,lastWriteAt:db._meta?.lastWriteAt||null}));
+app.get('/api/db-status',(req,res)=>res.json({ok:supabaseReady,persistence:'supabase-api',members:Array.isArray(db.members)?db.members.length:0}));
 
-// Start the web server independently of Supabase. A temporary database timeout must not produce HTTP 502.
-app.listen(PORT,'0.0.0.0',()=>console.log('BORNTOWIN5 running on '+PORT));
-
-(async()=>{
-  try{
+initPersistentDatabase()
+  .then(()=>{
     const seeded=seedSeniorityTestData();
     if(seeded) save(db);
     localSave(db);
-    await initPersistentDatabase();
-    if(seeded) save(db);
-  }catch(err){
-    supabaseReady=false;
-    console.error('PERMANENT DATABASE STARTUP FAILED (server stays online):',err.message);
-    scheduleSupabaseRetry();
-  }
-})();
+    app.listen(PORT,'0.0.0.0',()=>console.log('BORNTOWIN5 running on '+PORT));
+  })
+  .catch(err=>{
+    console.error('PERMANENT DATABASE STARTUP FAILED:',err.message);
+    process.exit(1);
+  });

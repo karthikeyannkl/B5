@@ -1,0 +1,8 @@
+BORNTOWIN5 - Targeted Upgrade Flow Fix
+
+1. Upgrade Request Sent state now remains visible from the server pending request state after refresh/reload; the temporary click label is no longer the only indicator.
+2. Admin REQUEST SELECTED tick is preserved while the request remains selected during the live admin refresh cycle.
+3. Receiver confirmation requests are now exposed only after the payer has submitted payment proof (UTR + screenshot) and before admin approval. Sending payment instructions alone no longer creates a receiver confirmation item in the receiver UI.
+4. Receiver/Admin payment screenshots are displayed as small thumbnails; tapping/clicking opens a large full-screen view.
+5. Existing amount, payment split, seniority, receiver selection, admin approval and Level Upgrade business logic is unchanged.
+6. Additional Upgrade remains ₹1,000 and is not treated as a Level 1 payment.
