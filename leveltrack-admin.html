@@ -76,21 +76,37 @@ async function useNextSeniorReceiver(){const r=state.selectedRequest;if(!r)retur
 function renderSplitPreview(level,isExtra=false){if(isExtra){$('splitPreview').innerHTML='<div class="split"><div>ADDITIONAL UPGRADE<b>₹1,000</b></div></div><div class="small" style="margin-top:6px">This is the additional Upgrade payment. It is not a Level 1 payment.</div>';return}const r=splitRules[level];if(!r){$('splitPreview').innerHTML='';return}const cells=[['MEMBER',r.member],['TRUST',r.trust],['ADMIN',r.admin]].filter(x=>x[1]>0);$('splitPreview').innerHTML='<div class="split">'+cells.map(x=>`<div>${x[0]}<b>₹${Number(x[1]).toLocaleString()}</b></div>`).join('')+'</div>'}
 async function fillReceiver(){const id=$('receiverIdInput').value.trim();if(!id){$('receiverLookup').textContent='';return}try{const d=await api('/api/leveltrack/admin/member-details/'+encodeURIComponent(id));const m=d.member||{};$('receiverName').value=m.name||'';$('receiverPhone').value=m.mobile||'';$('accountHolder').value=m.accountHolder||m.name||'';$('bankName').value=m.bank||'';$('accountNumber').value=m.account||'';$('ifsc').value=m.ifsc||'';$('branchName').value=m.branch||'';$('upi').value=m.upi||'';$('receiverLookup').innerHTML='<span style="color:#227442;font-weight:800">✓ Receiver found</span>'}catch(e){$('receiverLookup').innerHTML='<span style="color:#b42318">✕ Member ID not found</span>'}}
 async function sendDetails(){
-  const r=state.selectedRequest;if(!r)return alert('Select an upgrade request.');
+  let r=state.selectedRequest;if(!r)return alert('Select an upgrade request.');
   if(state.busy)return;
   state.busy=true;
-  const btn=document.querySelector('#paymentForm button[onclick=\"sendDetails()\"]')||document.querySelector('button[onclick=\"sendDetails()\"]');
+  const btn=document.querySelector('#paymentForm button[onclick="sendDetails()"]')||document.querySelector('button[onclick="sendDetails()"]');
   if(btn){btn.disabled=true;btn.textContent='SENDING…';btn.style.opacity='.65'}
   try{
+    // Re-read the request immediately before sending so the 5-second live refresh
+    // can never leave us with a stale request object.
+    const latest=await api('/api/leveltrack/admin/dashboard');
+    const fresh=(latest.requests||[]).find(x=>x.id===r.id);
+    if(!fresh)throw new Error('Upgrade request not found. Please refresh the Admin page.');
+    if(fresh.status==='Assigned'){
+      state.selectedRequest=fresh;
+      if(btn){btn.textContent='✓ PAYMENT DETAILS SENT';btn.style.opacity='1'}
+      $('selectedInfo').innerHTML='<div class="success"><b>✓ PAYMENT DETAILS SENT</b><br>The member can now see the payment instructions.</div>';
+      $('paymentForm').classList.add('hidden');
+      await load();
+      return;
+    }
+    if(fresh.status!=='Requested')throw new Error('This request is already being processed. Current status: '+fresh.status);
+    r=fresh;state.selectedRequest=r;
     const receiverId=$('receiverIdInput').value.trim();
     if(!receiverId)throw new Error('Receiver Member ID is required.');
     if(!$('receiverName').value.trim())throw new Error('Receiver details not found.');
     const body={amount:Number($('amount').value)};
-    await api('/api/leveltrack/admin/requests/'+encodeURIComponent(r.id)+'/assign',{method:'POST',body:JSON.stringify(body)});
+    const result=await api('/api/leveltrack/admin/requests/'+encodeURIComponent(r.id)+'/assign',{method:'POST',body:JSON.stringify(body)});
+    if(!result?.ok || result.request?.status!=='Assigned')throw new Error('Payment details were not confirmed by the server. Please try again.');
+    state.selectedRequest=result.request;
     if(btn){btn.textContent='✓ PAYMENT DETAILS SENT';btn.style.opacity='1'}
     $('selectedInfo').innerHTML='<div class="success"><b>✓ PAYMENT DETAILS SENT</b><br>The member can now see the payment instructions.</div>';
     $('paymentForm').classList.add('hidden');
-    state.selectedRequest=null;
     await load();
   }catch(e){
     if(btn){btn.disabled=false;btn.textContent='SEND PAYMENT DETAILS TO MEMBER';btn.style.opacity='1'}
