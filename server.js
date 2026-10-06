@@ -76,6 +76,13 @@ const SENIORITY_TEST_IDS=[
   ['SATHYA11','7000000011'],['KARTHI12','7000000012'],['SATHYA13','7000000013']
 ];
 const SENIORITY_TEST_REF='REF-FC329E';
+// Fresh independent 13-referral test tree. This is ADDED alongside the existing test tree; no old data is cleared.
+const SENIORITY_TEST_REF_NEW='REF-NEW13ROOT';
+const SENIORITY_TEST_NEW_IDS=[
+  ['TEST01','7100000001'],['TEST02','7100000002'],['TEST03','7100000003'],['TEST04','7100000004'],['TEST05','7100000005'],
+  ['TEST06','7100000006'],['TEST07','7100000007'],['TEST08','7100000008'],['TEST09','7100000009'],['TEST10','7100000010'],
+  ['TEST11','7100000011'],['TEST12','7100000012'],['TEST13','7100000013']
+];
 function seedSeniorityTestData(){
   if(String(process.env.B5_SENIORITY_TEST_MODE||'')!=='1') return false;
   let root=db.members.find(m=>String(m.referralId||'').toUpperCase()===SENIORITY_TEST_REF);
@@ -95,6 +102,26 @@ function seedSeniorityTestData(){
       m.status='ACTIVE';m.referral=m.referral||rootId;m.level=1;m.levelMemberId=m.levelMemberId&&String(m.levelMemberId).startsWith('L1-')?m.levelMemberId:`L1-TEST-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;m.levelReachedAt={...(m.levelReachedAt||{}),...reached};
     }
     m._seniorityTestOrder=i+1;
+  });
+
+  // Add a completely separate fresh root + 13 direct referrals for a clean second test run.
+  let newRoot=db.members.find(m=>String(m.referralId||'').toUpperCase()===SENIORITY_TEST_REF_NEW);
+  if(!newRoot){
+    newRoot={memberId:'B5-NEW13R',referralId:SENIORITY_TEST_REF_NEW,name:'New 13 Referral Root',mobile:'7888888888',email:'',status:'ACTIVE',referral:'FIRST MEMBER',level:1,levelMemberId:'L1-NEW13ROOT',joinedAt:'2026-10-06T00:00:00.000Z',levelReachedAt:{},passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:'New 13 Referral Root',bank:'TEST BANK',account:'TEST-NEWROOT',ifsc:'TEST0000001',branch:'TEST',upi:'new13root@upi',profileLocked:true};
+    db.members.push(newRoot);
+  }
+  const newRootId=newRoot.memberId;
+  SENIORITY_TEST_NEW_IDS.forEach(([memberId,mobile],i)=>{
+    let m=db.members.find(x=>x.memberId===memberId);
+    const stamp=`2026-10-06T00:01:${String(i).padStart(2,'0')}.000Z`;
+    const reached={};for(let l=2;l<=7;l++)reached[l]=stamp;
+    if(!m){
+      m={memberId,mobile,name:memberId,referral:newRootId,referralId:referralCode(memberId),status:'ACTIVE',level:1,levelMemberId:`L1-NEW13-${String(i+1).padStart(2,'0')}`,joinedAt:stamp,registeredAt:stamp,levelReachedAt:reached,passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:memberId,bank:'TEST BANK',account:`NEW13-${String(i+1).padStart(4,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};
+      db.members.push(m);
+    }else{
+      m.status='ACTIVE';m.referral=newRootId;m.level=1;m.levelMemberId=`L1-NEW13-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;m.levelReachedAt={...(m.levelReachedAt||{}),...reached};
+    }
+    m._seniorityTestNewOrder=i+1;
   });
   return true;
 }

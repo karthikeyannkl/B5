@@ -1,0 +1,29 @@
+NEW 13-REFERRAL TEST TREE
+
+This test tree is ADDED alongside existing data. No old members/data are cleared.
+
+ROOT LOGIN
+Name: New 13 Referral Root
+Member ID: B5-NEW13R
+Mobile: 7888888888
+Password: B5@123456
+Referral ID: REF-NEW13ROOT
+Referral URL parameter: ?ref=REF-NEW13ROOT
+
+13 DIRECT REFERRALS
+1. TEST01 - 7100000001
+2. TEST02 - 7100000002
+3. TEST03 - 7100000003
+4. TEST04 - 7100000004
+5. TEST05 - 7100000005
+6. TEST06 - 7100000006
+7. TEST07 - 7100000007
+8. TEST08 - 7100000008
+9. TEST09 - 7100000009
+10. TEST10 - 7100000010
+11. TEST11 - 7100000011
+12. TEST12 - 7100000012
+13. TEST13 - 7100000013
+
+All 13 direct referrals are seeded under the NEW ROOT and have level-reached timestamps for L2-L7 for seniority testing.
+Existing test data remains untouched.
