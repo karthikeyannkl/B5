@@ -1,0 +1,6 @@
+Upgrade Flow Correction v4
+- Admin payment details flow reviewed end-to-end.
+- Assigned requests now expose View/Resend controls.
+- Resend only re-sends existing payment details; it does not create a receiver confirmation request.
+- Frontend no longer blocks Send on a stale/blank receiver field; server remains authoritative for receiver selection.
+- Existing level/payment/seniority logic preserved.
