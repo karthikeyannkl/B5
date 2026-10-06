@@ -99,6 +99,7 @@ async function sendDetails(){
     r=fresh;state.selectedRequest=r;
     const receiverId=$('receiverIdInput').value.trim();
     if(!receiverId)throw new Error('Receiver Member ID is required.');
+    if(!$('receiverName').value.trim())throw new Error('Receiver details not found.');
     const body={amount:Number($('amount').value)};
     const result=await api('/api/leveltrack/admin/requests/'+encodeURIComponent(r.id)+'/assign',{method:'POST',body:JSON.stringify(body)});
     if(!result?.ok || result.request?.status!=='Assigned')throw new Error('Payment details were not confirmed by the server. Please try again.');

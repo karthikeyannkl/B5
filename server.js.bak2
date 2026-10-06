@@ -361,14 +361,7 @@ app.get('/api/leveltrack/admin/next-receiver/:level',(req,res)=>{
  res.json({receiver});
 });
 app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
- const r=db.leveltrackRequests.find(x=>x.id===req.params.id);if(!r)return res.status(404).json({error:'Upgrade request not found'});
- if(r.status==='Assigned'){
-  const u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);
-  const payment=u?db.leveltrackPayments.find(x=>x.upgradeId===u.id):null;
-  if(u&&payment)return res.json({ok:true,alreadyAssigned:true,request:r,upgrade:u,payment});
-  return res.status(409).json({error:'Request is marked Assigned but its payment record is missing. Please refresh Admin and retry.'});
- }
- if(r.status!=='Requested')return res.status(400).json({error:'Request is not pending'});
+ const r=db.leveltrackRequests.find(x=>x.id===req.params.id);if(!r)return res.status(404).json({error:'Upgrade request not found'});if(r.status!=='Requested')return res.status(400).json({error:'Request is not pending'});
  const m=ltMember(r.memberId);if(!m)return res.status(404).json({error:'Member not found'});const isReferral=r.kind==='REFERRAL_UPGRADE';const targetLevel=isReferral?Number(r.seniorityLevel||m.level):Number(r.to);const amount=isReferral?1000:Number(LEVEL_RULES[r.from]?.upgrade||0);if(!amount)return res.status(400).json({error:'Upgrade amount not configured'});const autoReceiver=nextSeniorReceiver(targetLevel,isReferral?m.memberId:'');const receiver=autoReceiver?ltMember(autoReceiver.memberId):null;if(!receiver)return res.status(400).json({error:'No eligible seniority receiver is available for this level. Add a member to the level queue first.'});
  const sr=isReferral?{upgrade:amount,parts:[{type:'member',label:'MEMBER / RECEIVER',amount}]}:splitRule(r.from);const parts=sr.parts;const rec=parts.find(x=>x.type==='member');if(rec)rec.accountDetails={name:receiver.name,memberId:receiver.memberId,mobile:receiver.mobile,accountHolder:receiver.accountHolder||receiver.name||'',bank:receiver.bank||'',account:receiver.account||'',ifsc:receiver.ifsc||'',branch:receiver.branch||'',upi:receiver.upi||''};
  const tr=parts.find(x=>x.type==='trust');if(tr)tr.accountDetails={...db.paymentSettings.trust};const ap=parts.findIndex(x=>x.type==='admin');if(ap>=0){const aa=allocateAdminAccount();if(!aa)return res.status(400).json({error:'No active Admin account configured'});parts[ap].accountDetails=aa;}
