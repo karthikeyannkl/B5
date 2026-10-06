@@ -132,7 +132,27 @@ async function sendDetails(){
     alert(e.message);
   }finally{state.busy=false}
 }
-async function approvePayment(id){if(!confirm('Approve all confirmed payment parts and complete this process?'))return;const btn=document.querySelector(`button[onclick="approvePayment('${id}')"]`);if(btn){btn.disabled=true;btn.textContent='SENDING APPROVAL…';btn.style.opacity='.65'}try{const u=(state.dashboard.upgrades||[]).find(x=>x.id===id);await api('/api/leveltrack/admin/payments/by-upgrade/'+encodeURIComponent(id)+'/approve',{method:'POST'});if(btn){btn.textContent='✓ APPROVAL SENT';btn.style.opacity='1'}alert(u?.kind==='REFERRAL_UPGRADE'?'Upgrade completed.':'Admin approval completed. Member moved to next level.');await load();}catch(e){if(btn){btn.disabled=false;btn.textContent='✓ ADMIN APPROVE & COMPLETE';btn.style.opacity='1'}alert(e.message)}}
+async function approvePayment(id){
+  if(!confirm('Approve all confirmed payment parts and complete this process?'))return;
+  if(state.busy)return;
+  state.busy=true;
+  const btn=document.querySelector(`button[onclick="approvePayment('${id}')"]`);
+  if(btn){btn.disabled=true;btn.textContent='SENDING APPROVAL…';btn.style.opacity='.65'}
+  try{
+    const latest=await api('/api/leveltrack/admin/dashboard');
+    const fresh=(latest.upgrades||[]).find(x=>x.id===id);
+    if(!fresh)throw new Error('Approval request is no longer available. Please refresh the Admin page.');
+    if(fresh.adminApproved){await load();return;}
+    const result=await api('/api/leveltrack/admin/payments/by-upgrade/'+encodeURIComponent(id)+'/approve',{method:'POST'});
+    if(!result?.ok)throw new Error('Approval was not confirmed by the server.');
+    if(btn){btn.textContent='✓ APPROVAL SENT';btn.style.opacity='1'}
+    alert(fresh.kind==='REFERRAL_UPGRADE'?'Upgrade completed.':'Admin approval completed. Member moved to next level.');
+    await load();
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='✓ CHECK & APPROVE PAYMENTS';btn.style.opacity='1'}
+    alert(e.message);
+  }finally{state.busy=false}
+}
 async function loadSettings(){try{const d=await api('/api/leveltrack/admin/payment-settings');const ps=d.paymentSettings;const arr=ps.admins||[];$('accountsEditor').innerHTML='<div class="grid3">'+arr.map((a,i)=>`<div class="account"><h4>Admin ${esc(a.id)}</h4><label>Name</label><input id="an_${i}" value="${esc(a.name)}"><label>Account Holder</label><input id="ah_${i}" value="${esc(a.accountHolder)}"><label>Bank</label><input id="ab_${i}" value="${esc(a.bank)}"><label>Account Number</label><input id="aa_${i}" value="${esc(a.account)}"><label>IFSC</label><input id="ai_${i}" value="${esc(a.ifsc)}"><label>UPI</label><input id="au_${i}" value="${esc(a.upi)}"><button class="secondary" onclick="saveAdmin(${i})">SAVE ADMIN ${esc(a.id)}</button></div>`).join('')+'</div>';const t=ps.trust||{};$('trustName').value=t.name||'';$('trustHolder').value=t.accountHolder||'';$('trustBank').value=t.bank||'';$('trustAccount').value=t.account||'TEMP-TRUST-001';$('trustIfsc').value=t.ifsc||'';$('trustUpi').value=t.upi||''}catch(e){}}
 async function saveAdmin(i){const d=await api('/api/leveltrack/admin/payment-settings');const a=d.paymentSettings.admins[i];a.name=$('an_'+i).value.trim();a.accountHolder=$('ah_'+i).value.trim();a.bank=$('ab_'+i).value.trim();a.account=$('aa_'+i).value.trim();a.ifsc=$('ai_'+i).value.trim();a.upi=$('au_'+i).value.trim();try{await api('/api/leveltrack/admin/payment-settings',{method:'POST',body:JSON.stringify({admins:d.paymentSettings.admins})});alert('Admin account saved.');state.settingsLoaded=false;await loadSettings();state.settingsLoaded=true}catch(e){alert(e.message)}}
 async function saveTrust(){try{await api('/api/leveltrack/admin/payment-settings',{method:'POST',body:JSON.stringify({trust:{name:$('trustName').value.trim(),accountHolder:$('trustHolder').value.trim(),bank:$('trustBank').value.trim(),account:$('trustAccount').value.trim(),ifsc:$('trustIfsc').value.trim(),upi:$('trustUpi').value.trim()}})});alert('Trust account saved.');state.settingsLoaded=false;await loadSettings();state.settingsLoaded=true}catch(e){alert(e.message)}}
