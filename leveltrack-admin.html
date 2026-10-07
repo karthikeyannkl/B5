@@ -97,56 +97,25 @@ async function sendDetails(){
     alert(e.message);
   }finally{state.busy=false}
 }
-async function approvePayment(id){if(!confirm('Approve all confirmed payment parts and complete this process?'))return;const btn=document.querySelector(`button[onclick="approvePayment('${id}')"]`);if(btn){btn.disabled=true;btn.textContent='SENDING APPROVAL…';btn.style.opacity='.65'}try{const u=(state.dashboard.upgrades||[]).find(x=>x.id===id);await api('/api/leveltrack/admin/payments/by-upgrade/'+encodeURIComponent(id)+'/approve',{method:'POST'});if(btn){btn.textContent='✓ APPROVAL SENT';btn.style.opacity='1'}alert(u?.kind==='REFERRAL_UPGRADE'?'Upgrade completed.':'Admin approval completed. Member moved to next level.');await load();}catch(e){if(btn){btn.disabled=false;btn.textContent='✓ ADMIN APPROVE & COMPLETE';btn.style.opacity='1'}alert(e.message)}}
-async function loadSettings(){try{const d=await api('/api/leveltrack/admin/payment-settings');const ps=d.paymentSettings;const arr=ps.admins||[];$('accountsEditor').innerHTML='<div class="grid3">'+arr.map((a,i)=>`<div class="account"><h4>Admin ${esc(a.id)}</h4><label>Name</label><input id="an_${i}" value="${esc(a.name)}"><label>Account Holder</label><input id="ah_${i}" value="${esc(a.accountHolder)}"><label>Bank</label><input id="ab_${i}" value="${esc(a.bank)}"><label>Account Number</label><input id="aa_${i}" value="${esc(a.account)}"><label>IFSC</label><input id="ai_${i}" value="${esc(a.ifsc)}"><label>UPI</label><input id="au_${i}" value="${esc(a.upi)}"><button class="secondary" onclick="saveAdmin(${i})">SAVE ADMIN ${esc(a.id)}</button></div>`).join('')+'</div>';const t=ps.trust||{};$('trustName').value=t.name||'';$('trustHolder').value=t.accountHolder||'';$('trustBank').value=t.bank||'';$('trustAccount').value=t.account||'TEMP-TRUST-001';$('trustIfsc').value=t.ifsc||'';$('trustUpi').value=t.upi||''}catch(e){}}
-async function saveAdmin(i){const d=await api('/api/leveltrack/admin/payment-settings');const a=d.paymentSettings.admins[i];a.name=$('an_'+i).value.trim();a.accountHolder=$('ah_'+i).value.trim();a.bank=$('ab_'+i).value.trim();a.account=$('aa_'+i).value.trim();a.ifsc=$('ai_'+i).value.trim();a.upi=$('au_'+i).value.trim();try{await api('/api/leveltrack/admin/payment-settings',{method:'POST',body:JSON.stringify({admins:d.paymentSettings.admins})});alert('Admin account saved.');state.settingsLoaded=false;await loadSettings();state.settingsLoaded=true}catch(e){alert(e.message)}}
-async function saveTrust(){try{await api('/api/leveltrack/admin/payment-settings',{method:'POST',body:JSON.stringify({trust:{name:$('trustName').value.trim(),accountHolder:$('trustHolder').value.trim(),bank:$('trustBank').value.trim(),account:$('trustAccount').value.trim(),ifsc:$('trustIfsc').value.trim(),upi:$('trustUpi').value.trim()}})});alert('Trust account saved.');state.settingsLoaded=false;await loadSettings();state.settingsLoaded=true}catch(e){alert(e.message)}}
-function fmtDate(d){const x=new Date();if(d==='today'){const z=new Date();return [z,z]}if(d==='week'){const z=new Date();const day=z.getDay()||7;const a=new Date(z);a.setDate(z.getDate()-day+1);return [a,z]}if(d==='month'){const z=new Date();return [new Date(z.getFullYear(),z.getMonth(),1),z]}return [x,x]}
-function iso(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
-function quickDate(kind){const [a,b]=fmtDate(kind);$('fromDate').value=iso(a);$('toDate').value=iso(b);runReport()}
-async function runReport(){const q=new URLSearchParams({from:$('fromDate').value,to:$('toDate').value,q:$('reportQ').value,level:$('reportLevel').value});try{const d=await api('/api/leveltrack/admin/payment-report?'+q.toString());const adminCards=Object.entries(d.adminByAccount||{}).map(([name,amt])=>`<div class="account"><b>${esc(name)}</b><br>₹${Number(amt||0).toLocaleString()}</div>`).join('');$('reportSummary').innerHTML=`<div class="grid3"><div class="account"><b>Member</b><br>₹${Number(d.totals.member||0).toLocaleString()}</div><div class="account"><b>Trust</b><br>₹${Number(d.totals.trust||0).toLocaleString()}</div><div class="account"><b>Admin Total</b><br>₹${Number(d.totals.admin||0).toLocaleString()}</div></div><div class="grid3" style="margin-top:8px">${adminCards||'<div class="account">No admin payments</div>'}</div><div class="success" style="margin-top:8px">${d.count} payment transaction(s) • Total allocated ₹${Number(d.totals.total||0).toLocaleString()}</div>`;if(!d.rows.length){$('reportTable').innerHTML='<div class="small">No payment records for this date range.</div>';return}$('reportTable').innerHTML='<table class="reportTable"><thead><tr><th>Date</th><th>Level</th><th>Payer</th><th>Receiver</th><th>Member</th><th>Trust</th><th>Admin</th><th>Status</th></tr></thead><tbody>'+d.rows.map(r=>{const g=Object.fromEntries(r.parts.map(x=>[x.type,x.amount]));return `<tr><td>${esc(r.date)}</td><td>${esc(r.level)}</td><td>${esc(r.payerMemberId)}</td><td>${esc(r.receiverMemberId)}</td><td>₹${Number(g.member||0).toLocaleString()}</td><td>₹${Number(g.trust||0).toLocaleString()}</td><td>₹${Number(g.admin||0).toLocaleString()}</td><td>${esc(r.status)}</td></tr>`}).join('')+'</tbody></table>'}catch(e){$('reportTable').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}}
-load();
-setInterval(refreshAdminLive,3000);
-</script><script id="b5-unified-accordion">
-(function(){
-  function makeCardAccordion(card){
-    if(!card || card.dataset.b5Acc==='1') return;
-    const head=card.querySelector(':scope > .title');
-    if(!head) return;
-    const body=document.createElement('div'); body.className='b5-accordion-body';
-    const nodes=Array.from(card.children).filter(n=>n!==head);
-    nodes.forEach(n=>body.appendChild(n));
-    head.classList.add('b5-accordion-head');
-    card.insertBefore(body, null);
-    card.dataset.b5Acc='1';
-    head.addEventListener('click',()=>card.classList.toggle('is-collapsed'));
-  }
-  function makeAccountAccordion(card){
-    if(!card || card.dataset.b5AccountAcc==='1') return;
-    const head=card.querySelector(':scope > h4');
-    if(!head) return;
-    const body=document.createElement('div'); body.className='b5-account-body';
-    const nodes=Array.from(card.children).filter(n=>n!==head);
-    nodes.forEach(n=>body.appendChild(n));
-    card.classList.add('b5-account-card');
-    card.appendChild(body);
-    card.dataset.b5AccountAcc='1';
-    head.addEventListener('click',()=>card.classList.toggle('is-collapsed'));
-  }
-  function init(){
-    document.querySelectorAll('.card').forEach(makeCardAccordion);
-    document.querySelectorAll('.account').forEach(makeAccountAccordion);
-    document.querySelectorAll('.level .lh').forEach(h=>{
-      if(h.dataset.b5LevelAcc==='1') return;
-      const body=h.nextElementSibling;
-      if(!body || !body.classList.contains('pay')) return;
-      h.dataset.b5LevelAcc='1'; h.style.cursor='pointer';
-      h.addEventListener('click',()=>{body.classList.toggle('hidden');});
-    });
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
-  const obs=new MutationObserver(()=>init());
-  obs.observe(document.body,{childList:true,subtree:true});
+async function approvePayment(id){
+  if(!confirm('Approve all confirmed payment parts and complete this process?'))return;
+  if(state.busy)return;
+  state.busy=true;
+  const btn=document.querySelector(`button[onclick="approvePayment('${id}')"]`);
+  if(btn){btn.disabled=true;btn.textContent='SENDING APPROVAL…';btn.style.opacity='.65';btn.dataset.b5ApprovalLock='1'}
+  try{
+    const latest=await api('/api/leveltrack/admin/dashboard');
+    const fresh=(latest.upgrades||[]).find(x=>x.id===id);
+    if(!fresh)throw new Error('Approval request is no longer available. Please refresh the Admin page.');
+    if(fresh.adminApproved){await load();return}
+    const result=await api('/api/leveltrack/admin/payments/by-upgrade/'+encodeURIComponent(id)+'/approve',{method:'POST'});
+    if(!result?.ok)throw new Error('Approval was not confirmed by the server.');
+    if(btn){btn.textContent='✓ APPROVAL SENT';btn.style.opacity='1'}
+    await load();
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='✓ CHECK & APPROVE PAYMENTS';btn.style.opacity='1'}
+    alert(e.message)
+  }finally{state.busy=false}
 })();
 </script>
 
