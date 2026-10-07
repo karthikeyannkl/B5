@@ -296,7 +296,15 @@ function seniorityQueue(level){
   if(firstMember && target>=2 && !eligible.some(m=>m.memberId===firstMember.memberId)) eligible.push(firstMember);
   eligible.sort((a,b)=>{
     if(String(process.env.B5_SENIORITY_TEST_MODE||'')==='1'){
-      const ao=Number(a._seniorityTestOrder||999999),bo=Number(b._seniorityTestOrder||999999);
+      // Fresh NEW13 test tree must be isolated at the front of the test queue.
+      // This lets the new root exercise #1 → #13 without old test payments
+      // selecting the previous KARTHI/SATHYA queue first.
+      const rank=(m)=>{
+        if(Number.isFinite(Number(m._seniorityTestNewOrder))) return Number(m._seniorityTestNewOrder);
+        if(Number.isFinite(Number(m._seniorityTestOrder))) return 1000+Number(m._seniorityTestOrder);
+        return 2000000;
+      };
+      const ao=rank(a),bo=rank(b);
       if(ao!==bo)return ao-bo;
     }
     if(firstMember && a.memberId===firstMember.memberId && b.memberId!==firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder)return -1;
@@ -304,7 +312,12 @@ function seniorityQueue(level){
     const at=(m)=>String((m.levelReachedAt&&m.levelReachedAt[target])||m.upgradeDate||m.joinedAt||m.registeredAt||m.createdAt||'');
     return at(a).localeCompare(at(b));
   });
-  return eligible.map((m,i)=>{const completed=db.leveltrackPayments.filter(p=>{const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);return p.receiverMemberId===m.memberId&&p.adminApproved&&Number(u?.seniorityLevel||u?.to)===target;}).length;const required=earningsRequired(target);return {position:i+1,memberId:m.memberId,name:m.name,mobile:m.mobile,reachedAt:(m.levelReachedAt&&m.levelReachedAt[target])||m.joinedAt||m.registeredAt||m.createdAt||null,completed,required,status:completed>=required?'COMPLETED':'ACTIVE'};});
+  return eligible.map((m,i)=>{const completed=db.leveltrackPayments.filter(p=>{
+      const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);
+      const seniorityLevel=Number(p.seniorityLevel||u?.seniorityLevel||u?.to||0);
+      return p.receiverMemberId===m.memberId&&p.adminApproved&&seniorityLevel===target;
+    }).length;
+    const required=earningsRequired(target);return {position:i+1,memberId:m.memberId,name:m.name,mobile:m.mobile,reachedAt:(m.levelReachedAt&&m.levelReachedAt[target])||m.joinedAt||m.registeredAt||m.createdAt||null,completed,required,status:completed>=required?'COMPLETED':'ACTIVE'};});
 }
 function nextSeniorReceiver(level,excludeMemberId=''){return seniorityQueue(level).find(x=>x.status==='ACTIVE'&&x.memberId!==excludeMemberId)||null;}
 function nextLevelMemberId(level){

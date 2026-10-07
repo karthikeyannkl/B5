@@ -380,6 +380,7 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
 #unifiedMemberSidebar .uitem.active{color:#fff!important;background:linear-gradient(135deg,#075B35,#0b7654)!important}
 #unifiedMemberSidebar .b5-subitem{color:#20312a!important;background:#f8faf8!important}
 #unifiedMemberSidebar .b5-subitem.active{color:#fff!important;background:#075B35!important}
+#unifiedMemberSidebar .b5-receiver-top{margin:4px 0 6px!important;border:1px solid #c89a4b!important;background:#f7faf7!important;font-weight:850!important}
 </style>
 <button id="unifiedMemberMenuBtn" onclick="uMemberToggle()" aria-label="Open Member menu">☰</button>
 <div id="unifiedMemberOverlay" onclick="uMemberToggle()"></div>
@@ -394,6 +395,7 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
     <button class="uitem" onclick="uMemberMain('pinwallet',this)">🔐 My PIN Wallet</button>
   <div class="ustitle b5-lt-title" style="margin-top:14px">Level Tracking</div>
   <button class="uitem b5-lt-toggle" type="button" onclick="uMemberLevelTrackToggle(this)">📊 Level Tracking <span>⌄</span></button>
+  <button class="uitem b5-subitem b5-receiver-top" onclick="uMemberLevelTrack('receiver',this)">▣ Receiver — Payment Confirmation</button>
   <div id="b5MemberLTOptions" class="b5-lt-options">
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('dashboard',this)">⌂ Dashboard</button>
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('membership',this)">◈ My Membership</button>
@@ -402,7 +404,6 @@ window.addEventListener('online',()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('earnings',this)">₹ My Earnings</button>
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('history',this)">◷ Upgrade History</button>
     <button class="uitem b5-subitem" onclick="uMemberLevelTrack('payment',this)">✓ Payment Confirmation</button>
-    <button class="uitem b5-subitem" onclick="uMemberLevelTrack('receiver',this)">▣ Receiver</button>
   </div>
 </aside>
 <iframe id="unifiedMemberFrame" title="LevelTrack Member Portal"></iframe>
