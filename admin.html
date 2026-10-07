@@ -400,9 +400,10 @@ window.uAdminLevelTrack=function(section,b){
    if(!adminLTLoaded){
      adminLTLoaded=true;
      frame.addEventListener('load',send,{once:true});
-     frame.src='/leveltrack-admin.html?v=FINAL-CLEAN';
+     frame.src='/leveltrack-admin.html?v=FINAL-CLEAN&section='+encodeURIComponent(target);
    } else {
      send();
+     setTimeout(send,120);
    }
    window.scrollTo({top:0,behavior:'smooth'});
  }

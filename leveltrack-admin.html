@@ -140,7 +140,7 @@ async function approvePayment(id){
   }
   function handle(e){if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;show(e.data.section||'dashboard');}
   window.addEventListener('message',handle);
-  window.addEventListener('load',()=>show('dashboard'));
+  window.addEventListener('load',()=>{const q=new URLSearchParams(location.search).get('section');show(q&&sections[q]?q:'dashboard');});
 })();
 </script>
 <style id="b5-v12-nav-style">
