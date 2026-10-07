@@ -127,10 +127,10 @@ function seedSeniorityTestData(){
       let m=db.members.find(x=>x.memberId===memberId);
       const stamp=`2026-10-07T00:01:${String(i).padStart(2,'0')}.000Z`;
       if(!m){
-        m={memberId,mobile,name:memberId,referral:nestedParentId,referralId:referralCode(memberId),status:'ACTIVE',level:1,levelMemberId:`L1-NEST-${String(i+1).padStart(2,'0')}`,joinedAt:stamp,registeredAt:stamp,levelReachedAt:{},passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:memberId,bank:'TEST BANK',account:`NEST-${String(i+1).padStart(4,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};
+        m={memberId,mobile,name:memberId,referral:nestedTestParentId,referralId:referralCode(memberId),status:'ACTIVE',level:1,levelMemberId:`L1-NEST-${String(i+1).padStart(2,'0')}`,joinedAt:stamp,registeredAt:stamp,levelReachedAt:{},passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:memberId,bank:'TEST BANK',account:`NEST-${String(i+1).padStart(4,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};
         db.members.push(m);
       }else{
-        m.status='ACTIVE';m.referral=nestedParentId;m.level=1;m.levelMemberId=`L1-NEST-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;m.levelReachedAt={};
+        m.status='ACTIVE';m.referral=nestedTestParentId;m.level=1;m.levelMemberId=`L1-NEST-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;m.levelReachedAt={};
       }
     });
   }
