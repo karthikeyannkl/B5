@@ -1,0 +1,9 @@
+TARGETED SENIORITY FIX
+
+- Seniority queue now uses only members who actually reached the requested level.
+- Removed automatic injection of the first/root member into every level.
+- Seniority completion is counted only from an approved payment whose receiver and exact seniority level match.
+- Duplicate payment rows for the same upgrade are counted once.
+- ₹1,000 Additional Upgrade remains tied to its exact seniority level and is not counted in another level.
+- User-side Level Tracking menu keeps the existing layout; only a small bottom spacing was added so the Receiver option can be reached comfortably on mobile.
+- No upgrade amounts, payment splits, receiver-selection rules, or approval flow were changed.
