@@ -358,7 +358,10 @@ function ltDashboard(memberId){
   const pendingRequest=pendingLeveltrackRequest(memberId);
   let upgrade=(pendingRequest && db.leveltrackUpgrades.find(u=>u.requestId===pendingRequest.id)) || null;
   if(upgrade && pendingRequest){ upgrade={...pendingRequest,...upgrade}; }
+  // After Admin approval, the old payment card must disappear immediately.
+  if(upgrade && upgrade.adminApproved){ upgrade=null; }
   if(!upgrade && pendingRequest && pendingRequest.status==='Assigned'){ upgrade={...pendingRequest}; }
+  if(upgrade && upgrade.adminApproved){ upgrade=null; }
   if(upgrade && String(upgrade.status||'').toLowerCase()==='assigned') { const saved=db.leveltrackPayments.find(p=>p.upgradeId===upgrade.id); upgrade={...pendingRequest,...upgrade,payment:saved||{payee:upgrade.payee||'',payeeId:upgrade.payeeId||'',payeePhone:upgrade.payeePhone||'',accountHolder:upgrade.accountHolder||'',bank:upgrade.bank||'',account:upgrade.account||'',ifsc:upgrade.ifsc||'',branch:upgrade.branch||'',upi:upgrade.upi||'',amount:upgrade.amount||0,parts:upgrade.paymentParts||[]}}; }
   const action=nextMemberAction(m);
   const payments=db.leveltrackPayments.filter(p=>p.receiverMemberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -394,6 +397,9 @@ app.get('/api/leveltrack/admin/next-receiver/:level',(req,res)=>{
  const receiver=nextSeniorReceiver(level,String(req.query.excludeMemberId||''));
  if(!receiver)return res.json({receiver:null});
  res.json({receiver});
+});
+app.get('/api/leveltrack/admin/seniority',(req,res)=>{
+  res.json({ok:true,seniority:{2:seniorityQueue(2),3:seniorityQueue(3),4:seniorityQueue(4),5:seniorityQueue(5),6:seniorityQueue(6),7:seniorityQueue(7)}});
 });
 app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
  const r=db.leveltrackRequests.find(x=>x.id===req.params.id);if(!r)return res.status(404).json({error:'Upgrade request not found'});

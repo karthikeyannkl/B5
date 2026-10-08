@@ -105,6 +105,13 @@ function renderUpgrade(level,count){
    }
    const left=Math.max(0,need-count);$('memberStatus').innerHTML=left>0?`<div class="warn">Need ${left} more direct referral${left===1?'':'s'} for the next step.</div>`:'<div class="note">Complete the current Upgrade process to unlock the next Level Upgrade.</div>';$('memberPayment').innerHTML='';return;
  }
+ if(u && u.adminApproved){
+   state.lt.upgrade=null;
+   $('memberStatus').innerHTML='<div class="success"><b>✓ UPGRADE COMPLETED</b><br>'+(u.kind==='REFERRAL_UPGRADE'?'Your Advanced Referral Upgrade is completed.':'Your Level Upgrade is completed.')+'</div>';
+   $('memberPayment').innerHTML='';
+   renderHistory();
+   return;
+ }
  const isExtra=u.kind==='REFERRAL_UPGRADE';
  const p=u.payment;
  $('memberStatus').innerHTML=String(u.status||'').toLowerCase()==='assigned'?(isExtra?'<div class="success">✓ Upgrade payment details received from Admin.</div>':'<div class="success">✓ Payment details received from Admin for L'+u.from+' → L'+u.to+'</div>'):(isExtra?'<div class="success"><b>✓ UPGRADE REQUEST SENT</b><br>Waiting for Admin payment details.</div>':'<div class="success"><b>✓ UPGRADE REQUEST SENT</b><br>Level '+u.from+' → Level '+u.to+' • Waiting for Admin.</div>');
@@ -125,7 +132,7 @@ function renderHistory(){const a=state.lt.upgradeHistory||[];$('history').innerH
 async function loadReceiver(){const mid=id();if(!mid)return;try{const d=await api('/api/leveltrack/member/dashboard/'+encodeURIComponent(mid));const p=(d.incomingPayments||[]).find(x=>x.memberPaid&&!x.memberAccepted&&!x.adminApproved);if(!p){$('receiverContent').innerHTML='<div class="note">No incoming payment confirmation is waiting for you.</div>';$('receiverButtons').innerHTML='';return}const memberPart=(p.parts||[]).find(x=>x.type==='member')||null;let proofHtml='';if(memberPart?.screenshot){proofHtml='<div class="title" style="margin-top:12px">RECEIVER PAYMENT PROOF</div><div class="pay"><b>MEMBER / RECEIVER PAYMENT</b><div class="small" style="margin-top:8px">Payment Screenshot</div><img src="'+memberPart.screenshot+'" alt="Payment screenshot" onclick="openPaymentImage(this.src)" style="display:block;width:120px;height:90px;object-fit:cover;margin-top:6px;border:1px solid #dfe5df;border-radius:10px;background:#f7f9f7;cursor:zoom-in"><div class="small" style="margin-top:5px">Tap image to view full size</div></div>'}$('receiverContent').innerHTML='<div class="success"><b>PAYMENT TO CONFIRM</b></div>'+detail('Payment Sent By Member ID',p.fromMemberId)+detail('Upgrade',p.kind==='REFERRAL_UPGRADE'?'Advanced Referral Upgrade • Seniority L2':'L'+p.from+' → L'+p.to)+detail('Receiver Amount','₹ '+Number(memberPart?.amount||0).toLocaleString())+proofHtml;$('receiverButtons').innerHTML='<button class="primary" onclick="receiverAction(\''+p.id+'\')">✓ PAYMENT RECEIVED</button>'}catch(e){$('receiverContent').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}}
 async function receiverAction(pid){const btn=document.querySelector(`button[onclick="receiverAction('${pid}')"]`);if(btn){btn.disabled=true;btn.textContent='✓ REQUEST SENT';btn.style.opacity='.72'}try{await api('/api/leveltrack/member/incoming/'+encodeURIComponent(pid)+'/accept',{method:'POST',body:JSON.stringify({memberId:id()})});if(btn){btn.textContent='✓ PAYMENT RECEIVED SENT';btn.style.opacity='1'}alert('Payment received confirmed.');await load();await loadReceiver()}catch(e){if(btn){btn.disabled=false;btn.textContent='✓ PAYMENT RECEIVED';btn.style.opacity=''}alert(e.message)}}
 function copyReferral(){navigator.clipboard?.writeText($('refLink').value);alert('Referral link copied.')}
-setInterval(()=>{if(!paymentProofDraftActive())load()},5000);setInterval(()=>{if(!$('receiver').classList.contains('hidden'))loadReceiver()},5000);load();
+setInterval(()=>{if(!paymentProofDraftActive() || state.lt?.upgrade?.adminApproved)load()},3000);setInterval(()=>{if(!$('receiver').classList.contains('hidden'))loadReceiver()},5000);load();
 </script><script id="b5-unified-accordion">
 (function(){
   function makeCardAccordion(card){
