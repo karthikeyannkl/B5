@@ -395,10 +395,8 @@ window.uAdminLevelTrack=function(section,b){
    if(statsCard) statsCard.style.display='none';
    hideMainPanels();
    frame.classList.add('show');
-   frame.style.visibility='hidden';
    const target=section||'dashboard';
-   const reveal=()=>{requestAnimationFrame(()=>requestAnimationFrame(()=>{frame.style.visibility='visible'}))};
-   const send=()=>{frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section:target},location.origin);reveal()};
+   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section:target},location.origin);
    if(!adminLTLoaded){
      adminLTLoaded=true;
      frame.addEventListener('load',send,{once:true});
