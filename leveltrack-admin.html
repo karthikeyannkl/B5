@@ -119,6 +119,16 @@ async function approvePayment(id){
 })();
 </script>
 
+<script id="b5-leveltrack-admin-init-v13">
+(function(){
+  async function initLevelTrackAdmin(){
+    try{ await load(); }catch(e){}
+    try{ setInterval(refreshAdminLive,5000); }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initLevelTrackAdmin);
+  else initLevelTrackAdmin();
+})();
+</script>
 
 <script id="b5-leveltrack-admin-nav-v12">
 (function(){
