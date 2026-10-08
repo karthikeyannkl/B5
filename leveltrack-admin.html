@@ -64,33 +64,70 @@ body{background:radial-gradient(circle at 15% 0,#eef6f0 0,#f6f8f5 35%,#f3f4f1 10
 </main>
 <script>
 const splitRules={1:{total:1000,member:1000,trust:0,admin:0},2:{total:3000,member:3000,trust:0,admin:0},3:{total:20000,member:15600,trust:2400,admin:2000},4:{total:100000,member:72000,trust:16000,admin:12000},5:{total:200000,member:148000,trust:32000,admin:20000},6:{total:500000,member:240000,trust:160000,admin:100000}};
-let state={dashboard:null,selectedRequest:null,settingsLoaded:false,busy:false};const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+let state={dashboard:null,selectedRequest:null,settingsLoaded:false,busy:false,currentSection:'dashboard',lastLiveKey:''};const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 async function api(url,opt={}){const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opt});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.error||'Request failed');return d}
 function memberMap(){const a=state.dashboard?.members||[];return Object.fromEntries(a.map(m=>[m.memberId,m]))}
-function renderAdminDashboard(d){state.dashboard=d;renderQueue();const members=memberMap();const requests=(d.requests||[]).filter(r=>r.status!=='Completed');const first=requests[0];$('aLevel').textContent=first?'L'+first.from:'—';$('aRefs').textContent=first?(first.directReferralCount??'—'):'—';$('aNext').textContent=first?'L'+first.to:'—';$('adminRequest').innerHTML=requests.length?requests.map(r=>{const m=members[r.memberId]||{name:r.memberId,mobile:'',memberId:r.memberId};const u=(d.upgrades||[]).find(x=>x.requestId===r.id);const pay=(d.payments||[]).find(x=>x.upgradeId===u?.id);const label=r.kind==='REFERRAL_UPGRADE'?`Upgrade • Seniority L${r.seniorityLevel||r.from}`:`L${r.from} → L${r.to}`;let action=`<button class="primary" onclick="selectRequest('${r.id}')">SELECT REQUEST</button>`;if(u&&pay&&!u.adminApproved){const submittedParts=(pay.parts||[]).filter(x=>x.screenshot||x.utr);const proofHtml=submittedParts.length?`<div class="info" style="margin-top:8px"><b>PAYMENT PROOFS TO CHECK</b>${submittedParts.map(x=>`<div class="pay" style="margin-top:7px;border-top:1px solid #e5e9e5;padding-top:7px"><b>${esc(x.label||'PAYMENT')}</b><br><span class="small">UTR: ${esc(x.utr||'—')} • Status: ${esc(x.status||'PENDING')}</span>${x.screenshot?`<a href="${x.screenshot}" target="_blank" rel="noopener"><img src="${x.screenshot}" alt="Payment screenshot" style="display:block;width:100%;max-width:420px;max-height:420px;object-fit:contain;margin-top:7px;border:1px solid #dfe5df;border-radius:10px;background:#f7f9f7"></a>`:''}</div>`).join('')}</div>`:'';action=`<div class="success">✓ PAYMENT DETAILS SENT • ${pay.memberAccepted?'RECEIVER CONFIRMED':'WAITING FOR MEMBER PAYMENT'}${pay.memberPaid?'<br>✓ Payment proofs received. Admin can check the screenshots below.':''}</div>${proofHtml}`;if(u&&pay?.memberAccepted&&!u.adminApproved)action+=`<button class="primary" style="background:#b7791f" onclick="approvePayment('${u.id}')">✓ CHECK & APPROVE PAYMENTS</button>`;}if(u&&u.adminApproved)action=`<div class="success">✓ Completed • ${esc(label)}</div>`;return `<div class="member"><b>${esc(m.name)}</b><div class="small">${esc(m.mobile)} • ${esc(m.memberId)}</div><div class="small">${esc(label)} • ${esc(r.status)}</div>${pay?`<div class="small">Payment: ${pay.adminApproved?'Approved':pay.memberAccepted?'Receiver Confirmed':pay.memberPaid?'Proof Submitted':'Pending'}</div>`:''}${action}</div>`}).join(''):'<div class="warn">No active upgrade request.</div>';const hist=(d.upgrades||[]).filter(x=>x.status==='Completed'||x.adminApproved).slice(0,50);$('history').innerHTML=hist.length?hist.map(x=>`<div class="member"><b>${esc(x.memberId)} — ${x.kind==='REFERRAL_UPGRADE'?`Upgrade • Seniority L${x.seniorityLevel||x.from}`:`L${x.from} → L${x.to}`}</b><div class="small">${x.completedAt?new Date(x.completedAt).toLocaleString():''}</div></div>`).join(''):'<div class="small">No upgrade history yet.</div>'}
-async function load(){try{const d=await api('/api/leveltrack/admin/dashboard');renderAdminDashboard(d);if(!state.settingsLoaded){await loadSettings();state.settingsLoaded=true}}catch(e){$('adminRequest').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}}
-async function refreshAdminLive(){if(state.busy)return;try{const d=await api('/api/leveltrack/admin/dashboard');state.dashboard=d;renderQueue();const selectedId=state.selectedRequest?.id;renderAdminDashboard(d);if(selectedId){const latest=(d.requests||[]).find(x=>x.id===selectedId);if(latest&&latest.status!=='Completed')state.selectedRequest=latest;else state.selectedRequest=null;}}catch(e){/* keep current admin screen on transient refresh errors */}}
-function renderQueue(){const wrap=$('allQueueTables');if(!wrap)return;const levels=[2,3,4,5,6,7];wrap.innerHTML=levels.map(level=>{const q=state.dashboard?.seniority?.[level]||[];const active=q.find(x=>x.status==='ACTIVE');const next=active?`#${active.position} • ${esc(active.name)} • ${esc(active.memberId)}`:'No active receiver';const rows=q.length?q.map(x=>`<tr><td class="b5-pos">#${x.position}</td><td><b>${esc(x.name)}</b><br><span class="small">${esc(x.memberId)} • ${esc(x.mobile)}</span></td><td>${esc(x.reachedAt?new Date(x.reachedAt).toLocaleString():'—')}</td><td>${x.completed}/${x.required}</td><td class="${x.status==='ACTIVE'?'b5-status-active':'b5-status-completed'}">${esc(x.status)}</td></tr>`).join(''):`<tr><td colspan="5" class="small">No members have reached L${level} yet.</td></tr>`;return `<div class="b5-queue-card ${level===2?'':'closed'}"><div class="b5-queue-head" onclick="this.parentElement.classList.toggle('closed')"><span>LEVEL ${level} <span class="small">• ${q.length} senior${q.length===1?'':'s'}</span></span><span style="font-size:10px;font-weight:700">Next: ${next}</span></div><div class="b5-queue-body"><div class="b5-queue-next">Payment system will automatically use: <b>${next}</b></div><div class="tableWrap"><table class="b5-queue-table"><thead><tr><th>Senior</th><th>Member</th><th>Reached</th><th>Earnings</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`}).join('')}
+function renderAdminDashboard(d){state.dashboard=d;renderQueue();const members=memberMap();const requests=(d.requests||[]).filter(r=>r.status!=='Completed');const first=requests[0];$('aLevel').textContent=first?'L'+first.from:'—';$('aRefs').textContent=first?(first.directReferralCount??'—'):'—';$('aNext').textContent=first?'L'+first.to:'—';$('adminRequest').innerHTML=requests.length?requests.map(r=>{const m=members[r.memberId]||{name:r.memberId,mobile:'',memberId:r.memberId};const u=(d.upgrades||[]).find(x=>x.requestId===r.id);const pay=(d.payments||[]).find(x=>x.upgradeId===u?.id);const label=r.kind==='REFERRAL_UPGRADE'?`Upgrade • Seniority L${r.seniorityLevel||r.from}`:`L${r.from} → L${r.to}`;const selected=state.selectedRequest?.id===r.id;let action=selected?`<button class="primary" disabled style="opacity:.72">✓ REQUEST SELECTED</button>`:`<button class="primary" onclick="selectRequest('${r.id}')">SELECT REQUEST</button>`;if(u&&pay&&!u.adminApproved){const submittedParts=(pay.parts||[]).filter(x=>x.screenshot||x.utr);const proofHtml=submittedParts.length?`<div class="info" style="margin-top:8px"><b>PAYMENT PROOFS TO CHECK</b>${submittedParts.map(x=>`<div class="pay" style="margin-top:7px;border-top:1px solid #e5e9e5;padding-top:7px"><b>${esc(x.label||'PAYMENT')}</b><br><span class="small">UTR: ${esc(x.utr||'—')} • Status: ${esc(x.status||'PENDING')}</span>${x.screenshot?`<img src="${x.screenshot}" alt="Payment screenshot" onclick="openPaymentImage(this.src)" style="display:block;width:120px;height:90px;object-fit:cover;margin-top:7px;border:1px solid #dfe5df;border-radius:10px;background:#f7f9f7;cursor:zoom-in"><div class="small" style="margin-top:5px">Click image to view full size</div>`:''}</div>`).join('')}</div>`:'';action=`<div class="success">✓ PAYMENT DETAILS SENT • ${pay.memberAccepted?'RECEIVER CONFIRMED':'WAITING FOR MEMBER PAYMENT'}${pay.memberPaid?'<br>✓ Payment proofs received. Admin can check the screenshots below.':''}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="secondary" onclick="viewAssignedRequest('${r.id}')">VIEW PAYMENT DETAILS</button><button class="secondary" onclick="resendDetails('${r.id}')">RESEND DETAILS</button></div>${proofHtml}`;if(u&&pay?.memberAccepted&&!u.adminApproved)action+=`<button class="primary" style="background:#b7791f" onclick="approvePayment('${u.id}')">✓ CHECK & APPROVE PAYMENTS</button>`;}if(u&&u.adminApproved)action=`<div class="success">✓ Completed • ${esc(label)}</div>`;return `<div class="member"><b>${esc(m.name)}</b><div class="small">${esc(m.mobile)} • ${esc(m.memberId)}</div><div class="small">${esc(label)} • ${esc(r.status)}</div>${pay?`<div class="small">Payment: ${pay.adminApproved?'Approved':pay.memberAccepted?'Receiver Confirmed':pay.memberPaid?'Proof Submitted':'Pending'}</div>`:''}${action}</div>`}).join(''):'<div class="warn">No active upgrade request.</div>';const hist=(d.upgrades||[]).filter(x=>x.status==='Completed'||x.adminApproved).slice(0,50);$('history').innerHTML=hist.length?hist.map(x=>`<div class="member"><b>${esc(x.memberId)} — ${x.kind==='REFERRAL_UPGRADE'?`Upgrade • Seniority L${x.seniorityLevel||x.from}`:`L${x.from} → L${x.to}`}</b><div class="small">${x.completedAt?new Date(x.completedAt).toLocaleString():''}</div></div>`).join(''):'<div class="small">No upgrade history yet.</div>'}
+function liveKey(d){const rq=(d.requests||[]).map(x=>[x.id,x.status,x.assignedAt,x.seniorityLevel]).join('|');const up=(d.upgrades||[]).map(x=>[x.id,x.status,x.adminApproved,x.memberPaid,x.memberAccepted,x.completedAt,x.seniorityLevel,x.seniorityPosition]).join('|');const pp=(d.payments||[]).map(x=>[x.id,x.upgradeId,x.adminApproved,x.memberPaid,x.memberAccepted,(x.parts||[]).map(z=>[z.type,z.status,z.utr,!!z.screenshot].join(':')).join(',')]).join('|');const sq=Object.entries(d.seniority||{}).map(([l,q])=>l+':'+q.map(x=>x.memberId+','+x.completed+','+x.status).join(';')).join('|');return rq+'#'+up+'#'+pp+'#'+sq;}
+async function load(){try{const d=await api('/api/leveltrack/admin/dashboard');const selectedId=state.selectedRequest?.id;state.dashboard=d;if(selectedId){const latest=(d.requests||[]).find(x=>x.id===selectedId);state.selectedRequest=latest&&latest.status!=='Completed'?latest:null;}renderAdminDashboard(d);state.lastLiveKey=liveKey(d);if(!state.settingsLoaded){await loadSettings();state.settingsLoaded=true}}catch(e){$('adminRequest').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}}
+async function refreshAdminLive(){if(state.busy)return;try{const d=await api('/api/leveltrack/admin/dashboard');const key=liveKey(d);if(key===state.lastLiveKey)return;const selectedId=state.selectedRequest?.id;state.dashboard=d;if(selectedId){const latest=(d.requests||[]).find(x=>x.id===selectedId);state.selectedRequest=latest&&latest.status!=='Completed'?latest:null;}renderAdminDashboard(d);state.lastLiveKey=key;}catch(e){/* keep current admin screen on transient refresh errors */}}
+function toggleQueue(level){state.queueOpen=state.queueOpen||{};state.queueOpen[level]=!state.queueOpen[level];renderQueue()}
+function renderQueue(){const wrap=$('allQueueTables');if(!wrap)return;state.queueOpen=state.queueOpen||{};if(state.queueOpen[2]===undefined)state.queueOpen[2]=true;const levels=[2,3,4,5,6,7];wrap.innerHTML=levels.map(level=>{const q=state.dashboard?.seniority?.[level]||[];const active=q.find(x=>x.status==='ACTIVE');const next=active?`#${active.position} • ${esc(active.name)} • ${esc(active.memberId)}`:'No active receiver';const rows=q.length?q.map(x=>`<tr><td class="b5-pos">#${x.position}</td><td><b>${esc(x.name)}</b><br><span class="small">${esc(x.memberId)} • ${esc(x.mobile)}</span></td><td>${esc(x.reachedAt?new Date(x.reachedAt).toLocaleString():'—')}</td><td>${x.completed}/${x.required}</td><td class="${x.status==='ACTIVE'?'b5-status-active':'b5-status-completed'}">${esc(x.status)}</td></tr>`).join(''):`<tr><td colspan="5" class="small">No members have reached L${level} yet.</td></tr>`;const open=state.queueOpen[level]!==false;return `<div class="b5-queue-card ${open?'':'closed'}"><div class="b5-queue-head" onclick="toggleQueue(${level})"><span>LEVEL ${level} <span class="small">• ${q.length} senior${q.length===1?'':'s'}</span></span><span style="font-size:10px;font-weight:700">Next: ${next}</span></div><div class="b5-queue-body"><div class="b5-queue-next">Payment system will automatically use: <b>${next}</b></div><div class="tableWrap"><table class="b5-queue-table"><thead><tr><th>Senior</th><th>Member</th><th>Reached</th><th>Earnings</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`}).join('')}
 async function selectRequest(id){if(state.busy)return;const r=(state.dashboard.requests||[]).find(x=>x.id===id);if(!r)return;state.selectedRequest=r;const btn=document.querySelector(`button[onclick="selectRequest('${id}')"]`);if(btn){btn.disabled=true;btn.textContent='✓ REQUEST SELECTED';btn.style.opacity='.65'}const label=r.kind==='REFERRAL_UPGRADE'?`Upgrade • Seniority L${r.seniorityLevel||r.from}`:`L${r.from} → L${r.to}`;$('selectedInfo').innerHTML=`<b>Selected:</b> ${esc(r.memberId)} • ${esc(label)}`;$('paymentForm').classList.remove('hidden');$('receiverIdInput').value='';$('receiverLookup').textContent='';$('seniorAutoText').textContent='Finding the next eligible senior…';['receiverName','receiverPhone','accountHolder','bankName','accountNumber','ifsc','branchName','upi'].forEach(id=>$(id).value='');$('amount').value=r.kind==='REFERRAL_UPGRADE'?1000:(splitRules[r.from]?.total||'');$('amountLabel').textContent=r.kind==='REFERRAL_UPGRADE'?'Additional Upgrade Amount':'Total Upgrade Amount';if(r.kind==='REFERRAL_UPGRADE')renderSplitPreview(null,true);else renderSplitPreview(r.from,false);await useNextSeniorReceiver()}
 async function useNextSeniorReceiver(){const r=state.selectedRequest;if(!r)return;try{const level=r.kind==='REFERRAL_UPGRADE'?(r.seniorityLevel||r.from):r.to;const exclude=r.kind==='REFERRAL_UPGRADE'?r.memberId:'';const d=await api('/api/leveltrack/admin/next-receiver/'+encodeURIComponent(level)+'?excludeMemberId='+encodeURIComponent(exclude));const next=d.receiver;if(!next){$('seniorAutoText').textContent='No active seniority receiver is available for L'+level+' yet.';return}$('receiverIdInput').value=next.memberId;$('seniorAutoText').innerHTML=`<b>#${next.position}</b> ${esc(next.name)} • ${esc(next.memberId)}<br><span class="small">L${level} seniority • ${next.completed}/${next.required} completed</span>`;await fillReceiver()}catch(e){$('seniorAutoText').textContent=e.message}}
 function renderSplitPreview(level,isExtra=false){if(isExtra){$('splitPreview').innerHTML='<div class="split"><div>ADDITIONAL UPGRADE<b>₹1,000</b></div></div><div class="small" style="margin-top:6px">This is the additional Upgrade payment. It is not a Level 1 payment.</div>';return}const r=splitRules[level];if(!r){$('splitPreview').innerHTML='';return}const cells=[['MEMBER',r.member],['TRUST',r.trust],['ADMIN',r.admin]].filter(x=>x[1]>0);$('splitPreview').innerHTML='<div class="split">'+cells.map(x=>`<div>${x[0]}<b>₹${Number(x[1]).toLocaleString()}</b></div>`).join('')+'</div>'}
 async function fillReceiver(){const id=$('receiverIdInput').value.trim();if(!id){$('receiverLookup').textContent='';return}try{const d=await api('/api/leveltrack/admin/member-details/'+encodeURIComponent(id));const m=d.member||{};$('receiverName').value=m.name||'';$('receiverPhone').value=m.mobile||'';$('accountHolder').value=m.accountHolder||m.name||'';$('bankName').value=m.bank||'';$('accountNumber').value=m.account||'';$('ifsc').value=m.ifsc||'';$('branchName').value=m.branch||'';$('upi').value=m.upi||'';$('receiverLookup').innerHTML='<span style="color:#227442;font-weight:800">✓ Receiver found</span>'}catch(e){$('receiverLookup').innerHTML='<span style="color:#b42318">✕ Member ID not found</span>'}}
+async function viewAssignedRequest(id){
+  const r=(state.dashboard.requests||[]).find(x=>x.id===id);
+  if(!r)return;
+  state.selectedRequest=r;
+  const label=r.kind==='REFERRAL_UPGRADE'?`Upgrade • Seniority L${r.seniorityLevel||r.from}`:`L${r.from} → L${r.to}`;
+  $('selectedInfo').innerHTML=`<div class="success"><b>✓ PAYMENT DETAILS SENT</b><br>${esc(r.memberId)} • ${esc(label)}</div>`;
+  $('paymentForm').classList.remove('hidden');
+  $('amount').value=r.kind==='REFERRAL_UPGRADE'?1000:(r.amount||splitRules[r.from]?.total||'');
+  $('amountLabel').textContent=r.kind==='REFERRAL_UPGRADE'?'Additional Upgrade Amount':'Total Upgrade Amount';
+  if(r.kind==='REFERRAL_UPGRADE')renderSplitPreview(null,true);else renderSplitPreview(r.from,false);
+  $('receiverIdInput').value=r.payeeId||'';
+  await fillReceiver();
+  const btn=document.querySelector('#paymentForm button[onclick="sendDetails()"]');
+  if(btn){btn.disabled=true;btn.textContent='✓ PAYMENT DETAILS ALREADY SENT';btn.style.opacity='.72'}
+}
+async function resendDetails(id){
+  try{
+    const d=await api('/api/leveltrack/admin/requests/'+encodeURIComponent(id)+'/resend-details',{method:'POST'});
+    alert(d.message||'Payment details sent again to the member.');
+    await load();
+  }catch(e){alert(e.message)}
+}
 async function sendDetails(){
-  const r=state.selectedRequest;if(!r)return alert('Select an upgrade request.');
+  let r=state.selectedRequest;if(!r)return alert('Select an upgrade request.');
   if(state.busy)return;
   state.busy=true;
-  const btn=document.querySelector('#paymentForm button[onclick=\"sendDetails()\"]')||document.querySelector('button[onclick=\"sendDetails()\"]');
+  const btn=document.querySelector('#paymentForm button[onclick="sendDetails()"]')||document.querySelector('button[onclick="sendDetails()"]');
   if(btn){btn.disabled=true;btn.textContent='SENDING…';btn.style.opacity='.65'}
   try{
-    const receiverId=$('receiverIdInput').value.trim();
-    if(!receiverId)throw new Error('Receiver Member ID is required.');
-    if(!$('receiverName').value.trim())throw new Error('Receiver details not found.');
+    // Re-read the request immediately before sending so the 5-second live refresh
+    // can never leave us with a stale request object.
+    const latest=await api('/api/leveltrack/admin/dashboard');
+    const fresh=(latest.requests||[]).find(x=>x.id===r.id);
+    if(!fresh)throw new Error('Upgrade request not found. Please refresh the Admin page.');
+    if(fresh.status==='Assigned'){
+      state.selectedRequest=fresh;
+      if(btn){btn.textContent='✓ PAYMENT DETAILS SENT';btn.style.opacity='1'}
+      $('selectedInfo').innerHTML='<div class="success"><b>✓ PAYMENT DETAILS SENT</b><br>The member can now see the payment instructions.</div>';
+      $('paymentForm').classList.add('hidden');
+      await load();
+      return;
+    }
+    if(fresh.status!=='Requested')throw new Error('This request is already being processed. Current status: '+fresh.status);
+    r=fresh;state.selectedRequest=r;
     const body={amount:Number($('amount').value)};
-    await api('/api/leveltrack/admin/requests/'+encodeURIComponent(r.id)+'/assign',{method:'POST',body:JSON.stringify(body)});
+    const result=await api('/api/leveltrack/admin/requests/'+encodeURIComponent(r.id)+'/assign',{method:'POST',body:JSON.stringify(body)});
+    if(!result?.ok || result.request?.status!=='Assigned')throw new Error('Payment details were not confirmed by the server. Please try again.');
+    state.selectedRequest=result.request;
     if(btn){btn.textContent='✓ PAYMENT DETAILS SENT';btn.style.opacity='1'}
     $('selectedInfo').innerHTML='<div class="success"><b>✓ PAYMENT DETAILS SENT</b><br>The member can now see the payment instructions.</div>';
     $('paymentForm').classList.add('hidden');
-    state.selectedRequest=null;
     await load();
   }catch(e){
     if(btn){btn.disabled=false;btn.textContent='SEND PAYMENT DETAILS TO MEMBER';btn.style.opacity='1'}
@@ -102,38 +139,80 @@ async function approvePayment(id){
   if(state.busy)return;
   state.busy=true;
   const btn=document.querySelector(`button[onclick="approvePayment('${id}')"]`);
-  if(btn){btn.disabled=true;btn.textContent='SENDING APPROVAL…';btn.style.opacity='.65';btn.dataset.b5ApprovalLock='1'}
+  if(btn){btn.disabled=true;btn.textContent='SENDING APPROVAL…';btn.style.opacity='.65'}
   try{
     const latest=await api('/api/leveltrack/admin/dashboard');
     const fresh=(latest.upgrades||[]).find(x=>x.id===id);
     if(!fresh)throw new Error('Approval request is no longer available. Please refresh the Admin page.');
-    if(fresh.adminApproved){await load();return}
+    if(fresh.adminApproved){await load();return;}
     const result=await api('/api/leveltrack/admin/payments/by-upgrade/'+encodeURIComponent(id)+'/approve',{method:'POST'});
     if(!result?.ok)throw new Error('Approval was not confirmed by the server.');
     if(btn){btn.textContent='✓ APPROVAL SENT';btn.style.opacity='1'}
+    alert(fresh.kind==='REFERRAL_UPGRADE'?'Upgrade completed.':'Admin approval completed. Member moved to next level.');
     await load();
   }catch(e){
     if(btn){btn.disabled=false;btn.textContent='✓ CHECK & APPROVE PAYMENTS';btn.style.opacity='1'}
-    alert(e.message)
+    alert(e.message);
   }finally{state.busy=false}
 }
-</script>
-
-<script id="b5-leveltrack-admin-init-v13">
+async function loadSettings(){try{const d=await api('/api/leveltrack/admin/payment-settings');const ps=d.paymentSettings;const arr=ps.admins||[];$('accountsEditor').innerHTML='<div class="grid3">'+arr.map((a,i)=>`<div class="account"><h4>Admin ${esc(a.id)}</h4><label>Name</label><input id="an_${i}" value="${esc(a.name)}"><label>Account Holder</label><input id="ah_${i}" value="${esc(a.accountHolder)}"><label>Bank</label><input id="ab_${i}" value="${esc(a.bank)}"><label>Account Number</label><input id="aa_${i}" value="${esc(a.account)}"><label>IFSC</label><input id="ai_${i}" value="${esc(a.ifsc)}"><label>UPI</label><input id="au_${i}" value="${esc(a.upi)}"><button class="secondary" onclick="saveAdmin(${i})">SAVE ADMIN ${esc(a.id)}</button></div>`).join('')+'</div>';const t=ps.trust||{};$('trustName').value=t.name||'';$('trustHolder').value=t.accountHolder||'';$('trustBank').value=t.bank||'';$('trustAccount').value=t.account||'TEMP-TRUST-001';$('trustIfsc').value=t.ifsc||'';$('trustUpi').value=t.upi||''}catch(e){}}
+async function saveAdmin(i){const d=await api('/api/leveltrack/admin/payment-settings');const a=d.paymentSettings.admins[i];a.name=$('an_'+i).value.trim();a.accountHolder=$('ah_'+i).value.trim();a.bank=$('ab_'+i).value.trim();a.account=$('aa_'+i).value.trim();a.ifsc=$('ai_'+i).value.trim();a.upi=$('au_'+i).value.trim();try{await api('/api/leveltrack/admin/payment-settings',{method:'POST',body:JSON.stringify({admins:d.paymentSettings.admins})});alert('Admin account saved.');state.settingsLoaded=false;await loadSettings();state.settingsLoaded=true}catch(e){alert(e.message)}}
+async function saveTrust(){try{await api('/api/leveltrack/admin/payment-settings',{method:'POST',body:JSON.stringify({trust:{name:$('trustName').value.trim(),accountHolder:$('trustHolder').value.trim(),bank:$('trustBank').value.trim(),account:$('trustAccount').value.trim(),ifsc:$('trustIfsc').value.trim(),upi:$('trustUpi').value.trim()}})});alert('Trust account saved.');state.settingsLoaded=false;await loadSettings();state.settingsLoaded=true}catch(e){alert(e.message)}}
+function fmtDate(d){const x=new Date();if(d==='today'){const z=new Date();return [z,z]}if(d==='week'){const z=new Date();const day=z.getDay()||7;const a=new Date(z);a.setDate(z.getDate()-day+1);return [a,z]}if(d==='month'){const z=new Date();return [new Date(z.getFullYear(),z.getMonth(),1),z]}return [x,x]}
+function iso(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function quickDate(kind){const [a,b]=fmtDate(kind);$('fromDate').value=iso(a);$('toDate').value=iso(b);runReport()}
+async function runReport(){const q=new URLSearchParams({from:$('fromDate').value,to:$('toDate').value,q:$('reportQ').value,level:$('reportLevel').value});try{const d=await api('/api/leveltrack/admin/payment-report?'+q.toString());const adminCards=Object.entries(d.adminByAccount||{}).map(([name,amt])=>`<div class="account"><b>${esc(name)}</b><br>₹${Number(amt||0).toLocaleString()}</div>`).join('');$('reportSummary').innerHTML=`<div class="grid3"><div class="account"><b>Member</b><br>₹${Number(d.totals.member||0).toLocaleString()}</div><div class="account"><b>Trust</b><br>₹${Number(d.totals.trust||0).toLocaleString()}</div><div class="account"><b>Admin Total</b><br>₹${Number(d.totals.admin||0).toLocaleString()}</div></div><div class="grid3" style="margin-top:8px">${adminCards||'<div class="account">No admin payments</div>'}</div><div class="success" style="margin-top:8px">${d.count} payment transaction(s) • Total allocated ₹${Number(d.totals.total||0).toLocaleString()}</div>`;if(!d.rows.length){$('reportTable').innerHTML='<div class="small">No payment records for this date range.</div>';return}$('reportTable').innerHTML='<table class="reportTable"><thead><tr><th>Date</th><th>Level</th><th>Payer</th><th>Receiver</th><th>Member</th><th>Trust</th><th>Admin</th><th>Status</th></tr></thead><tbody>'+d.rows.map(r=>{const g=Object.fromEntries(r.parts.map(x=>[x.type,x.amount]));return `<tr><td>${esc(r.date)}</td><td>${esc(r.level)}</td><td>${esc(r.payerMemberId)}</td><td>${esc(r.receiverMemberId)}</td><td>₹${Number(g.member||0).toLocaleString()}</td><td>₹${Number(g.trust||0).toLocaleString()}</td><td>₹${Number(g.admin||0).toLocaleString()}</td><td>${esc(r.status)}</td></tr>`}).join('')+'</tbody></table>'}catch(e){$('reportTable').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}}
+load();
+setInterval(refreshAdminLive,5000);
+</script><script id="b5-unified-accordion">
 (function(){
-  async function initLevelTrackAdmin(){
-    try{ await load(); }catch(e){}
-    try{ setInterval(refreshAdminLive,5000); }catch(e){}
+  function makeCardAccordion(card){
+    if(!card || card.dataset.b5Acc==='1') return;
+    const head=card.querySelector(':scope > .title');
+    if(!head) return;
+    const body=document.createElement('div'); body.className='b5-accordion-body';
+    const nodes=Array.from(card.children).filter(n=>n!==head);
+    nodes.forEach(n=>body.appendChild(n));
+    head.classList.add('b5-accordion-head');
+    card.insertBefore(body, null);
+    card.dataset.b5Acc='1';
+    head.addEventListener('click',()=>card.classList.toggle('is-collapsed'));
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initLevelTrackAdmin);
-  else initLevelTrackAdmin();
+  function makeAccountAccordion(card){
+    if(!card || card.dataset.b5AccountAcc==='1') return;
+    const head=card.querySelector(':scope > h4');
+    if(!head) return;
+    const body=document.createElement('div'); body.className='b5-account-body';
+    const nodes=Array.from(card.children).filter(n=>n!==head);
+    nodes.forEach(n=>body.appendChild(n));
+    card.classList.add('b5-account-card');
+    card.appendChild(body);
+    card.dataset.b5AccountAcc='1';
+    head.addEventListener('click',()=>card.classList.toggle('is-collapsed'));
+  }
+  function init(){
+    document.querySelectorAll('.card').forEach(makeCardAccordion);
+    document.querySelectorAll('.account').forEach(makeAccountAccordion);
+    document.querySelectorAll('.level .lh').forEach(h=>{
+      if(h.dataset.b5LevelAcc==='1') return;
+      const body=h.nextElementSibling;
+      if(!body || !body.classList.contains('pay')) return;
+      h.dataset.b5LevelAcc='1'; h.style.cursor='pointer';
+      h.addEventListener('click',()=>{body.classList.toggle('hidden');});
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+  const obs=new MutationObserver(()=>init());
+  obs.observe(document.body,{childList:true,subtree:true});
 })();
 </script>
+
 
 <script id="b5-leveltrack-admin-nav-v12">
 (function(){
   const sections={requests:'ltRequests',payments:'ltPayments',accounts:'ltAccounts',seniority:'ltSeniority',reports:'ltReports',history:'ltHistory'};
   function show(key){
+    state.currentSection=key||'dashboard';
     document.body.classList.add('b5-embedded');
     const hero=document.querySelector('main.wrap > .hero');
     const cards=Array.from(document.querySelectorAll('main.wrap > .card'));
@@ -150,7 +229,7 @@ async function approvePayment(id){
   }
   function handle(e){if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;show(e.data.section||'dashboard');}
   window.addEventListener('message',handle);
-  window.addEventListener('load',()=>{const q=new URLSearchParams(location.search).get('section');show(q&&sections[q]?q:'dashboard');});
+  window.addEventListener('load',()=>show('dashboard'));
 })();
 </script>
 <style id="b5-v12-nav-style">
@@ -159,4 +238,7 @@ async function approvePayment(id){
 .b5-embedded main.wrap>.hero.b5-v12-show,.b5-embedded main.wrap>.card.b5-v12-show{display:block!important}
 .b5-embedded .wrap{padding-top:10px}
 </style>
-<script>function levelTrackAdminLogout(){localStorage.removeItem('B5_ADMIN_LOGIN');try{if(window.parent&&window.parent!==window){window.parent.location.reload();return}}catch(e){}location.reload()}</script><style id="b5-final-leveltrack-admin-header">.top{padding-left:72px!important;padding-right:10px!important;position:sticky!important;top:0!important;z-index:20!important}.top .logo{overflow:hidden;background:#fff!important;border:1px solid #d9e3dc!important}.top .logo img{width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit}.top-actions{margin-left:auto;display:flex;gap:8px}.top-actions button{width:auto!important;padding:8px 10px!important;margin:0!important;border-radius:11px!important}@media(max-width:520px){.top{padding-left:72px!important}.top-actions{gap:5px}.top-actions button{font-size:10px;padding:7px 8px!important}}</style></body></html>
+<script>function levelTrackAdminLogout(){localStorage.removeItem('B5_ADMIN_LOGIN');try{if(window.parent&&window.parent!==window){window.parent.location.reload();return}}catch(e){}location.reload()}</script><style id="b5-final-leveltrack-admin-header">.top{padding-left:72px!important;padding-right:10px!important;position:sticky!important;top:0!important;z-index:20!important}.top .logo{overflow:hidden;background:#fff!important;border:1px solid #d9e3dc!important}.top .logo img{width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit}.top-actions{margin-left:auto;display:flex;gap:8px}.top-actions button{width:auto!important;padding:8px 10px!important;margin:0!important;border-radius:11px!important}@media(max-width:520px){.top{padding-left:72px!important}.top-actions{gap:5px}.top-actions button{font-size:10px;padding:7px 8px!important}}</style>
+<div id="b5ImageModal" onclick="closePaymentImage()" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.78);align-items:center;justify-content:center;padding:18px"><button type="button" onclick="event.stopPropagation();closePaymentImage()" style="position:absolute;right:14px;top:14px;width:42px;height:42px;border-radius:50%;background:#fff;color:#064b35;font-size:22px;z-index:2">×</button><img id="b5ImageModalImg" src="" alt="Payment screenshot full view" style="max-width:96vw;max-height:90vh;width:auto;height:auto;object-fit:contain;border-radius:12px;background:#fff" onclick="event.stopPropagation()"></div>
+<script>function openPaymentImage(src){const m=document.getElementById('b5ImageModal'),i=document.getElementById('b5ImageModalImg');if(!m||!i)return;i.src=src;m.style.display='flex'}function closePaymentImage(){const m=document.getElementById('b5ImageModal'),i=document.getElementById('b5ImageModalImg');if(m)m.style.display='none';if(i)i.src=''}</script>
+</body></html>
