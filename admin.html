@@ -396,15 +396,13 @@ window.uAdminLevelTrack=function(section,b){
    hideMainPanels();
    frame.classList.add('show');
    const target=section||'dashboard';
-   const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section:target},location.origin);
-   if(!adminLTLoaded){
-     adminLTLoaded=true;
-     frame.addEventListener('load',send,{once:true});
-     frame.src='/leveltrack-admin.html?v=FINAL-CLEAN&section='+encodeURIComponent(target);
-   } else {
-     send();
-     setTimeout(send,120);
-   }
+   /* Always navigate the iframe with an explicit section URL. This avoids relying only on postMessage when the embedded page was already loaded or restored from browser cache. */
+   const url='/leveltrack-admin.html?v=FINAL-CLEAN-'+Date.now()+'&section='+encodeURIComponent(target);
+   adminLTLoaded=true;
+   frame.onload=()=>{
+     try{frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section:target},location.origin)}catch(e){}
+   };
+   frame.src=url;
    window.scrollTo({top:0,behavior:'smooth'});
  }
  async function loadPwReset(){const el=document.getElementById('pwResetList');if(!el)return;try{const r=await fetch('/api/admin/password-reset-requests');const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');const requests=Array.isArray(d.requests)?d.requests:[];if(!requests.length){el.innerHTML='<div class="small">No pending password reset requests.</div>';return}el.innerHTML=requests.map(x=>`<div class="card" style="margin-top:10px"><b>${String(x.name).replace(/</g,'&lt;')}</b><div class="small">${x.memberId} • ${x.mobile}<br>Requested: ${x.createdAt?new Date(x.createdAt).toLocaleString():''}</div><button class="primary" style="margin-top:10px" onclick="approvePwReset('${x.id}')">APPROVE & RESET PASSWORD</button></div>`).join('')}catch(e){el.innerHTML='<div class="warn">Failed to load password reset requests: '+String(e.message).replace(/</g,'&lt;')+'</div>'}}
