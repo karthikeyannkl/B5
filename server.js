@@ -304,7 +304,7 @@ function seniorityQueue(level){
     const at=(m)=>String((m.levelReachedAt&&m.levelReachedAt[target])||m.upgradeDate||m.joinedAt||m.registeredAt||m.createdAt||'');
     return at(a).localeCompare(at(b));
   });
-  return eligible.map((m,i)=>{const completed=db.leveltrackPayments.filter(p=>{const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);return p.receiverMemberId===m.memberId&&p.adminApproved&&Number(u?.seniorityLevel||u?.to)===target;}).length;const required=earningsRequired(target);return {position:i+1,memberId:m.memberId,name:m.name,mobile:m.mobile,reachedAt:(m.levelReachedAt&&m.levelReachedAt[target])||m.joinedAt||m.registeredAt||m.createdAt||null,completed,required,status:completed>=required?'COMPLETED':'ACTIVE'};});
+  return eligible.map((m,i)=>{const completed=db.leveltrackPayments.filter(p=>{const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);return p.receiverMemberId===m.memberId&&p.adminApproved&&Number((p.kind==='REFERRAL_UPGRADE'||u?.kind==='REFERRAL_UPGRADE')?2:(p.seniorityLevel||u?.seniorityLevel||u?.to))===target;}).length;const required=earningsRequired(target);return {position:i+1,memberId:m.memberId,name:m.name,mobile:m.mobile,reachedAt:(m.levelReachedAt&&m.levelReachedAt[target])||m.joinedAt||m.registeredAt||m.createdAt||null,completed,required,status:completed>=required?'COMPLETED':'ACTIVE'};});
 }
 function nextSeniorReceiver(level,excludeMemberId=''){return seniorityQueue(level).find(x=>x.status==='ACTIVE'&&x.memberId!==excludeMemberId)||null;}
 function nextLevelMemberId(level){
@@ -315,7 +315,7 @@ function nextLevelMemberId(level){
 function ltMember(id){return db.members.find(m=>m.memberId===id)}
 function direct(id){return db.members.filter(m=>m.referral===id)}
 function completedReferralUpgrades(memberId){return db.leveltrackUpgrades.filter(u=>u.memberId===memberId&&u.kind==='REFERRAL_UPGRADE'&&u.adminApproved).length;}
-function pendingLeveltrackRequest(memberId){return db.leveltrackRequests.find(r=>r.memberId===memberId&&r.status!=='Completed')||null;}
+function pendingLeveltrackRequest(memberId){return db.leveltrackRequests.find(r=>r.memberId===memberId&&String(r.status||'').toLowerCase()!=='completed')||null;}
 function referralUpgradeState(m){
   const refs=direct(m.memberId).length;
   const availableBatches=refs<3?0:1+Math.floor((refs-3)/2);
@@ -358,28 +358,26 @@ function ltDashboard(memberId){
   const pendingRequest=pendingLeveltrackRequest(memberId);
   let upgrade=(pendingRequest && db.leveltrackUpgrades.find(u=>u.requestId===pendingRequest.id)) || null;
   if(upgrade && pendingRequest){ upgrade={...pendingRequest,...upgrade}; }
-  // After Admin approval, the old payment card must disappear immediately.
-  if(upgrade && upgrade.adminApproved){ upgrade=null; }
   if(!upgrade && pendingRequest && pendingRequest.status==='Assigned'){ upgrade={...pendingRequest}; }
-  if(upgrade && upgrade.adminApproved){ upgrade=null; }
   if(upgrade && String(upgrade.status||'').toLowerCase()==='assigned') { const saved=db.leveltrackPayments.find(p=>p.upgradeId===upgrade.id); upgrade={...pendingRequest,...upgrade,payment:saved||{payee:upgrade.payee||'',payeeId:upgrade.payeeId||'',payeePhone:upgrade.payeePhone||'',accountHolder:upgrade.accountHolder||'',bank:upgrade.bank||'',account:upgrade.account||'',ifsc:upgrade.ifsc||'',branch:upgrade.branch||'',upi:upgrade.upi||'',amount:upgrade.amount||0,parts:upgrade.paymentParts||[]}}; }
   const action=nextMemberAction(m);
   const payments=db.leveltrackPayments.filter(p=>p.receiverMemberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
   const incomingPayments=payments.filter(p=>p.memberPaid===true&&!p.adminApproved);
   const earningsRules={2:5,3:10,4:10,5:5,6:5,7:5};
-  const earnings=Object.keys(earningsRules).map(l=>{const level=Number(l);const completed=payments.filter(p=>{const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);return u&&Number(u.to)===level&&p.memberAccepted&&u.adminApproved}).length;return {level,required:earningsRules[level],completed}});
+  const earnings=Object.keys(earningsRules).map(l=>{const level=Number(l);const completed=payments.filter(p=>{const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);const assignedLevel=Number((p.kind==='REFERRAL_UPGRADE'||u?.kind==='REFERRAL_UPGRADE')?2:(p.seniorityLevel||u?.seniorityLevel||u?.to));return u&&assignedLevel===level&&p.memberAccepted&&u.adminApproved}).length;return {level,required:earningsRules[level],completed}});
   const directReferrals=direct(memberId).length;
   const requiredDirectReferrals={1:3,2:5,3:7,4:9,5:11,6:13}[Number(m.level||1)]||0;
   const msgs=[...db.messages.filter(x=>x.to===memberId||x.to==='ALL'),...db.leveltrackMessages.filter(x=>x.to===memberId)].sort((a,b)=>String(b.at).localeCompare(String(a.at))).map(x=>({message:x.message,at:x.at}));
   return {member:memberPublic(m),directReferrals,totalDownline:downlineCount(memberId),tree:ltTree(memberId),upgrade,requests,incomingPayments,history:ltHistory(memberId),earnings,seniority:seniorityQueue(Number(m.level||1)).find(x=>x.memberId===memberId)||null,requiredDirectReferrals,messages:msgs,action};
 }
-app.get('/leveltrack-admin.html',(req,res)=>res.sendFile(path.join(__dirname,'leveltrack-admin.html')));
-app.get('/leveltrack-member.html',(req,res)=>res.sendFile(path.join(__dirname,'leveltrack-member.html')));
+app.get('/leveltrack-admin.html',(req,res)=>{res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');res.set('Pragma','no-cache');res.set('Expires','0');res.sendFile(path.join(__dirname,'leveltrack-admin.html'))});
+app.get('/leveltrack-member.html',(req,res)=>{res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');res.set('Pragma','no-cache');res.set('Expires','0');res.sendFile(path.join(__dirname,'leveltrack-member.html'))});
 app.get('/api/leveltrack/admin/status',(req,res)=>{
   const requests=db.leveltrackRequests.map(r=>({id:r.id,status:r.status,kind:r.kind||'LEVEL_UPGRADE',memberId:r.memberId,seniorityLevel:r.kind==='REFERRAL_UPGRADE'?2:r.seniorityLevel,from:r.from,to:r.to,createdAt:r.createdAt,assignedAt:r.assignedAt}));
   const upgrades=db.leveltrackUpgrades.map(u=>({id:u.id,requestId:u.requestId,status:u.status,kind:u.kind||'LEVEL_UPGRADE',adminApproved:!!u.adminApproved,memberPaid:!!u.memberPaid,receiverApproved:!!u.receiverApproved,seniorityLevel:u.kind==='REFERRAL_UPGRADE'?2:u.seniorityLevel,completedAt:u.completedAt,createdAt:u.createdAt}));
   const payments=db.leveltrackPayments.map(p=>({id:p.id,upgradeId:p.upgradeId,memberPaid:!!p.memberPaid,memberAccepted:!!p.memberAccepted,adminApproved:!!p.adminApproved,parts:(p.parts||[]).map(x=>({type:x.type,status:x.status,utr:x.utr||'',hasScreenshot:!!x.screenshot}))}));
-  const signature=JSON.stringify({requests,upgrades,payments});
+  const seniority=[2,3,4,5,6,7].map(level=>({level,queue:seniorityQueue(level).map(x=>({memberId:x.memberId,position:x.position,completed:x.completed,required:x.required,status:x.status}))}));
+  const signature=JSON.stringify({requests,upgrades,payments,seniority});
   res.json({ok:true,signature});
 });
 app.get('/api/leveltrack/admin/dashboard',(req,res)=>{
@@ -397,9 +395,6 @@ app.get('/api/leveltrack/admin/next-receiver/:level',(req,res)=>{
  const receiver=nextSeniorReceiver(level,String(req.query.excludeMemberId||''));
  if(!receiver)return res.json({receiver:null});
  res.json({receiver});
-});
-app.get('/api/leveltrack/admin/seniority',(req,res)=>{
-  res.json({ok:true,seniority:{2:seniorityQueue(2),3:seniorityQueue(3),4:seniorityQueue(4),5:seniorityQueue(5),6:seniorityQueue(6),7:seniorityQueue(7)}});
 });
 app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
  const r=db.leveltrackRequests.find(x=>x.id===req.params.id);if(!r)return res.status(404).json({error:'Upgrade request not found'});
