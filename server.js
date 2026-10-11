@@ -329,10 +329,12 @@ function expirePaymentDeadlines(){
     const u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);const p=u?db.leveltrackPayments.find(x=>x.upgradeId===u.id):null;
     if(!u||u.adminApproved||p?.adminApproved||p?.memberPaid)continue;
     r.status='ExpiredHold';r.expiredAt=new Date(now).toISOString();r.holdReason='Payment deadline expired';
+    // Keep a private server-side snapshot so Admin can deliberately extend the same assignment.
+    r.expiredPaymentSnapshot=JSON.parse(JSON.stringify({request:{account:r.account,bank:r.bank,ifsc:r.ifsc,branch:r.branch,upi:r.upi,accountHolder:r.accountHolder,payee:r.payee,payeeId:r.payeeId,payeePhone:r.payeePhone,paymentParts:r.paymentParts},upgrade:u?{account:u.account,bank:u.bank,ifsc:u.ifsc,branch:u.branch,upi:u.upi,accountHolder:u.accountHolder,payee:u.payee,payeeId:u.payeeId,payeePhone:u.payeePhone,paymentParts:u.paymentParts}:null,paymentParts:p?(p.parts||[]).map(x=>({...x,accountDetails:{...(x.accountDetails||{})}})):[]}));
     u.status='ExpiredHold';u.expiredAt=r.expiredAt;
     const m=ltMember(r.memberId);if(m)m.paymentHold={requestId:r.id,since:r.expiredAt,reason:'Payment deadline expired'};
     clearPaymentInstructions(r,u,p);
-    db.leveltrackMessages.push({to:r.memberId,message:`Your payment details have been locked because the 72-hour payment window expired. Please contact Admin at ${B5_ADMIN_CONTACT_EMAIL} to request a review.`,at:r.expiredAt});
+    db.leveltrackMessages.push({to:r.memberId,message:`Your payment details have been locked because the 24-hour payment window expired. Please contact Admin at ${B5_ADMIN_CONTACT_EMAIL} to request a review.`,at:r.expiredAt});
     changed=true;
   }
   if(changed)save(db);
@@ -424,7 +426,7 @@ app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
  const m=ltMember(r.memberId);if(!m)return res.status(404).json({error:'Member not found'});if(m.paymentBlacklisted)return res.status(403).json({error:'This member is restricted. Admin review is required.'});const isReferral=r.kind==='REFERRAL_UPGRADE';const targetLevel=isReferral?Number(r.seniorityLevel||m.level):Number(r.to);const amount=isReferral?1000:Number(LEVEL_RULES[r.from]?.upgrade||0);if(!amount)return res.status(400).json({error:'Upgrade amount not configured'});const autoReceiver=nextSeniorReceiver(targetLevel,isReferral?m.memberId:'');const receiver=autoReceiver?ltMember(autoReceiver.memberId):null;if(!receiver)return res.status(400).json({error:'No eligible seniority receiver is available for this level. Add a member to the level queue first.'});
  const sr=isReferral?{upgrade:amount,parts:[{type:'member',label:'MEMBER / RECEIVER',amount}]}:splitRule(r.from);const parts=sr.parts;const rec=parts.find(x=>x.type==='member');if(rec)rec.accountDetails={name:receiver.name,memberId:receiver.memberId,mobile:receiver.mobile,accountHolder:receiver.accountHolder||receiver.name||'',bank:receiver.bank||'',account:receiver.account||'',ifsc:receiver.ifsc||'',branch:receiver.branch||'',upi:receiver.upi||''};
  const tr=parts.find(x=>x.type==='trust');if(tr)tr.accountDetails={...db.paymentSettings.trust};const ap=parts.findIndex(x=>x.type==='admin');if(ap>=0){const aa=allocateAdminAccount();if(!aa)return res.status(400).json({error:'No active Admin account configured'});parts[ap].accountDetails=aa;}
- const now=new Date().toISOString();const deadline=new Date(Date.now()+72*60*60*1000).toISOString();Object.assign(r,{status:'Assigned',assignedAt:now,paymentDeadlineAt:deadline,seniorityLevel:targetLevel,payee:receiver.name||'',accountHolder:receiver.accountHolder||receiver.name||'',payeeId:receiver.memberId,payeePhone:receiver.mobile||'',amount,account:receiver.account||'',bank:receiver.bank||'',ifsc:receiver.ifsc||'',branch:receiver.branch||'',upi:receiver.upi||'',paymentParts:parts});
+ const now=new Date().toISOString();const deadline=new Date(Date.now()+24*60*60*1000).toISOString();Object.assign(r,{status:'Assigned',assignedAt:now,paymentDeadlineAt:deadline,seniorityLevel:targetLevel,payee:receiver.name||'',accountHolder:receiver.accountHolder||receiver.name||'',payeeId:receiver.memberId,payeePhone:receiver.mobile||'',amount,account:receiver.account||'',bank:receiver.bank||'',ifsc:receiver.ifsc||'',branch:receiver.branch||'',upi:receiver.upi||'',paymentParts:parts});
  let u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);if(!u){u={id:'LTU-'+crypto.randomBytes(4).toString('hex').toUpperCase(),requestId:r.id,memberId:m.memberId,from:r.from,to:r.to,kind:r.kind||'LEVEL_UPGRADE',seniorityLevel:targetLevel,createdAt:now};db.leveltrackUpgrades.push(u)}Object.assign(u,{status:'Assigned',amount,kind:r.kind||'LEVEL_UPGRADE',paymentDeadlineAt:deadline,seniorityLevel:targetLevel,payee:r.payee,accountHolder:r.accountHolder,payeeId:r.payeeId,payeePhone:r.payeePhone,account:r.account,bank:r.bank,ifsc:r.ifsc,branch:r.branch,upi:r.upi,paymentParts:parts,detailsSent:true,detailsSentAt:now});
  const payment={id:'LTP-'+crypto.randomBytes(4).toString('hex').toUpperCase(),upgradeId:u.id,kind:r.kind||'LEVEL_UPGRADE',paymentDeadlineAt:deadline,seniorityLevel:targetLevel,fromMemberId:m.memberId,receiverMemberId:receiver.memberId,from:m.name,to:receiver.name,amount,parts:parts.map(x=>({...x,status:'PENDING',utr:'',screenshot:null})),memberPaid:false,memberAccepted:false,adminApproved:false,createdAt:now};db.leveltrackPayments=db.leveltrackPayments.filter(x=>x.upgradeId!==u.id);db.leveltrackPayments.push(payment);db.leveltrackMessages.push({to:m.memberId,message:(r.kind==='REFERRAL_UPGRADE'?`Upgrade payment details sent. Seniority Level L${targetLevel}. Total ₹${amount.toLocaleString()}.`:`Payment details sent for L${r.from} → L${r.to}. Total ₹${amount.toLocaleString()}.`),at:now});save(db);res.json({ok:true,request:r,upgrade:u,payment});
 });
@@ -433,15 +435,25 @@ app.post('/api/leveltrack/admin/requests/:id/hold-action',(req,res)=>{
  if(!['ExpiredHold','Blacklisted'].includes(String(r.status||'')))return res.status(400).json({error:'Only expired/held requests can be managed here.'});
  const action=String(req.body?.action||'');const m=ltMember(r.memberId);if(!m)return res.status(404).json({error:'Member not found'});
  const u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);const p=u?db.leveltrackPayments.find(x=>x.upgradeId===u.id):null;
- if(action==='restore-reassign'){
-   m.paymentHold=null;m.paymentBlacklisted=false;r.status='Requested';r.paymentDeadlineAt=null;r.restoredAt=new Date().toISOString();
+ if(action==='extend-24h'){
+   const snap=r.expiredPaymentSnapshot;
+   if(!snap||!u||!p)return res.status(400).json({error:'Saved payment details are unavailable. Use RESTORE & REASSIGN to issue fresh details.'});
+   const deadline=new Date(Date.now()+24*60*60*1000).toISOString();
+   Object.assign(r,snap.request||{});Object.assign(u,snap.upgrade||{});
+   (p.parts||[]).forEach((part,i)=>{const saved=(snap.paymentParts||[])[i];if(saved){part.accountDetails={...(saved.accountDetails||{})};part.status=saved.status||'PENDING';part.utr=saved.utr||'';part.screenshot=saved.screenshot||null;}});
+   r.status='Assigned';r.paymentDeadlineAt=deadline;r.extendedAt=new Date().toISOString();r.extensionCount=Number(r.extensionCount||0)+1;
+   u.status='Assigned';u.paymentDeadlineAt=deadline;u.detailsSent=true;
+   m.paymentHold=null;m.paymentBlacklisted=false;delete r.expiredPaymentSnapshot;
+   db.leveltrackMessages.push({to:r.memberId,message:'Admin extended your payment deadline by 24 hours. Your payment details are available again.',at:new Date().toISOString()});
+ }else if(action==='restore-reassign'){
+   m.paymentHold=null;m.paymentBlacklisted=false;r.status='Requested';r.paymentDeadlineAt=null;r.restoredAt=new Date().toISOString();delete r.expiredPaymentSnapshot;
    if(u){u.status='Released';u.detailsSent=false;u.paymentDeadlineAt=null;}
    clearPaymentInstructions(r,u,p);
  }else if(action==='release-slot'){
-   m.paymentHold=null;r.status='Released';r.releasedAt=new Date().toISOString();
+   delete r.expiredPaymentSnapshot;m.paymentHold=null;r.status='Released';r.releasedAt=new Date().toISOString();
    if(u){u.status='Released';u.paymentDeadlineAt=null;}clearPaymentInstructions(r,u,p);
  }else if(action==='blacklist'){
-   m.paymentBlacklisted=true;m.paymentHold={requestId:r.id,since:new Date().toISOString(),reason:'Admin restricted after expired payment deadline'};r.status='Blacklisted';r.blacklistedAt=new Date().toISOString();
+   delete r.expiredPaymentSnapshot;m.paymentBlacklisted=true;m.paymentHold={requestId:r.id,since:new Date().toISOString(),reason:'Admin restricted after expired payment deadline'};r.status='Blacklisted';r.blacklistedAt=new Date().toISOString();
    if(u){u.status='Blacklisted';u.paymentDeadlineAt=null;}clearPaymentInstructions(r,u,p);
  }else return res.status(400).json({error:'Unknown action'});
  save(db);res.set('Cache-Control','no-store');res.json({ok:true,action,request:r,member:memberPublic(m)});
@@ -510,7 +522,7 @@ app.get('/api/leveltrack/admin/daily-report',(req,res)=>{
 });
 app.get('/api/leveltrack/member/dashboard/:id',(req,res)=>{
   expirePaymentDeadlines();
-  const d=ltDashboard(req.params.id);if(!d)return res.status(404).json({error:'Member not found'});d.contactEmail=B5_ADMIN_CONTACT_EMAIL;const m=ltMember(req.params.id);d.accountRestriction=m?.paymentBlacklisted?{status:'BLACKLISTED',message:`Your account is locked. Please contact Admin at ${B5_ADMIN_CONTACT_EMAIL}.`}:m?.paymentHold?{status:'HOLD',message:`Your payment instructions are locked because the 72-hour deadline expired. Please contact Admin at ${B5_ADMIN_CONTACT_EMAIL} for review.`}:null;res.set('Cache-Control','no-store, no-cache, must-revalidate, private');res.json(d);
+  const d=ltDashboard(req.params.id);if(!d)return res.status(404).json({error:'Member not found'});d.contactEmail=B5_ADMIN_CONTACT_EMAIL;const m=ltMember(req.params.id);d.accountRestriction=m?.paymentBlacklisted?{status:'BLACKLISTED',message:`Your account is locked. Please contact Admin at ${B5_ADMIN_CONTACT_EMAIL}.`}:m?.paymentHold?{status:'HOLD',message:`Your payment instructions are locked because the 24-hour deadline expired. Please contact Admin at ${B5_ADMIN_CONTACT_EMAIL} for review.`}:null;res.set('Cache-Control','no-store, no-cache, must-revalidate, private');res.json(d);
 });
 app.post('/api/leveltrack/member/upgrade-request',(req,res)=>{
   const m=ltMember(req.body.memberId);if(!m)return res.status(404).json({error:'Member not found'});if(m.paymentBlacklisted||m.paymentHold)return res.status(403).json({error:'Your account is on hold. Please contact Admin for review.'});

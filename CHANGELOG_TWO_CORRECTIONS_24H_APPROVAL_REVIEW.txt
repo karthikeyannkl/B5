@@ -1,0 +1,8 @@
+24-hour payment deadline correction based on B5-main-Two-Corrections-72H-AdminApproval-v1.zip.
+
+- Changed assigned payment deadline from 72 hours to 24 hours.
+- Updated user/admin expiry wording to 24 hours.
+- Added Admin EXTEND 24 HOURS action, restoring saved assignment details for a further 24 hours.
+- Existing RESTORE & REASSIGN / RELEASE SLOT / BLACKLIST MEMBER options retained.
+- No fake test members are auto-seeded: SENIORITY_TEST_MODE must be explicitly enabled.
+- Approval and live Seniority behavior still require deployment-level end-to-end verification; this archive cannot verify AIC Cloud/Supabase runtime.
