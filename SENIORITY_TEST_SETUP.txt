@@ -1,12 +1,14 @@
-B5 SENIORITY + 24-HOUR DEADLINE TEST BUILD
-==========================================
+SENIORITY TEST MODE
+===================
 
-This is a TEST BUILD, not a production ZIP. It seeds the test members automatically at startup so the Admin Seniority Queue can be checked without setting an environment variable.
+Purpose:
+- Creates 10 test members in the exact requested order.
+- Makes them eligible for Seniority Levels L2, L3, L4, L5, L6 and L7 while keeping their CURRENT member level at L1.
+- In test mode they appear as Seniority 1 through 10 at each of those levels.
+- Existing Level Upgrade / payment / approval logic is not changed.
+- Seniority test eligibility is separate from current member level, so a test member will not appear as Level 7 merely because it is seeded into the L7 Seniority queue.
 
-Test password for all seeded users: B5@123456
-
-GROUP A — 13 Seniority test IDs
-Root mobile: 7999999999 | Root referral code: REF-FC329E
+Test IDs:
 1. KARTHI01 / 7000000001
 2. SATHYA02 / 7000000002
 3. KARTHI03 / 7000000003
@@ -17,45 +19,16 @@ Root mobile: 7999999999 | Root referral code: REF-FC329E
 8. SATHYA08 / 7000000008
 9. KARTHI09 / 7000000009
 10. KARTHI10 / 7000000010
-11. SATHYA11 / 7000000011
-12. KARTHI12 / 7000000012
-13. SATHYA13 / 7000000013
 
-GROUP B — 13 fresh direct-referral IDs
-Root mobile: 7888888888 | Root referral code: REF-NEW13ROOT
-1. TEST01 / 7100000001
-2. TEST02 / 7100000002
-3. TEST03 / 7100000003
-4. TEST04 / 7100000004
-5. TEST05 / 7100000005
-6. TEST06 / 7100000006
-7. TEST07 / 7100000007
-8. TEST08 / 7100000008
-9. TEST09 / 7100000009
-10. TEST10 / 7100000010
-11. TEST11 / 7100000011
-12. TEST12 / 7100000012
-13. TEST13 / 7100000013
+Referral test code:
+REF-FC329E
 
-GROUP C — 13 nested referral IDs under TEST01 / 7100000001
-1. NTEST01 / 7200000001
-2. NTEST02 / 7200000002
-3. NTEST03 / 7200000003
-4. NTEST04 / 7200000004
-5. NTEST05 / 7200000005
-6. NTEST06 / 7200000006
-7. NTEST07 / 7200000007
-8. NTEST08 / 7200000008
-9. NTEST09 / 7200000009
-10. NTEST10 / 7200000010
-11. NTEST11 / 7200000011
-12. NTEST12 / 7200000012
-13. NTEST13 / 7200000013
+Enable on the test server with environment variable:
+B5_SENIORITY_TEST_MODE=1
 
-What to check:
-1. Open Admin > Level-wise Seniority Queue. L2-L7 should show seeded queue entries.
-2. Confirm TEST01 (7100000001) has the 13 NTEST referrals (7200000001-7200000013).
-3. Check the 24-hour payment deadline and Admin hold actions on an eligible test request.
-4. Existing test-member levels/progress are not reset on every server restart.
+Test login password for these seeded users:
+B5@123456
 
-WARNING: Do not deploy this test build over the live production app/database. It inserts demo members into the configured database. Use a separate staging/test deployment and test database. Test bank/UPI values are dummy values.
+IMPORTANT:
+- This is test-only data. Do not enable B5_SENIORITY_TEST_MODE on the final production deployment.
+- Test bank/UPI details are dummy values; no real bank credentials are embedded in this seed.
