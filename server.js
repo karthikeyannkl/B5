@@ -68,15 +68,15 @@ let db=load();
 
 
 // ---------------- OPTIONAL SENIORITY TEST DATA ----------------
-// TEST BUILD: seed test members by default; set B5_SENIORITY_TEST_MODE=0 to disable.
-// Do not deploy this testing build to production with the test seed enabled.
+// Enable only when testing: B5_SENIORITY_TEST_MODE=1
+// Creates the supplied 10 test IDs and pins them to Seniority 1-10 for L2-L7.
 const SENIORITY_TEST_IDS=[
   ['KARTHI01','7000000001'],['SATHYA02','7000000002'],['KARTHI03','7000000003'],['SATHYA04','7000000004'],['KARTHI05','7000000005'],
   ['SATHYA06','7000000006'],['KARTHI07','7000000007'],['SATHYA08','7000000008'],['KARTHI09','7000000009'],['KARTHI10','7000000010']
 ];
 const SENIORITY_TEST_REF='REF-FC329E';
 function seedSeniorityTestData(){
-  if(String(process.env.B5_SENIORITY_TEST_MODE||'1')==='0') return false;
+  if(String(process.env.B5_SENIORITY_TEST_MODE||'')!=='1') return false;
   let root=db.members.find(m=>String(m.referralId||'').toUpperCase()===SENIORITY_TEST_REF);
   if(!root){
     root={memberId:'B5-FC329E',referralId:SENIORITY_TEST_REF,name:'Seniority Test Root',mobile:'7999999999',email:'',status:'ACTIVE',referral:'FIRST MEMBER',level:1,levelMemberId:'L1-TEST-ROOT',joinedAt:'2000-01-01T00:00:00.000Z',levelReachedAt:{2:'2000-01-01T00:00:00.000Z',3:'2000-01-01T00:00:00.000Z',4:'2000-01-01T00:00:00.000Z',5:'2000-01-01T00:00:00.000Z',6:'2000-01-01T00:00:00.000Z',7:'2000-01-01T00:00:00.000Z'},passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:'Seniority Test Root',bank:'TEST BANK',account:'TEST-ROOT',ifsc:'TEST0000001',branch:'TEST',upi:'testroot@upi',profileLocked:true};
@@ -96,20 +96,19 @@ function seedSeniorityTestData(){
     m._seniorityTestOrder=i+1;
   });
   // Two independent mobile-test parents, each with 13 direct referrals.
-  // Seeded in this TEST BUILD unless B5_SENIORITY_TEST_MODE=0; existing member records are preserved.
+  // Only seeded when B5_SENIORITY_TEST_MODE=1; existing production members are preserved.
   const testTrees=[
     {memberId:'B5-MOBTEST01',referralId:'REF-MOBTEST01',name:'Mobile Test Parent 1',mobile:'7888888801',prefix:'M1T'},
-    {memberId:'B5-MOBTEST02',referralId:'REF-MOBTEST02',name:'Mobile Test Parent 2',mobile:'7888888802',prefix:'M2T'},
-    {memberId:'B5-NEW13R',referralId:'REF-NEW13ROOT',name:'New 13 Referral Root',mobile:'7888888888',prefix:'TEST'}
+    {memberId:'B5-MOBTEST02',referralId:'REF-MOBTEST02',name:'Mobile Test Parent 2',mobile:'7888888802',prefix:'M2T'}
   ];
   testTrees.forEach((t,ti)=>{
     let root=db.members.find(m=>m.memberId===t.memberId||String(m.referralId||'').toUpperCase()===t.referralId);
     if(!root){root={memberId:t.memberId,referralId:t.referralId,name:t.name,mobile:t.mobile,email:'',status:'ACTIVE',referral:'FIRST MEMBER',level:1,levelMemberId:`L1-MOBTEST-${ti+1}`,joinedAt:`2026-01-01T00:00:0${ti}.000Z`,passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:t.name,bank:'TEST BANK',account:`TEST-MOBILE-${ti+1}`,ifsc:'TEST0000001',branch:'TEST',upi:`${t.prefix.toLowerCase()}@upi`,profileLocked:true};db.members.push(root);}
-    root.referralId=t.referralId;root.mobile=t.mobile;root.passwordHash=root.passwordHash||hashPassword('B5@123456');root.level=1;root.status='ACTIVE';root.levelReachedAt={...(root.levelReachedAt||{}),2:root.levelReachedAt?.[2]||'2026-01-01T00:00:00.000Z',3:root.levelReachedAt?.[3]||'2026-01-01T00:00:00.000Z',4:root.levelReachedAt?.[4]||'2026-01-01T00:00:00.000Z',5:root.levelReachedAt?.[5]||'2026-01-01T00:00:00.000Z',6:root.levelReachedAt?.[6]||'2026-01-01T00:00:00.000Z',7:root.levelReachedAt?.[7]||'2026-01-01T00:00:00.000Z'};
+    root.referralId=t.referralId;root.mobile=t.mobile;root.passwordHash=root.passwordHash||hashPassword('B5@123456');root.level=1;root.status='ACTIVE';
     for(let i=1;i<=13;i++){
-      const memberId=t.prefix==='TEST'?`TEST${String(i).padStart(2,'0')}`:`${t.prefix}${String(i).padStart(2,'0')}`;const mobile=t.prefix==='TEST'?String(7100000000+i):String(7300000000+ti*100+i);const stamp=`2026-01-0${ti+1}T00:${String(i).padStart(2,'0')}:00.000Z`;
+      const memberId=`${t.prefix}${String(i).padStart(2,'0')}`;const mobile=String(7300000000+ti*100+i);const stamp=`2026-01-0${ti+1}T00:${String(i).padStart(2,'0')}:00.000Z`;
       let child=db.members.find(m=>m.memberId===memberId||m.mobile===mobile);
-      if(!child){child={memberId,mobile,name:`${t.prefix} Referral ${String(i).padStart(2,'0')}`,email:'',status:'ACTIVE',referral:root.memberId,referralId:referralCode(memberId),level:1,levelMemberId:`L1-${t.prefix}-${String(i).padStart(3,'0')}`,joinedAt:stamp,registeredAt:stamp,levelReachedAt:{2:stamp,3:stamp,4:stamp,5:stamp,6:stamp,7:stamp},passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:`${t.prefix} Referral ${i}`,bank:'TEST BANK',account:`TEST-${t.prefix}-${String(i).padStart(2,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};db.members.push(child);}else{child.referral=root.memberId;child.mobile=mobile;child.level=1;child.status='ACTIVE';child.levelReachedAt={...(child.levelReachedAt||{}),2:child.levelReachedAt?.[2]||stamp,3:child.levelReachedAt?.[3]||stamp,4:child.levelReachedAt?.[4]||stamp,5:child.levelReachedAt?.[5]||stamp,6:child.levelReachedAt?.[6]||stamp,7:child.levelReachedAt?.[7]||stamp};child.passwordHash=child.passwordHash||hashPassword('B5@123456');}
+      if(!child){child={memberId,mobile,name:`${t.prefix} Referral ${String(i).padStart(2,'0')}`,email:'',status:'ACTIVE',referral:root.memberId,referralId:referralCode(memberId),level:1,levelMemberId:`L1-${t.prefix}-${String(i).padStart(3,'0')}`,joinedAt:stamp,registeredAt:stamp,passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:`${t.prefix} Referral ${i}`,bank:'TEST BANK',account:`TEST-${t.prefix}-${String(i).padStart(2,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};db.members.push(child);}else{child.referral=root.memberId;child.mobile=mobile;child.level=1;child.status='ACTIVE';child.passwordHash=child.passwordHash||hashPassword('B5@123456');}
     }
   });
   return true;
@@ -277,27 +276,14 @@ function splitRule(from){const r=LEVEL_RULES[Number(from)]||{upgrade:0,member:0,
 function activeAdminAccounts(){return (db.paymentSettings.admins||[]).filter(x=>x.active!==false);}
 function allocateAdminAccount(level){const a=activeAdminAccounts();if(!a.length)return null;const l=Number(level||0);if([4,5,6,7].includes(l)){db.paymentSettings.adminRotationByLevel=db.paymentSettings.adminRotationByLevel||{4:0,5:0,6:0,7:0};const idx=Number(db.paymentSettings.adminRotationByLevel[l]||0)%a.length;const chosen=a[idx];db.paymentSettings.adminRotationByLevel[l]=(idx+1)%a.length;return {...chosen};}const idx=Number(db.paymentSettings.adminRotationIndex||0)%a.length;const chosen=a[idx];db.paymentSettings.adminRotationIndex=(idx+1)%a.length;return {...chosen};}
 function earningsRequired(level){return ({2:5,3:5,4:5,5:5,6:5,7:5})[Number(level)]||0;}
-function paymentExpired(p){return !!(p && (p.expired===true || (p.deadlineAt && Date.now()>=Date.parse(p.deadlineAt) && !p.memberPaid)));}
-function expirePaymentDeadlines(){
-  let changed=false; const now=Date.now();
-  for(const p of db.leveltrackPayments){
-    if(p.adminApproved||p.memberPaid||p.expired||p.releasedAt||!p.deadlineAt)continue;
-    if(now>=Date.parse(p.deadlineAt)){
-      p.expired=true;p.expiredAt=new Date().toISOString();
-      const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);const r=u&&db.leveltrackRequests.find(x=>x.id===u.requestId);
-      if(u)u.paymentExpired=true;if(r){r.status='EXPIRED — ADMIN REVIEW';r.paymentExpired=true;}
-      db.leveltrackMessages.push({to:p.fromMemberId,message:'Your payment details have expired after 24 hours and are locked. Please contact Admin to request access again.',at:new Date().toISOString()});changed=true;
-    }
-  }
-  if(changed)save(db);return changed;
-}
 function seniorityQueue(level){
   const target=Number(level);
   const firstMember=[...db.members].sort((a,b)=>String(a.joinedAt||a.registeredAt||a.createdAt||'').localeCompare(String(b.joinedAt||b.registeredAt||b.createdAt||'')))[0]||null;
   const eligible=db.members.filter(m=>{const reached=m.levelReachedAt&&m.levelReachedAt[target];return !!reached || Number(m.level||1)>=target;});
+  // The First Company / First Member is the permanent root position for every level.
   if(firstMember && target>=2 && !eligible.some(m=>m.memberId===firstMember.memberId)) eligible.push(firstMember);
   eligible.sort((a,b)=>{
-    if(String(process.env.B5_SENIORITY_TEST_MODE||'1')!=='0'){
+    if(String(process.env.B5_SENIORITY_TEST_MODE||'')==='1'){
       const ao=Number(a._seniorityTestOrder||999999),bo=Number(b._seniorityTestOrder||999999);
       if(ao!==bo)return ao-bo;
     }
@@ -308,17 +294,15 @@ function seniorityQueue(level){
   });
   return eligible.map((m,i)=>{
     const completed=db.leveltrackPayments.filter(p=>{
-      if(p.receiverMemberId!==m.memberId || !p.adminApproved || !p.memberAccepted)return false;
-      const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);if(!u||!u.adminApproved)return false;
-      const paymentLevel=u.kind==='REFERRAL_UPGRADE'?2:Number(p.seniorityLevel||u.seniorityLevel||u.to||0);return paymentLevel===target;
+      if(p.receiverMemberId!==m.memberId || !p.adminApproved || !p.memberAccepted) return false;
+      const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);
+      if(!u || !u.adminApproved) return false;
+      // All ₹1,000 Advanced Referral Upgrades always belong to L2, regardless of the payer's current level.
+      const paymentLevel=u.kind==='REFERRAL_UPGRADE' ? 2 : Number(p.seniorityLevel||u.seniorityLevel||u.to||0);
+      return paymentLevel===target;
     }).length;
-    const pending=db.leveltrackPayments.filter(p=>{
-      if(p.receiverMemberId!==m.memberId || p.adminApproved || p.releasedAt || p.slotReleased)return false;
-      const u=db.leveltrackUpgrades.find(x=>x.id===p.upgradeId);if(!u)return false;
-      const paymentLevel=u.kind==='REFERRAL_UPGRADE'?2:Number(p.seniorityLevel||u.seniorityLevel||u.to||0);return paymentLevel===target;
-    }).length;
-    const required=earningsRequired(target),occupied=completed+pending;
-    return {position:i+1,memberId:m.memberId,name:m.name,mobile:m.mobile,reachedAt:(m.levelReachedAt&&m.levelReachedAt[target])||m.joinedAt||m.registeredAt||m.createdAt||null,completed,pending,occupied,required,status:completed>=required?'COMPLETED':occupied>=required?'FULL':'ACTIVE'};
+    const required=earningsRequired(target);
+    return {position:i+1,memberId:m.memberId,name:m.name,mobile:m.mobile,reachedAt:(m.levelReachedAt&&m.levelReachedAt[target])||m.joinedAt||m.registeredAt||m.createdAt||null,completed,required,status:completed>=required?'COMPLETED':'ACTIVE'};
   });
 }
 function nextSeniorReceiver(level,excludeMemberId=''){return seniorityQueue(level).find(x=>x.status==='ACTIVE'&&x.memberId!==excludeMemberId)||null;}
@@ -328,7 +312,6 @@ function nextLevelMemberId(level){
   return prefix+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');
 }
 function ltMember(id){return db.members.find(m=>m.memberId===id)}
-function latestPaymentForUpgrade(upgradeId){return db.leveltrackPayments.filter(x=>x.upgradeId===upgradeId).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')))[0]||null}
 function direct(id){return db.members.filter(m=>m.referral===id)}
 function completedReferralUpgrades(memberId){return db.leveltrackUpgrades.filter(u=>u.memberId===memberId&&u.kind==='REFERRAL_UPGRADE'&&u.adminApproved).length;}
 function pendingLeveltrackRequest(memberId){return db.leveltrackRequests.find(r=>r.memberId===memberId&&r.status!=='Completed')||null;}
@@ -375,7 +358,7 @@ function ltDashboard(memberId){
   let upgrade=(pendingRequest && db.leveltrackUpgrades.find(u=>u.requestId===pendingRequest.id)) || null;
   if(upgrade && pendingRequest){ upgrade={...pendingRequest,...upgrade}; }
   if(!upgrade && pendingRequest && pendingRequest.status==='Assigned'){ upgrade={...pendingRequest}; }
-  if(upgrade && (String(upgrade.status||'').toLowerCase()==='assigned' || upgrade.paymentExpired || String(upgrade.status||'').toUpperCase().includes('EXPIRED') || String(upgrade.status||'').toUpperCase().includes('LOCKED') || String(upgrade.status||'').toUpperCase().includes('RELEASED'))) { const saved=latestPaymentForUpgrade(upgrade.id); upgrade={...pendingRequest,...upgrade,payment:saved||{payee:upgrade.payee||'',payeeId:upgrade.payeeId||'',payeePhone:upgrade.payeePhone||'',accountHolder:upgrade.accountHolder||'',bank:upgrade.bank||'',account:upgrade.account||'',ifsc:upgrade.ifsc||'',branch:upgrade.branch||'',upi:upgrade.upi||'',amount:upgrade.amount||0,parts:upgrade.paymentParts||[]}}; }
+  if(upgrade && String(upgrade.status||'').toLowerCase()==='assigned') { const saved=db.leveltrackPayments.find(p=>p.upgradeId===upgrade.id); upgrade={...pendingRequest,...upgrade,payment:saved||{payee:upgrade.payee||'',payeeId:upgrade.payeeId||'',payeePhone:upgrade.payeePhone||'',accountHolder:upgrade.accountHolder||'',bank:upgrade.bank||'',account:upgrade.account||'',ifsc:upgrade.ifsc||'',branch:upgrade.branch||'',upi:upgrade.upi||'',amount:upgrade.amount||0,parts:upgrade.paymentParts||[]}}; }
   const action=nextMemberAction(m);
   const payments=db.leveltrackPayments.filter(p=>p.receiverMemberId===memberId).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
   const incomingPayments=payments.filter(p=>p.memberPaid===true&&!p.adminApproved);
@@ -384,12 +367,11 @@ function ltDashboard(memberId){
   const directReferrals=direct(memberId).length;
   const requiredDirectReferrals={1:3,2:5,3:7,4:9,5:11,6:13}[Number(m.level||1)]||0;
   const msgs=[...db.messages.filter(x=>x.to===memberId||x.to==='ALL'),...db.leveltrackMessages.filter(x=>x.to===memberId)].sort((a,b)=>String(b.at).localeCompare(String(a.at))).map(x=>({message:x.message,at:x.at}));
-  return {member:{...memberPublic(m),paymentAccessLocked:!!m.paymentAccessLocked},adminContactEmail:process.env.B5_ADMIN_CONTACT_EMAIL||'notifications@borntowin5.com',directReferrals,totalDownline:downlineCount(memberId),tree:ltTree(memberId),upgrade,requests,incomingPayments,history:ltHistory(memberId),earnings,seniority:seniorityQueue(Number(m.level||1)).find(x=>x.memberId===memberId)||null,requiredDirectReferrals,messages:msgs,action};
+  return {member:memberPublic(m),directReferrals,totalDownline:downlineCount(memberId),tree:ltTree(memberId),upgrade,requests,incomingPayments,history:ltHistory(memberId),earnings,seniority:seniorityQueue(Number(m.level||1)).find(x=>x.memberId===memberId)||null,requiredDirectReferrals,messages:msgs,action};
 }
 app.get('/leveltrack-admin.html',(req,res)=>res.sendFile(path.join(__dirname,'leveltrack-admin.html')));
 app.get('/leveltrack-member.html',(req,res)=>res.sendFile(path.join(__dirname,'leveltrack-member.html')));
 app.get('/api/leveltrack/admin/dashboard',(req,res)=>{
-  expirePaymentDeadlines();
   const levels={1:0,2:0,3:0,4:0,5:0,6:0,7:0};
   db.members.forEach(m=>{const l=Math.min(7,Math.max(1,Number(m.level||1)));levels[l]++});
   res.json({levels,members:db.members.map(memberPublic),requests:db.leveltrackRequests.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),upgrades:db.leveltrackUpgrades.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),payments:db.leveltrackPayments.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),paymentSettings:db.paymentSettings,seniority:{2:seniorityQueue(2),3:seniorityQueue(3),4:seniorityQueue(4),5:seniorityQueue(5),6:seniorityQueue(6),7:seniorityQueue(7)}});
@@ -409,7 +391,7 @@ app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
  const r=db.leveltrackRequests.find(x=>x.id===req.params.id);if(!r)return res.status(404).json({error:'Upgrade request not found'});
  if(r.status==='Assigned'){
   const u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);
-  const payment=u?latestPaymentForUpgrade(u.id):null;
+  const payment=u?db.leveltrackPayments.find(x=>x.upgradeId===u.id):null;
   if(u&&payment)return res.json({ok:true,alreadyAssigned:true,request:r,upgrade:u,payment});
   return res.status(409).json({error:'Request is marked Assigned but its payment record is missing. Please refresh Admin and retry.'});
  }
@@ -419,16 +401,15 @@ app.post('/api/leveltrack/admin/requests/:id/assign',(req,res)=>{
  const tr=parts.find(x=>x.type==='trust');if(tr)tr.accountDetails={...db.paymentSettings.trust};const ap=parts.findIndex(x=>x.type==='admin');if(ap>=0){const aa=allocateAdminAccount(Number(r.to));if(!aa)return res.status(400).json({error:'No active Admin account configured'});parts[ap].accountDetails=aa;}
  const now=new Date().toISOString();Object.assign(r,{status:'Assigned',assignedAt:now,seniorityLevel:targetLevel,payee:receiver.name||'',accountHolder:receiver.accountHolder||receiver.name||'',payeeId:receiver.memberId,payeePhone:receiver.mobile||'',amount,account:receiver.account||'',bank:receiver.bank||'',ifsc:receiver.ifsc||'',branch:receiver.branch||'',upi:receiver.upi||'',paymentParts:parts});
  let u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);if(!u){u={id:'LTU-'+crypto.randomBytes(4).toString('hex').toUpperCase(),requestId:r.id,memberId:m.memberId,from:r.from,to:r.to,kind:r.kind||'LEVEL_UPGRADE',seniorityLevel:targetLevel,createdAt:now};db.leveltrackUpgrades.push(u)}Object.assign(u,{amount,kind:r.kind||'LEVEL_UPGRADE',seniorityLevel:targetLevel,payee:r.payee,accountHolder:r.accountHolder,payeeId:r.payeeId,payeePhone:r.payeePhone,account:r.account,bank:r.bank,ifsc:r.ifsc,branch:r.branch,upi:r.upi,paymentParts:parts,detailsSent:true,detailsSentAt:now});
- const payment={id:'LTP-'+crypto.randomBytes(4).toString('hex').toUpperCase(),upgradeId:u.id,kind:r.kind||'LEVEL_UPGRADE',seniorityLevel:targetLevel,fromMemberId:m.memberId,receiverMemberId:receiver.memberId,from:m.name,to:receiver.name,amount,parts:parts.map(x=>({...x,status:'PENDING',utr:'',screenshot:null})),memberPaid:false,memberAccepted:false,adminApproved:false,createdAt:now,detailsSentAt:now,deadlineAt:new Date(Date.now()+24*60*60*1000).toISOString(),expired:false};db.leveltrackPayments=db.leveltrackPayments.filter(x=>x.upgradeId!==u.id);db.leveltrackPayments.push(payment);db.leveltrackMessages.push({to:m.memberId,message:(r.kind==='REFERRAL_UPGRADE'?`Upgrade payment details sent. Seniority Level L${targetLevel}. Total ₹${amount.toLocaleString()}.`:`Payment details sent for L${r.from} → L${r.to}. Total ₹${amount.toLocaleString()}.`),at:now});save(db);res.json({ok:true,request:r,upgrade:u,payment});
+ const payment={id:'LTP-'+crypto.randomBytes(4).toString('hex').toUpperCase(),upgradeId:u.id,kind:r.kind||'LEVEL_UPGRADE',seniorityLevel:targetLevel,fromMemberId:m.memberId,receiverMemberId:receiver.memberId,from:m.name,to:receiver.name,amount,parts:parts.map(x=>({...x,status:'PENDING',utr:'',screenshot:null})),memberPaid:false,memberAccepted:false,adminApproved:false,createdAt:now};db.leveltrackPayments=db.leveltrackPayments.filter(x=>x.upgradeId!==u.id);db.leveltrackPayments.push(payment);db.leveltrackMessages.push({to:m.memberId,message:(r.kind==='REFERRAL_UPGRADE'?`Upgrade payment details sent. Seniority Level L${targetLevel}. Total ₹${amount.toLocaleString()}.`:`Payment details sent for L${r.from} → L${r.to}. Total ₹${amount.toLocaleString()}.`),at:now});save(db);res.json({ok:true,request:r,upgrade:u,payment});
 });
 app.post('/api/leveltrack/admin/requests/:id/resend-details',(req,res)=>{
  const r=db.leveltrackRequests.find(x=>x.id===req.params.id);
  if(!r)return res.status(404).json({error:'Upgrade request not found'});
  if(r.status!=='Assigned')return res.status(400).json({error:'Payment details have not been assigned for this request yet.'});
  const u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);
- const p=u?latestPaymentForUpgrade(u.id):null;
+ const p=u?db.leveltrackPayments.find(x=>x.upgradeId===u.id):null;
  if(!u||!p)return res.status(400).json({error:'Payment details record not found for this request.'});
- if(paymentExpired(p)||p.releasedAt)return res.status(410).json({error:'These payment details are expired/locked. Use RESTORE & REASSIGN to issue new details.'});
  const m=ltMember(r.memberId);
  if(!m)return res.status(404).json({error:'Member not found'});
  const amount=Number(u.amount||r.amount||p.amount||0);
@@ -437,46 +418,7 @@ app.post('/api/leveltrack/admin/requests/:id/resend-details',(req,res)=>{
  save(db);
  res.json({ok:true,message:'Payment details sent again to the member.',request:r,upgrade:u,payment:p});
 });
-app.post('/api/leveltrack/admin/requests/:id/deadline-action',(req,res)=>{
- const r=db.leveltrackRequests.find(x=>x.id===req.params.id);if(!r)return res.status(404).json({error:'Upgrade request not found'});
- const u=db.leveltrackUpgrades.find(x=>x.requestId===r.id);const p=u&&latestPaymentForUpgrade(u.id);const action=String(req.body.action||'').toUpperCase();
- if(!p||!u)return res.status(400).json({error:'Payment assignment not found'});
- if(p.adminApproved||u.adminApproved)return res.status(400).json({error:'Approved payment cannot be reassigned or released'});
- if(action==='EXTEND_24_HOURS'){
-   if(p.releasedAt||p.slotReleased||r.paymentAccessLocked)return res.status(400).json({error:'This slot was released or payment access is locked. Use RESTORE & REASSIGN after Admin review.'});
-   if(p.memberPaid)return res.status(400).json({error:'Payment proof is already submitted; do not extend this deadline.'});
-   p.expired=false;p.expiredAt=null;p.deadlineAt=new Date(Date.now()+24*60*60*1000).toISOString();p.detailsSentAt=new Date().toISOString();u.paymentExpired=false;r.paymentExpired=false;r.status='Assigned';
-   db.leveltrackMessages.push({to:r.memberId,message:'Admin extended your payment deadline by another 24 hours. Your current payment details are active again.',at:new Date().toISOString()});save(db);return res.json({ok:true,action,request:r,payment:p});
- }
- if(action==='RELEASE_SLOT'){
-   p.releasedAt=new Date().toISOString();p.slotReleased=true;p.expired=true;p.expiredAt=p.expiredAt||new Date().toISOString();r.status='SLOT RELEASED';r.slotReleased=true;u.paymentExpired=true;
-   save(db);return res.json({ok:true,action,request:r,payment:p});
- }
- if(action==='BLACKLIST_MEMBER'){
-   const m=ltMember(r.memberId);if(m){m.paymentAccessLocked=true;m.paymentAccessLockedAt=new Date().toISOString();m.paymentAccessLockReason='ADMIN_REVIEW';}
-   p.expired=true;p.expiredAt=p.expiredAt||new Date().toISOString();r.status='ADMIN REVIEW — PAYMENT LOCKED';r.paymentAccessLocked=true;u.paymentExpired=true;
-   db.leveltrackMessages.push({to:r.memberId,message:'Your payment access is locked pending Admin review. Please contact Admin.',at:new Date().toISOString()});save(db);return res.json({ok:true,action,request:r,payment:p});
- }
- if(action==='RESTORE_REASSIGN'){
-   if(p.memberPaid)return res.status(400).json({error:'Payment proof has already been submitted. Do not reassign a paid request; review it manually.'});
-   // Keep old payment record as history and release its reserved slot before selecting a new eligible receiver.
-   p.releasedAt=new Date().toISOString();p.slotReleased=true;p.expired=true;p.expiredAt=p.expiredAt||new Date().toISOString();u.paymentExpired=true;
-   const m=ltMember(r.memberId);if(m){m.paymentAccessLocked=false;m.paymentAccessLockedAt=null;m.paymentAccessLockReason='';}
-   const isReferral=r.kind==='REFERRAL_UPGRADE',targetLevel=isReferral?2:Number(r.to),amount=isReferral?1000:Number(LEVEL_RULES[r.from]?.upgrade||0);
-   const next=nextSeniorReceiver(targetLevel,isReferral?m.memberId:'');const receiver=next?ltMember(next.memberId):null;
-   if(!receiver){r.status='EXPIRED — ADMIN REVIEW';save(db);return res.status(400).json({error:'No eligible next Senior is available. Old slot is released; please add/check the Seniority queue.'});}
-   const sr=isReferral?{upgrade:amount,parts:[{type:'member',label:'MEMBER / RECEIVER',amount}]}:splitRule(r.from);const parts=sr.parts;
-   const rec=parts.find(x=>x.type==='member');if(rec)rec.accountDetails={name:receiver.name,memberId:receiver.memberId,mobile:receiver.mobile,accountHolder:receiver.accountHolder||receiver.name||'',bank:receiver.bank||'',account:receiver.account||'',ifsc:receiver.ifsc||'',branch:receiver.branch||'',upi:receiver.upi||''};
-   const tr=parts.find(x=>x.type==='trust');if(tr)tr.accountDetails={...db.paymentSettings.trust};const ap=parts.findIndex(x=>x.type==='admin');if(ap>=0){const aa=allocateAdminAccount(Number(r.to));if(!aa)return res.status(400).json({error:'No active Admin account configured'});parts[ap].accountDetails=aa;}
-   const now=new Date().toISOString();Object.assign(r,{status:'Assigned',assignedAt:now,seniorityLevel:targetLevel,payee:receiver.name||'',accountHolder:receiver.accountHolder||receiver.name||'',payeeId:receiver.memberId,payeePhone:receiver.mobile||'',amount,account:receiver.account||'',bank:receiver.bank||'',ifsc:receiver.ifsc||'',branch:receiver.branch||'',upi:receiver.upi||'',paymentParts:parts,paymentExpired:false,slotReleased:false});
-   Object.assign(u,{amount,kind:r.kind||'LEVEL_UPGRADE',seniorityLevel:targetLevel,payee:r.payee,accountHolder:r.accountHolder,payeeId:r.payeeId,payeePhone:r.payeePhone,account:r.account,bank:r.bank,ifsc:r.ifsc,branch:r.branch,upi:r.upi,paymentParts:parts,detailsSent:true,detailsSentAt:now,paymentExpired:false});
-   const freshPayment={id:'LTP-'+crypto.randomBytes(4).toString('hex').toUpperCase(),upgradeId:u.id,kind:r.kind||'LEVEL_UPGRADE',seniorityLevel:targetLevel,fromMemberId:m.memberId,receiverMemberId:receiver.memberId,from:m.name,to:receiver.name,amount,parts:parts.map(x=>({...x,status:'PENDING',utr:'',screenshot:null})),memberPaid:false,memberAccepted:false,adminApproved:false,createdAt:now,detailsSentAt:now,deadlineAt:new Date(Date.now()+24*60*60*1000).toISOString(),expired:false};db.leveltrackPayments.push(freshPayment);
-   db.leveltrackMessages.push({to:m.memberId,message:`Admin reassigned your payment details. New receiver: ${receiver.memberId}. New 24-hour deadline started.`,at:now});save(db);
-   return res.json({ok:true,action,request:r,upgrade:u,payment:freshPayment,message:'New receiver details assigned. Old payment details are locked; the new 24-hour deadline has started.'});
- }
- return res.status(400).json({error:'Unknown deadline action'});
-});
-app.post('/api/leveltrack/admin/payments/by-upgrade/:id/approve',(req,res)=>{const u=db.leveltrackUpgrades.find(x=>x.id===req.params.id);if(!u)return res.status(404).json({error:'Upgrade not found'});const p=latestPaymentForUpgrade(u.id);if(!p)return res.status(400).json({error:'Payment not found'});const m=ltMember(u.memberId);if(!m)return res.status(404).json({error:'Member not found'});if(u.adminApproved&&p.adminApproved){return res.json({ok:true,alreadyApproved:true,member:memberPublic(m),upgrade:u,payment:p});}if(Number(m.level)!==Number(u.from))return res.status(400).json({error:'Member level changed already'});const allPaid=(p.parts||[]).every(x=>['SUBMITTED','CONFIRMED','APPROVED'].includes(x.status));if(!u.memberPaid||!allPaid||!p.memberAccepted)return res.status(400).json({error:'All payment proofs and receiver confirmation are required'});const approvedAt=new Date().toISOString();p.parts=(p.parts||[]).map(x=>({...x,status:'APPROVED',adminApprovedAt:approvedAt}));p.adminApproved=true;p.adminVerifiedAt=approvedAt;u.receiverApproved=true;u.adminApproved=true;u.completedAt=approvedAt;const r=db.leveltrackRequests.find(x=>x.id===u.requestId);if(r)r.status='Completed';if(u.kind==='REFERRAL_UPGRADE'){db.leveltrackMessages.push({to:m.memberId,message:`Upgrade completed. Your next Level Upgrade is now available when unlocked.`,at:new Date().toISOString()});save(db);return res.json({ok:true,member:memberPublic(m),upgrade:u,payment:p});}m.level=Number(u.to);m.levelMemberId=nextLevelMemberId(m.level);m.levelReachedAt={...(m.levelReachedAt||{}),[String(u.to)]:new Date().toISOString()};m.upgradeDate=new Date().toISOString();m.status='Verified';db.leveltrackMessages.push({to:m.memberId,message:`Admin approved payment. Level upgrade completed. You are now Level ${m.level}.`,at:new Date().toISOString()});save(db);res.json({ok:true,member:memberPublic(m),upgrade:u,payment:p})});
+app.post('/api/leveltrack/admin/payments/by-upgrade/:id/approve',(req,res)=>{const u=db.leveltrackUpgrades.find(x=>x.id===req.params.id);if(!u)return res.status(404).json({error:'Upgrade not found'});const p=db.leveltrackPayments.find(x=>x.upgradeId===u.id);if(!p)return res.status(400).json({error:'Payment not found'});const m=ltMember(u.memberId);if(!m)return res.status(404).json({error:'Member not found'});if(u.adminApproved&&p.adminApproved){return res.json({ok:true,alreadyApproved:true,member:memberPublic(m),upgrade:u,payment:p});}if(Number(m.level)!==Number(u.from))return res.status(400).json({error:'Member level changed already'});const allPaid=(p.parts||[]).every(x=>['SUBMITTED','CONFIRMED','APPROVED'].includes(x.status));if(!u.memberPaid||!allPaid||!p.memberAccepted)return res.status(400).json({error:'All payment proofs and receiver confirmation are required'});const approvedAt=new Date().toISOString();p.parts=(p.parts||[]).map(x=>({...x,status:'APPROVED',adminApprovedAt:approvedAt}));p.adminApproved=true;p.adminVerifiedAt=approvedAt;u.receiverApproved=true;u.adminApproved=true;u.completedAt=approvedAt;const r=db.leveltrackRequests.find(x=>x.id===u.requestId);if(r)r.status='Completed';if(u.kind==='REFERRAL_UPGRADE'){db.leveltrackMessages.push({to:m.memberId,message:`Upgrade completed. Your next Level Upgrade is now available when unlocked.`,at:new Date().toISOString()});save(db);return res.json({ok:true,member:memberPublic(m),upgrade:u,payment:p});}m.level=Number(u.to);m.levelMemberId=nextLevelMemberId(m.level);m.levelReachedAt={...(m.levelReachedAt||{}),[String(u.to)]:new Date().toISOString()};m.upgradeDate=new Date().toISOString();m.status='Verified';db.leveltrackMessages.push({to:m.memberId,message:`Admin approved payment. Level upgrade completed. You are now Level ${m.level}.`,at:new Date().toISOString()});save(db);res.json({ok:true,member:memberPublic(m),upgrade:u,payment:p})});
 app.post('/api/leveltrack/admin/payments/:id/verify',(req,res)=>{
   const p=db.leveltrackPayments.find(x=>x.id===req.params.id);if(!p)return res.status(404).json({error:'Payment not found'});
   if(!p.memberAccepted)return res.status(400).json({error:'Receiver has not accepted the payment'});
@@ -486,7 +428,7 @@ app.post('/api/leveltrack/admin/payments/:id/verify',(req,res)=>{
 });
 app.post('/api/leveltrack/admin/upgrades/:id/final-approve',(req,res)=>{
   const u=db.leveltrackUpgrades.find(x=>x.id===req.params.id);if(!u)return res.status(404).json({error:'Upgrade not found'});
-  const p=latestPaymentForUpgrade(u.id);if(!u.memberPaid||!u.receiverApproved||!p?.adminApproved)return res.status(400).json({error:'Payment must be paid, accepted and admin verified first'});
+  const p=db.leveltrackPayments.find(x=>x.upgradeId===u.id);if(!u.memberPaid||!u.receiverApproved||!p?.adminApproved)return res.status(400).json({error:'Payment must be paid, accepted and admin verified first'});
   const m=ltMember(u.memberId);if(!m)return res.status(404).json({error:'Member not found'});
   if(Number(m.level)!==Number(u.from))return res.status(400).json({error:'Member level changed already'});
   u.adminApproved=true;u.completedAt=new Date().toISOString();
@@ -504,7 +446,6 @@ app.get('/api/leveltrack/admin/daily-report',(req,res)=>{
   res.json({date,count:upgrades.length,upgrades});
 });
 app.get('/api/leveltrack/member/dashboard/:id',(req,res)=>{
-  expirePaymentDeadlines();
   const d=ltDashboard(req.params.id);if(!d)return res.status(404).json({error:'Member not found'});res.json(d);
 });
 app.post('/api/leveltrack/member/upgrade-request',(req,res)=>{
@@ -522,7 +463,7 @@ app.post('/api/leveltrack/member/referral-upgrade-request',(req,res)=>{
   const action=nextMemberAction(m);if(action.type!=='REFERRAL_UPGRADE')return res.status(400).json({error:'The additional Upgrade is not unlocked yet.'});
   const r={id:'LTR-'+crypto.randomBytes(4).toString('hex').toUpperCase(),memberId:m.memberId,from:Number(m.level||1),to:Number(m.level||1),kind:'REFERRAL_UPGRADE',cycle:Number(action.cycle||1),seniorityLevel:2,status:'Requested',date:new Date().toISOString().slice(0,10),createdAt:new Date().toISOString()};db.leveltrackRequests.push(r);db.leveltrackMessages.push({to:'ADMIN',message:`New Advanced Referral Upgrade: ${m.name} — cycle ${r.cycle}, Seniority L2.`,at:new Date().toISOString()});save(db);res.json({ok:true,request:r});
 });
-app.post('/api/leveltrack/member/upgrade/:id/pay',(req,res)=>{const u=db.leveltrackUpgrades.find(x=>x.id===req.params.id);if(!u)return res.status(404).json({error:'Upgrade not found'});if(u.memberId!==req.body.memberId)return res.status(403).json({error:'Not your upgrade'});const p=latestPaymentForUpgrade(u.id);if(!p)return res.status(404).json({error:'Payment instructions not found'});if(String(req.body.paymentId||'')!==String(p.id))return res.status(409).json({error:'Payment details have changed. Refresh the page and use the latest receiver details.'});const payer=ltMember(req.body.memberId);if(payer?.paymentAccessLocked)return res.status(403).json({error:'Payment access is locked pending Admin review. Contact Admin.'});if(paymentExpired(p)||p.releasedAt||u.paymentExpired){p.expired=true;p.expiredAt=p.expiredAt||new Date().toISOString();save(db);return res.status(410).json({error:'Payment details have expired and are locked. Contact Admin for new payment details.'});}const proofs=Array.isArray(req.body.parts)?req.body.parts:[];if(!proofs.length)return res.status(400).json({error:'Payment proof required'});for(const proof of proofs){const part=p.parts.find(x=>x.type===proof.type);if(!part)continue;const utr=String(proof.utr||'').trim();if(!utr)return res.status(400).json({error:`UTR required for ${part.label}`});if(!proof.screenshot)return res.status(400).json({error:`Screenshot required for ${part.label}`});part.utr=utr;part.screenshot=proof.screenshot;part.submittedAt=new Date().toISOString();part.status='SUBMITTED';}const all=p.parts.every(x=>['SUBMITTED','CONFIRMED','APPROVED'].includes(x.status));if(!all)return res.status(400).json({error:'Upload payment proof for every payment section'});u.memberPaid=true;u.utr=p.parts.find(x=>x.type==='member')?.utr||'';u.paidAt=new Date().toISOString();p.utr=u.utr;p.memberPaid=true;p.submittedAt=new Date().toISOString();db.leveltrackMessages.push({to:u.payeeId,message:`Payment proofs submitted for L${u.from} → L${u.to}. Please confirm the receiver payment.`,at:new Date().toISOString()});save(db);res.json({ok:true,upgrade:u,payment:p});});
+app.post('/api/leveltrack/member/upgrade/:id/pay',(req,res)=>{const u=db.leveltrackUpgrades.find(x=>x.id===req.params.id);if(!u)return res.status(404).json({error:'Upgrade not found'});if(u.memberId!==req.body.memberId)return res.status(403).json({error:'Not your upgrade'});const p=db.leveltrackPayments.find(x=>x.upgradeId===u.id);if(!p)return res.status(404).json({error:'Payment instructions not found'});const proofs=Array.isArray(req.body.parts)?req.body.parts:[];if(!proofs.length)return res.status(400).json({error:'Payment proof required'});for(const proof of proofs){const part=p.parts.find(x=>x.type===proof.type);if(!part)continue;const utr=String(proof.utr||'').trim();if(!utr)return res.status(400).json({error:`UTR required for ${part.label}`});if(!proof.screenshot)return res.status(400).json({error:`Screenshot required for ${part.label}`});part.utr=utr;part.screenshot=proof.screenshot;part.submittedAt=new Date().toISOString();part.status='SUBMITTED';}const all=p.parts.every(x=>['SUBMITTED','CONFIRMED','APPROVED'].includes(x.status));if(!all)return res.status(400).json({error:'Upload payment proof for every payment section'});u.memberPaid=true;u.utr=p.parts.find(x=>x.type==='member')?.utr||'';u.paidAt=new Date().toISOString();p.utr=u.utr;p.memberPaid=true;p.submittedAt=new Date().toISOString();db.leveltrackMessages.push({to:u.payeeId,message:`Payment proofs submitted for L${u.from} → L${u.to}. Please confirm the receiver payment.`,at:new Date().toISOString()});save(db);res.json({ok:true,upgrade:u,payment:p});});
 app.post('/api/leveltrack/member/incoming/:id/accept',(req,res)=>{
   const p=db.leveltrackPayments.find(x=>x.id===req.params.id);if(!p)return res.status(404).json({error:'Payment not found'});
   if(p.receiverMemberId!==req.body.memberId)return res.status(403).json({error:'Not your payment'});

@@ -1,0 +1,11 @@
+ADMIN SENIORITY VISIBILITY FIX
+
+Based on OOOOOOK.zip. Targeted changes only:
+- Standalone /leveltrack-admin.html no longer hides all Admin sections on initial load.
+- Embedded mode keeps section navigation for the parent Admin menu.
+- Seniority Queue shows a loading state before data arrives.
+- Dashboard/API errors are shown in the Seniority area instead of leaving it blank.
+- The dashboard loader checks that the API response includes Seniority Queue data.
+
+No server Seniority calculation, payment approval rules, or rotation rules were changed in this patch.
+Test member seeding still requires B5_SENIORITY_TEST_MODE=1 as documented in SENIORITY_TEST_SETUP.txt.
