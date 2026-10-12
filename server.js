@@ -65,6 +65,8 @@ function save(d){
 }
 
 let db=load();
+// Dedicated TEST ZIP: enable the existing Seniority test ordering automatically.
+if(!process.env.B5_SENIORITY_TEST_MODE)process.env.B5_SENIORITY_TEST_MODE='1';
 
 
 // ---------------- OPTIONAL SENIORITY TEST DATA ----------------
@@ -84,7 +86,7 @@ const SENIORITY_TEST_NEW_IDS=[
   ['TEST11','7100000011'],['TEST12','7100000012'],['TEST13','7100000013']
 ];
 function seedSeniorityTestData(){
-  if(String(process.env.B5_SENIORITY_TEST_MODE||'')!=='1') return false;
+  // TEST BUILD: seed the dedicated demo IDs automatically so Seniority can be checked without environment setup.
   let root=db.members.find(m=>String(m.referralId||'').toUpperCase()===SENIORITY_TEST_REF);
   if(!root){
     root={memberId:'B5-FC329E',referralId:SENIORITY_TEST_REF,name:'Seniority Test Root',mobile:'7999999999',email:'',status:'ACTIVE',referral:'FIRST MEMBER',level:1,levelMemberId:'L1-TEST-ROOT',joinedAt:'2000-01-01T00:00:00.000Z',levelReachedAt:{2:'2000-01-01T00:00:00.000Z',3:'2000-01-01T00:00:00.000Z',4:'2000-01-01T00:00:00.000Z',5:'2000-01-01T00:00:00.000Z',6:'2000-01-01T00:00:00.000Z',7:'2000-01-01T00:00:00.000Z'},passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:'Seniority Test Root',bank:'TEST BANK',account:'TEST-ROOT',ifsc:'TEST0000001',branch:'TEST',upi:'testroot@upi',profileLocked:true};
@@ -99,7 +101,8 @@ function seedSeniorityTestData(){
       m={memberId,mobile,name:memberId,referral:rootId,referralId:referralCode(memberId),status:'ACTIVE',level:1,levelMemberId:`L1-TEST-${String(i+1).padStart(2,'0')}`,joinedAt:stamp,registeredAt:stamp,levelReachedAt:reached,passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:memberId,bank:'TEST BANK',account:`TEST-${String(i+1).padStart(4,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};
       db.members.push(m);
     }else{
-      m.status='ACTIVE';m.referral=m.referral||rootId;m.level=1;m.levelMemberId=m.levelMemberId&&String(m.levelMemberId).startsWith('L1-')?m.levelMemberId:`L1-TEST-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;m.levelReachedAt={...(m.levelReachedAt||{}),...reached};
+      m.referral=m.referral||rootId;m.levelMemberId=m.levelMemberId||`L1-TEST-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;
+      m.levelReachedAt={...(m.levelReachedAt||{})};for(let l=2;l<=7;l++)if(!m.levelReachedAt[l])m.levelReachedAt[l]=stamp;
     }
     m._seniorityTestOrder=i+1;
   });
@@ -111,6 +114,7 @@ function seedSeniorityTestData(){
     db.members.push(newRoot);
   }
   const newRootId=newRoot.memberId;
+
   SENIORITY_TEST_NEW_IDS.forEach(([memberId,mobile],i)=>{
     let m=db.members.find(x=>x.memberId===memberId);
     const stamp=`2026-10-06T00:01:${String(i).padStart(2,'0')}.000Z`;
@@ -119,10 +123,34 @@ function seedSeniorityTestData(){
       m={memberId,mobile,name:memberId,referral:newRootId,referralId:referralCode(memberId),status:'ACTIVE',level:1,levelMemberId:`L1-NEW13-${String(i+1).padStart(2,'0')}`,joinedAt:stamp,registeredAt:stamp,levelReachedAt:reached,passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:memberId,bank:'TEST BANK',account:`NEW13-${String(i+1).padStart(4,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};
       db.members.push(m);
     }else{
-      m.status='ACTIVE';m.referral=newRootId;m.level=1;m.levelMemberId=`L1-NEW13-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;m.levelReachedAt={...(m.levelReachedAt||{}),...reached};
+      m.referral=newRootId;m.levelMemberId=m.levelMemberId||`L1-NEW13-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;
+      m.levelReachedAt={...(m.levelReachedAt||{})};for(let l=2;l<=7;l++)if(!m.levelReachedAt[l])m.levelReachedAt[l]=stamp;
     }
     m._seniorityTestNewOrder=i+1;
   });
+
+  // Fresh nested 13-referral test tree under TEST01 (mobile 7100000001).
+  // This keeps the original NEW13 root untouched and gives a clean Level 1 member
+  // that can be upgraded from 3 -> 5 -> 7 -> 9 -> 11 -> 13 referrals.
+  const nestedTestParentId='TEST01';
+  const NESTED_TEST_IDS=[
+    ['NTEST01','7200000001'],['NTEST02','7200000002'],['NTEST03','7200000003'],['NTEST04','7200000004'],['NTEST05','7200000005'],
+    ['NTEST06','7200000006'],['NTEST07','7200000007'],['NTEST08','7200000008'],['NTEST09','7200000009'],['NTEST10','7200000010'],
+    ['NTEST11','7200000011'],['NTEST12','7200000012'],['NTEST13','7200000013']
+  ];
+  const nestedParent=db.members.find(m=>m.memberId===nestedTestParentId);
+  if(nestedParent){
+    NESTED_TEST_IDS.forEach(([memberId,mobile],i)=>{
+      let m=db.members.find(x=>x.memberId===memberId);
+      const stamp=`2026-10-07T00:01:${String(i).padStart(2,'0')}.000Z`;
+      if(!m){
+        m={memberId,mobile,name:memberId,referral:nestedTestParentId,referralId:referralCode(memberId),status:'ACTIVE',level:1,levelMemberId:`L1-NEST-${String(i+1).padStart(2,'0')}`,joinedAt:stamp,registeredAt:stamp,levelReachedAt:{},passwordHash:hashPassword('B5@123456'),place:'TEST',accountHolder:memberId,bank:'TEST BANK',account:`NEST-${String(i+1).padStart(4,'0')}`,ifsc:'TEST0000001',branch:'TEST',upi:`${memberId.toLowerCase()}@upi`,profileLocked:true};
+        db.members.push(m);
+      }else{
+        m.referral=nestedTestParentId;m.levelMemberId=m.levelMemberId||`L1-NEST-${String(i+1).padStart(2,'0')}`;m.joinedAt=m.joinedAt||stamp;m.levelReachedAt=m.levelReachedAt||{};
+      }
+    });
+  }
   return true;
 }
 

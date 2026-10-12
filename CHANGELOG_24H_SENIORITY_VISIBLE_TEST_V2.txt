@@ -1,0 +1,8 @@
+24H SENIORITY VISIBLE TEST BUILD v2
+- Uses the 24-hour payment deadline/Admin hold actions from the prior review ZIP.
+- Restores the complete 13 + 13 + 13 test datasets (700..., 710..., 720...).
+- Test data seeds automatically in this test build; no environment variable required.
+- Fixes test-seed ordering so TEST01 exists before its 720... nested referrals are created.
+- Preserves existing test account level/status and referral history across restarts where possible.
+- Does not alter seniorityQueue calculation or Admin Seniority UI rendering logic.
+- Static syntax and ZIP integrity checks must be run before deployment; live cloud flow remains unverified.
