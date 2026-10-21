@@ -1,0 +1,7 @@
+B5 PERSISTENCE SAFETY V4 - DEPLOY NOTES
+
+1. Keep the current live deployment unchanged until a separate test deployment is available.
+2. Set B5_BACKUP_DIR only to a persistent mounted path confirmed by AIC Cloud. Do not guess a path.
+3. After test deployment, open /api/db-status and verify backup.secondaryOk and supabase status.
+4. If Supabase still reports statement timeout, do not assume persistence is repaired. The single app_state JSON row needs a database redesign/migration; preserve both snapshots before any such change.
+5. Do not expose SUPABASE_SECRET_KEY or SMTP_PASS in screenshots, chat, or source files.
