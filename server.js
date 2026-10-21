@@ -24,6 +24,18 @@ async function sendEmail(to,subject,text,html){
   return mailer.sendMail({from:EMAIL_FROM,to,subject,text,html:html||undefined});
 }
 
+// Approval notification is best-effort: in-app message remains the source of truth.
+async function sendLevelApprovalNotice(member, upgrade){
+  const to=String(member?.email||member?.rEmail||'').trim();
+  if(!to) return {sent:false,reason:'no-member-email'};
+  const isReferral=upgrade?.kind==='REFERRAL_UPGRADE';
+  const subject='BORNTOWIN5 - Upgrade Approved';
+  const detail=isReferral?`Your referral upgrade (cycle ${upgrade.cycle||1}) has been approved.`:`Your Level ${upgrade.from} to Level ${upgrade.to} upgrade has been approved.`;
+  const body=`Hello ${member.name||member.memberId},\n\n${detail}\nMember ID: ${member.memberId}\nApproval time: ${upgrade.completedAt||new Date().toISOString()}\n\nThank you,\nBORNTOWIN5`;
+  try{await sendEmail(to,subject,body);return {sent:true};}
+  catch(e){console.error('Level approval email failed:',e.message);return {sent:false,reason:String(e.message||e)};}
+}
+
 if(mailer){
   mailer.verify().then(()=>console.log('AIC Cloud SMTP connection verified')).catch(err=>console.error('AIC Cloud SMTP verification failed:',err.message));
 }
@@ -32,7 +44,10 @@ app.use(express.json({limit:'12mb'}));
 app.use(express.static(__dirname));
 
 const DB_FILE=process.env.DB_FILE || path.join(__dirname,'data','db.json');
+// Set B5_BACKUP_DIR to an AIC Cloud persistent-volume path for a separate local backup copy.
+const B5_BACKUP_DIR=process.env.B5_BACKUP_DIR || path.join(path.dirname(DB_FILE),'backups');
 fs.mkdirSync(path.dirname(DB_FILE),{recursive:true});
+let localBackupStatus={state:'not-run',lastSuccessAt:null,lastError:null,path:B5_BACKUP_DIR};
 function freshDB(){return {adminPassword:'ADMIN',members:[],pins:[],messages:[],passwordResetRequests:[],leveltrackRequests:[],leveltrackUpgrades:[],leveltrackPayments:[],leveltrackMessages:[],paymentSettings:{admins:[{id:'A',name:'Admin A',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'B',name:'Admin B',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true},{id:'C',name:'Admin C',accountHolder:'',bank:'',account:'',ifsc:'',upi:'',active:true}],adminRotationIndex:0,adminRotationByLevel:{4:0,5:0,6:0,7:0},trust:{name:'Registered Trust',accountHolder:'',bank:'',account:'TEMP-TRUST-001',ifsc:'',upi:'',active:true}}};}
 function load(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch(e){return freshDB()}}
 
@@ -41,8 +56,7 @@ const SUPABASE_URL=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
 const SUPABASE_SECRET_KEY=String(process.env.SUPABASE_SECRET_KEY||'');
 let supabaseReady=false;
 let supabaseSaveQueue=Promise.resolve();
-let persistenceStatus={lastAttemptAt:null,lastSuccessAt:null,lastError:null,consecutiveFailures:0,localBackupOk:null,localBackupError:null};
-const BACKUP_DIR=process.env.B5_BACKUP_DIR||path.join(path.dirname(DB_FILE),'backups');
+let supabaseSaveStatus={state:'idle',lastAttemptAt:null,lastSuccessAt:null,lastError:null,consecutiveFailures:0};
 function supabaseHeaders(extra={}){return {'apikey':SUPABASE_SECRET_KEY,'Authorization':'Bearer '+SUPABASE_SECRET_KEY,'Content-Type':'application/json','Accept':'application/json',...extra}}
 async function supabaseFetch(pathname,options={}){
   if(!SUPABASE_URL||!SUPABASE_SECRET_KEY) throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required');
@@ -51,63 +65,61 @@ async function supabaseFetch(pathname,options={}){
   if(!r.ok) throw new Error('Supabase API '+r.status+': '+body);
   try{return body?JSON.parse(body):null}catch{return body}
 }
-function atomicWrite(file,contents){
-  fs.mkdirSync(path.dirname(file),{recursive:true});
-  const tmp=file+'.tmp-'+process.pid+'-'+Date.now();
-  fs.writeFileSync(tmp,contents);
-  fs.renameSync(tmp,file);
-}
+// Safer local persistence: atomically replace db.json and keep the previous
+// successfully written snapshot beside it. This is a local fallback, not a
+// substitute for a separate persistent backup service.
 function localSave(d){
-  const contents=JSON.stringify(d,null,2);
-  // Keep the previous local state before replacing it; never make a failed save look successful.
+  const dir=path.dirname(DB_FILE);
+  const tmp=DB_FILE+'.tmp';
+  const text=JSON.stringify(d,null,2);
+  fs.writeFileSync(tmp,text,{encoding:'utf8',mode:0o600});
+  if(fs.existsSync(DB_FILE)){
+    try{fs.copyFileSync(DB_FILE,DB_FILE+'.previous');}catch(e){console.error('Local previous snapshot copy failed:',e.message);}
+  }
+  fs.renameSync(tmp,DB_FILE);
+  // Maintain a second snapshot file. This is durable across deploys ONLY when B5_BACKUP_DIR is a persistent volume.
   try{
-    fs.mkdirSync(path.dirname(DB_FILE),{recursive:true});
-    if(fs.existsSync(DB_FILE)) atomicWrite(DB_FILE+'.previous',fs.readFileSync(DB_FILE));
-    atomicWrite(DB_FILE,contents);
-  }catch(e){throw new Error('Local database save failed: '+e.message)}
-  // Secondary snapshot is best-effort and is durable only if B5_BACKUP_DIR is persistent storage.
-  try{
-    fs.mkdirSync(BACKUP_DIR,{recursive:true});
-    const backupFile=path.join(BACKUP_DIR,'b5-state.json');
-    if(fs.existsSync(backupFile)) atomicWrite(backupFile+'.previous',fs.readFileSync(backupFile));
-    atomicWrite(backupFile,contents);
-    persistenceStatus.localBackupOk=true;
-    persistenceStatus.localBackupError=null;
+    fs.mkdirSync(B5_BACKUP_DIR,{recursive:true});
+    const backupTmp=path.join(B5_BACKUP_DIR,'b5-state.json.tmp');
+    const backupFile=path.join(B5_BACKUP_DIR,'b5-state.json');
+    fs.writeFileSync(backupTmp,text,{encoding:'utf8',mode:0o600});
+    fs.renameSync(backupTmp,backupFile);
+    localBackupStatus={state:'saved',lastSuccessAt:new Date().toISOString(),lastError:null,path:B5_BACKUP_DIR};
   }catch(e){
-    persistenceStatus.localBackupOk=false;
-    persistenceStatus.localBackupError=e.message;
-    console.error('Secondary local backup failed:',e.message);
+    localBackupStatus={...localBackupStatus,state:'failed',lastError:String(e.message||e)};
+    console.error('B5 secondary local backup failed:',e.message);
   }
 }
 function hasRealData(d){
   return !!(d && ((d.members||[]).length || (d.messages||[]).length || (d.passwordResetRequests||[]).length || (d.leveltrackRequests||[]).length || (d.leveltrackUpgrades||[]).length || (d.leveltrackPayments||[]).length || (d.leveltrackMessages||[]).length || (d.pins||[]).some(x=>x && !x.system)));
 }
 function save(d){
+  // Keep the local write synchronous so existing routes retain their behavior.
   localSave(d);
-  if(!supabaseReady)return;
+  if(!supabaseReady){supabaseSaveStatus={...supabaseSaveStatus,state:'not-ready',lastError:'Supabase is not ready'};return;}
   const snapshot=JSON.parse(JSON.stringify(d));
-  // Serialize writes and retry transient failures. A failed remote write remains visible in status/logs.
+  supabaseSaveStatus={...supabaseSaveStatus,state:'queued',lastAttemptAt:new Date().toISOString(),lastError:null};
   supabaseSaveQueue=supabaseSaveQueue.then(async()=>{
-    const delays=[0,1000,2500];
-    let lastError=null;
-    for(let attempt=0;attempt<delays.length;attempt++){
-      if(delays[attempt]) await new Promise(resolve=>setTimeout(resolve,delays[attempt]));
-      persistenceStatus.lastAttemptAt=new Date().toISOString();
+    let lastError;
+    for(let attempt=1;attempt<=3;attempt++){
       try{
+        supabaseSaveStatus={...supabaseSaveStatus,state:'saving',lastAttemptAt:new Date().toISOString()};
         await supabaseFetch('app_state?id=eq.1',{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({data:snapshot})});
-        persistenceStatus.lastSuccessAt=new Date().toISOString();
-        persistenceStatus.lastError=null;
-        persistenceStatus.consecutiveFailures=0;
+        supabaseSaveStatus={state:'saved',lastAttemptAt:supabaseSaveStatus.lastAttemptAt,lastSuccessAt:new Date().toISOString(),lastError:null,consecutiveFailures:0};
+        console.log('Supabase persistence save succeeded');
         return;
       }catch(e){
         lastError=e;
-        console.error(`Supabase API save failed (attempt ${attempt+1}/${delays.length}):`,e.message);
+        console.error(`Supabase API save failed (attempt ${attempt}/3):`,e.message);
+        if(attempt<3) await new Promise(resolve=>setTimeout(resolve,1000*attempt));
       }
     }
-    persistenceStatus.lastError=lastError?lastError.message:'Unknown Supabase save failure';
-    persistenceStatus.consecutiveFailures++;
-    console.error('Supabase persistence is behind local state; local and secondary snapshots retained where available.');
-  }).catch(e=>console.error('Supabase save queue error:',e.message));
+    supabaseSaveStatus={...supabaseSaveStatus,state:'failed',lastError:String(lastError?.message||lastError),consecutiveFailures:(supabaseSaveStatus.consecutiveFailures||0)+1};
+    console.error('Supabase persistence is behind local state; local db.json.previous retained where available.');
+  }).catch(e=>{
+    supabaseSaveStatus={...supabaseSaveStatus,state:'failed',lastError:String(e?.message||e),consecutiveFailures:(supabaseSaveStatus.consecutiveFailures||0)+1};
+    console.error('Supabase save queue failed:',e.message);
+  });
 }
 
 let db=load();
@@ -498,7 +510,7 @@ app.post('/api/leveltrack/admin/requests/:id/restore-reassign',(req,res)=>{
  Object.assign(u,{detailsSent:true,detailsSentAt:now,seniorityLevel:level,payee:receiver.name||'',accountHolder:receiver.accountHolder||receiver.name||'',payeeId:receiver.memberId,payeePhone:receiver.mobile||'',account:receiver.account||'',bank:receiver.bank||'',ifsc:receiver.ifsc||'',branch:receiver.branch||'',upi:receiver.upi||'',paymentParts:parts,paymentAccessLocked:false});
  const np={...old,id:'LTP-'+crypto.randomBytes(4).toString('hex').toUpperCase(),to:receiver.name,receiverMemberId:receiver.memberId,parts,memberPaid:false,memberAccepted:false,adminApproved:false,createdAt:now,detailsSentAt:now,expiresAt:new Date(Date.now()+PAYMENT_DEADLINE_MS).toISOString(),status:'PENDING',paymentAccessLocked:false,slotReleased:false,memberAcceptedAt:null,submittedAt:null,utr:''};db.leveltrackPayments.push(np);m.paymentAccessLocked=false;m.paymentReviewStatus='';db.leveltrackMessages.push({to:m.memberId,message:`Admin restored your payment access and issued new receiver details. New 24-hour deadline starts now.`,at:now});save(db);res.json({ok:true,message:'New receiver details assigned with a fresh 24-hour deadline.',request:r,upgrade:u,payment:paymentPublic(np)});
 });
-app.post('/api/leveltrack/admin/payments/by-upgrade/:id/approve',(req,res)=>{const u=db.leveltrackUpgrades.find(x=>x.id===req.params.id);if(!u)return res.status(404).json({error:'Upgrade not found'});const p=latestPaymentForUpgrade(u.id);if(!p)return res.status(400).json({error:'Payment not found'});const m=ltMember(u.memberId);if(!m)return res.status(404).json({error:'Member not found'});if(u.adminApproved&&p.adminApproved){return res.json({ok:true,alreadyApproved:true,member:memberPublic(m),upgrade:u,payment:p});}if(Number(m.level)!==Number(u.from))return res.status(400).json({error:'Member level changed already'});const allPaid=(p.parts||[]).every(x=>['SUBMITTED','CONFIRMED','APPROVED'].includes(x.status));if(!u.memberPaid||!allPaid||!p.memberAccepted)return res.status(400).json({error:'All payment proofs and receiver confirmation are required'});const approvedAt=new Date().toISOString();p.parts=(p.parts||[]).map(x=>({...x,status:'APPROVED',adminApprovedAt:approvedAt}));p.adminApproved=true;p.adminVerifiedAt=approvedAt;u.receiverApproved=true;u.adminApproved=true;u.completedAt=approvedAt;const r=db.leveltrackRequests.find(x=>x.id===u.requestId);if(r)r.status='Completed';if(u.kind==='REFERRAL_UPGRADE'){db.leveltrackMessages.push({to:m.memberId,message:`Upgrade completed. Your next Level Upgrade is now available when unlocked.`,at:new Date().toISOString()});save(db);return res.json({ok:true,member:memberPublic(m),upgrade:u,payment:p});}m.level=Number(u.to);m.levelMemberId=nextLevelMemberId(m.level);m.levelReachedAt={...(m.levelReachedAt||{}),[String(u.to)]:new Date().toISOString()};m.upgradeDate=new Date().toISOString();m.status='Verified';db.leveltrackMessages.push({to:m.memberId,message:`Admin approved payment. Level upgrade completed. You are now Level ${m.level}.`,at:new Date().toISOString()});save(db);res.json({ok:true,member:memberPublic(m),upgrade:u,payment:p})});
+app.post('/api/leveltrack/admin/payments/by-upgrade/:id/approve',(req,res)=>{const u=db.leveltrackUpgrades.find(x=>x.id===req.params.id);if(!u)return res.status(404).json({error:'Upgrade not found'});const p=latestPaymentForUpgrade(u.id);if(!p)return res.status(400).json({error:'Payment not found'});const m=ltMember(u.memberId);if(!m)return res.status(404).json({error:'Member not found'});if(u.adminApproved&&p.adminApproved){return res.json({ok:true,alreadyApproved:true,member:memberPublic(m),upgrade:u,payment:p});}if(Number(m.level)!==Number(u.from))return res.status(400).json({error:'Member level changed already'});const allPaid=(p.parts||[]).every(x=>['SUBMITTED','CONFIRMED','APPROVED'].includes(x.status));if(!u.memberPaid||!allPaid||!p.memberAccepted)return res.status(400).json({error:'All payment proofs and receiver confirmation are required'});const approvedAt=new Date().toISOString();p.parts=(p.parts||[]).map(x=>({...x,status:'APPROVED',adminApprovedAt:approvedAt}));p.adminApproved=true;p.adminVerifiedAt=approvedAt;u.receiverApproved=true;u.adminApproved=true;u.completedAt=approvedAt;const r=db.leveltrackRequests.find(x=>x.id===u.requestId);if(r)r.status='Completed';if(u.kind==='REFERRAL_UPGRADE'){db.leveltrackMessages.push({to:m.memberId,message:`Upgrade completed. Your next Level Upgrade is now available when unlocked.`,at:new Date().toISOString()});db.leveltrackMessages.push({to:'ADMIN',message:`APPROVAL COMPLETED: ${m.memberId} referral upgrade cycle ${u.cycle||1}.`,at:approvedAt});save(db);sendLevelApprovalNotice(m,u).then(n=>console.log('Level approval notification:',u.id,n.sent?'email-sent':n.reason||'not-sent'));return res.json({ok:true,member:memberPublic(m),upgrade:u,payment:p,notification:{inApp:true,emailAttempted:!!(m.email||m.rEmail)}});}m.level=Number(u.to);m.levelMemberId=nextLevelMemberId(m.level);m.levelReachedAt={...(m.levelReachedAt||{}),[String(u.to)]:new Date().toISOString()};m.upgradeDate=new Date().toISOString();m.status='Verified';db.leveltrackMessages.push({to:m.memberId,message:`Admin approved payment. Level upgrade completed. You are now Level ${m.level}.`,at:approvedAt});db.leveltrackMessages.push({to:'ADMIN',message:`APPROVAL COMPLETED: ${m.memberId} advanced to Level ${m.level}.`,at:approvedAt});save(db);sendLevelApprovalNotice(m,u).then(n=>console.log('Level approval notification:',u.id,n.sent?'email-sent':n.reason||'not-sent'));res.json({ok:true,member:memberPublic(m),upgrade:u,payment:p,notification:{inApp:true,emailAttempted:!!(m.email||m.rEmail)}})});
 app.post('/api/leveltrack/admin/payments/:id/verify',(req,res)=>{
   const p=db.leveltrackPayments.find(x=>x.id===req.params.id);if(!p)return res.status(404).json({error:'Payment not found'});
   if(!p.memberAccepted)return res.status(400).json({error:'Receiver has not accepted the payment'});
@@ -513,9 +525,9 @@ app.post('/api/leveltrack/admin/upgrades/:id/final-approve',(req,res)=>{
   if(Number(m.level)!==Number(u.from))return res.status(400).json({error:'Member level changed already'});
   u.adminApproved=true;u.completedAt=new Date().toISOString();
   const r=db.leveltrackRequests.find(x=>x.id===u.requestId);if(r)r.status='Completed';
-  if(u.kind==='REFERRAL_UPGRADE'){db.leveltrackMessages.push({to:m.memberId,message:`Upgrade completed. Your next Level Upgrade is now available when unlocked.`,at:new Date().toISOString()});save(db);return res.json({ok:true,member:memberPublic(m),upgrade:u});}
+  if(u.kind==='REFERRAL_UPGRADE'){db.leveltrackMessages.push({to:m.memberId,message:`Upgrade completed. Your next Level Upgrade is now available when unlocked.`,at:u.completedAt});db.leveltrackMessages.push({to:'ADMIN',message:`APPROVAL COMPLETED: ${m.memberId} referral upgrade cycle ${u.cycle||1}.`,at:u.completedAt});save(db);sendLevelApprovalNotice(m,u).then(n=>console.log('Level approval notification:',u.id,n.sent?'email-sent':n.reason||'not-sent'));return res.json({ok:true,member:memberPublic(m),upgrade:u,notification:{inApp:true,emailAttempted:!!(m.email||m.rEmail)}});}
   m.level=Number(u.to);m.levelMemberId=nextLevelMemberId(m.level);m.levelReachedAt={...(m.levelReachedAt||{}),[String(u.to)]:new Date().toISOString()};m.upgradeDate=new Date().toISOString();m.status='Verified';
-  db.leveltrackMessages.push({to:m.memberId,message:`Level upgrade completed. You are now Level ${m.level}.`,at:new Date().toISOString()});save(db);res.json({ok:true,member:memberPublic(m),upgrade:u});
+  db.leveltrackMessages.push({to:m.memberId,message:`Level upgrade completed. You are now Level ${m.level}.`,at:u.completedAt});db.leveltrackMessages.push({to:'ADMIN',message:`APPROVAL COMPLETED: ${m.memberId} advanced to Level ${m.level}.`,at:u.completedAt});save(db);sendLevelApprovalNotice(m,u).then(n=>console.log('Level approval notification:',u.id,n.sent?'email-sent':n.reason||'not-sent'));res.json({ok:true,member:memberPublic(m),upgrade:u,notification:{inApp:true,emailAttempted:!!(m.email||m.rEmail)}});
 });
 app.get('/api/leveltrack/admin/payment-settings',(req,res)=>res.json({paymentSettings:db.paymentSettings,levels:LEVEL_RULES}));
 app.post('/api/leveltrack/admin/payment-settings',(req,res)=>{const b=req.body||{};if(Array.isArray(b.admins))db.paymentSettings.admins=b.admins.map((x,i)=>({id:x.id||String.fromCharCode(65+i),name:x.name||`Admin ${String.fromCharCode(65+i)}`,accountHolder:x.accountHolder||'',bank:x.bank||'',account:x.account||'',ifsc:x.ifsc||'',upi:x.upi||'',active:x.active!==false}));if(b.trust)db.paymentSettings.trust={...db.paymentSettings.trust,...b.trust};if(Number.isInteger(b.adminRotationIndex))db.paymentSettings.adminRotationIndex=Math.max(0,b.adminRotationIndex);save(db);res.json({ok:true,paymentSettings:db.paymentSettings});});
@@ -555,13 +567,7 @@ app.get('/api/leveltrack/member/messages/:id',(req,res)=>{
 });
 
 const PORT=process.env.PORT||10000;
-app.get('/api/db-status',(req,res)=>res.json({
-  ok:supabaseReady && !persistenceStatus.lastError,
-  persistence:'supabase-api',
-  members:Array.isArray(db.members)?db.members.length:0,
-  backup:{localPreviousAvailable:fs.existsSync(DB_FILE+'.previous'),secondaryOk:persistenceStatus.localBackupOk,secondaryPathConfigured:!!process.env.B5_BACKUP_DIR,lastError:persistenceStatus.localBackupError},
-  supabase:{lastAttemptAt:persistenceStatus.lastAttemptAt,lastSuccessAt:persistenceStatus.lastSuccessAt,lastError:persistenceStatus.lastError,consecutiveFailures:persistenceStatus.consecutiveFailures}
-}));
+app.get('/api/db-status',(req,res)=>res.json({ok:supabaseReady,persistence:'supabase-api',members:Array.isArray(db.members)?db.members.length:0,saveStatus:{...supabaseSaveStatus},localPreviousSnapshotAvailable:fs.existsSync(DB_FILE+'.previous'),secondaryBackup:{...localBackupStatus,exists:fs.existsSync(path.join(B5_BACKUP_DIR,'b5-state.json'))},approvalNotifications:{inApp:true,emailConfigured:!!mailer,emailNeedsMemberAddress:true}}));
 
 initPersistentDatabase()
   .then(()=>{
