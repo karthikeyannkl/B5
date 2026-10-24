@@ -1,167 +1,1362 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BORNTOWIN5 Level Tracking - Admin</title><style>*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#172033;font-family:system-ui,-apple-system,"Noto Sans Tamil",sans-serif}.top{height:64px;background:#fff;border-bottom:1px solid #e5e8ef;display:flex;align-items:center;gap:10px;padding:0 14px;position:sticky;top:0;z-index:5}.logo{width:39px;height:39px;border-radius:12px;background:linear-gradient(135deg,#034A2B,#d39a42);color:#fff;display:grid;place-items:center;font-size:23px;font-weight:800}.brand b{display:block;font-size:15px}.brand small{display:block;color:#7b8496;font-size:10px}.wrap{max-width:900px;margin:auto;padding:15px 12px 35px}.hero{background:linear-gradient(135deg,#681733,#a82d53);color:#fff;border-radius:19px;padding:20px 18px;margin-bottom:13px}.hero h1{margin:8px 0 4px;font-size:27px}.hero p{margin:0;color:#f8e9ed;font-size:11px}.card{background:#fff;border:1px solid #e3e7ef;border-radius:18px;padding:16px;margin-bottom:13px;box-shadow:0 5px 20px #00000008}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{text-align:center;border:1px solid #e5e8ef;border-radius:13px;padding:10px}.stat b{display:block;font-size:23px;color:#075B35}.stat span{font-size:10px;color:#788196}.member{border:1px solid #e4e8ef;border-radius:13px;padding:12px;margin-top:9px}.small{font-size:10px;color:#7b8496}.pill{display:inline-block;background:#eee1e6;color:#075B35;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800}.info{background:#fff8fb;border-left:4px solid #075B35;padding:11px;border-radius:10px;font-size:11px;line-height:1.5}.success{background:#e1f4e7;color:#227442;border-radius:10px;padding:11px;font-size:11px;line-height:1.5}.warn{background:#fff0c2;color:#806000;border-radius:10px;padding:11px;font-size:11px;line-height:1.5;margin-top:9px}.primary,.send{background:#075B35;color:#fff;width:100%;margin-top:10px;border:0;border-radius:10px;padding:11px;font-weight:800;cursor:pointer}.secondary{background:#fff;color:#075B35;border:1px solid #075B35;width:100%;padding:11px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}.danger{background:#fff;color:#b42318;border:1px solid #b42318;width:100%;padding:9px;border-radius:10px;font-weight:800}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.account{border:1px solid #e4e8ef;border-radius:12px;padding:11px}.account h4{margin:0 0 8px;color:#075B35}.row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #eee;font-size:12px}.row:last-child{border-bottom:0}.badge{padding:5px 9px;border-radius:20px;background:#e1f4e7;color:#227442;font-weight:800;font-size:10px}input,select,textarea{width:100%;padding:10px;border:1px solid #dfe3ec;border-radius:10px;font:inherit;background:#fff;margin:5px 0 10px}label{font-size:10px;font-weight:800;display:block}.hidden{display:none}.tableWrap{overflow:auto}.reportTable{width:100%;border-collapse:collapse;font-size:10px}.reportTable th,.reportTable td{padding:8px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap}.reportTable th{background:#fafbfe;color:#075B35}.title{font-weight:800;font-size:14px}.split{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}.split div{border:1px solid #e4e8ef;border-radius:10px;padding:8px;text-align:center;font-size:10px}.split b{display:block;font-size:13px;color:#075B35}@media(max-width:650px){.grid2,.grid3,.split{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr 1fr}}</style><style id="b5-unified-theme">
-:root{--b5-green:#064b35;--b5-green2:#0a6a4b;--b5-gold:#c89a4b;--b5-cream:#f8f4ea;--b5-ink:#18241f;--b5-muted:#6f7b76;--b5-line:#e4e9e5;--b5-soft:#f5f8f5;--b5-radius:18px}
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#042619">
+<title>BORNTOWIN5 Level Tracking — Admin Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="b5-design-system.css">
+<style>
 *{box-sizing:border-box}
-body{background:linear-gradient(180deg,#f7f8f5 0,#f4f6f4 100%)!important;color:var(--b5-ink)!important;font-family:Inter,system-ui,-apple-system,"Noto Sans Tamil","Noto Sans",sans-serif!important;font-size:13px}
-.top,header{background:rgba(255,255,255,.96)!important;border-bottom:1px solid var(--b5-line)!important;backdrop-filter:blur(10px)}
-.logo{background:linear-gradient(135deg,var(--b5-green),var(--b5-gold))!important;box-shadow:0 5px 14px #064b3520}
-.brand b{color:var(--b5-green)!important;font-weight:850!important;letter-spacing:.1px}.brand small{color:var(--b5-muted)!important}
-.card{background:rgba(255,255,255,.97)!important;border:1px solid var(--b5-line)!important;border-radius:var(--b5-radius)!important;box-shadow:0 8px 26px rgba(6,75,53,.06)!important}
-.hero{background:linear-gradient(135deg,var(--b5-green),#0b6b4b 62%,var(--b5-gold))!important;border-radius:22px!important;box-shadow:0 10px 28px rgba(6,75,53,.14)}
-.hero h1,.title{font-family:inherit!important;color:var(--b5-green)!important;font-weight:850!important;letter-spacing:.1px}
-.hero h1{color:#fff!important}.hero p{color:#eef7f2!important}
-button,.primary,.send{background:linear-gradient(135deg,var(--b5-green),var(--b5-green2))!important;color:#fff!important;border-radius:12px!important;box-shadow:0 5px 12px rgba(6,75,53,.10)}
-.secondary{background:#fff!important;color:var(--b5-green)!important;border:1px solid #b8cfc3!important}
-input,select,textarea{border:1px solid #d7e1db!important;border-radius:11px!important;color:var(--b5-ink)!important}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)!important;box-shadow:0 0 0 3px rgba(200,154,75,.14)!important}
-.stat b,.account h4,.reportTable th{color:var(--b5-green)!important}
-.pill,.tag{background:#edf5f0!important;color:var(--b5-green)!important}
-.badge,.success{background:#edf7f0!important;color:#246b47!important}
-.info{background:#f7faf7!important;border-left-color:var(--b5-gold)!important}
-.warn{background:#fff8e8!important;border-color:#efdca8!important}
-/* unified accordion / slide cards */
+:root{
+  --b5-green:#042619;
+  --b5-green2:#0B4F35;
+  --b5-copper:#C85A17;
+  --b5-gold:#C59B38;
+  --b5-cream:#F6F4EE;
+  --b5-ink:#111C17;
+  --b5-muted:#4A5D53;
+  --b5-line:#DCE2DC;
+  --b5-soft:#EFECE4;
+  --b5-radius:18px;
+}
+body{
+  margin:0;
+  background:radial-gradient(circle at 12% 0%,#EFECE4 0%,#F6F4EE 55%,#EDEAE0 100%)!important;
+  color:var(--b5-ink)!important;
+  font-family:'Plus Jakarta Sans','Noto Sans Tamil',system-ui,-apple-system,sans-serif!important;
+  font-size:13.5px;
+  overflow-x:hidden;
+}
+html{overflow-x:hidden}
+.top,header{
+  height:70px!important;
+  background:linear-gradient(135deg,#042619 0%,#083D28 100%)!important;
+  color:#fff!important;
+  border-bottom:1px solid rgba(197,155,56,.32)!important;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 16px 0 72px!important;
+  position:sticky!important;
+  top:0!important;
+  z-index:25!important;
+  box-shadow:0 8px 24px rgba(4,38,25,.18)!important;
+}
+.top .logo{
+  width:44px!important;
+  height:44px!important;
+  border-radius:13px!important;
+  overflow:hidden;
+  background:#fff!important;
+  border:1.5px solid var(--b5-gold)!important;
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+}
+.top .logo img{width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit}
+.brand b{display:block;font-family:'Outfit',sans-serif;font-size:16px;color:#fff!important;font-weight:800!important;letter-spacing:.2px}
+.brand small{display:block;color:rgba(246,244,238,.78)!important;font-size:11px}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.top-actions button{
+  width:auto!important;
+  min-height:38px!important;
+  padding:8px 12px!important;
+  margin:0!important;
+  border-radius:10px!important;
+  background:rgba(255,255,255,.12)!important;
+  color:#fff!important;
+  border:1px solid rgba(197,155,56,.45)!important;
+  font-size:12px!important;
+  font-weight:700!important;
+  cursor:pointer;
+}
+.top-actions button:hover{background:rgba(255,255,255,.2)!important}
+.wrap{max-width:960px;margin:auto;padding:16px 14px 44px}
+.hero{
+  background:linear-gradient(135deg,#042619 0%,#083D28 64%,#0B4F35 100%)!important;
+  color:#fff!important;
+  border:1px solid rgba(197,155,56,.38)!important;
+  border-radius:22px!important;
+  padding:22px 20px!important;
+  margin-bottom:14px;
+  box-shadow:0 14px 34px rgba(4,38,25,.18)!important;
+  position:relative;
+  overflow:hidden;
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  right:-40px;top:-40px;
+  width:180px;height:180px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(197,155,56,.22) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero h1{margin:8px 0 4px;font-family:'Outfit',sans-serif!important;font-size:26px;color:#fff!important;font-weight:800!important}
+.hero p{margin:0;color:rgba(246,244,238,.86)!important;font-size:12.5px}
+.hero-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:12px}
+.b5-db-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 11px;
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(197,155,56,.42);
+  color:#F6F4EE;
+  font-size:11px;
+  font-weight:700;
+}
+.card{
+  background:#FCFBF8!important;
+  border:1px solid var(--b5-line)!important;
+  border-radius:20px!important;
+  padding:18px!important;
+  margin-bottom:14px;
+  box-shadow:0 8px 24px rgba(4,38,25,.06)!important;
+  position:relative;
+  overflow:visible!important;
+}
+.card::before{
+  content:"";
+  position:absolute;
+  left:0;top:0;
+  width:4px;height:100%;
+  background:linear-gradient(180deg,var(--b5-gold),var(--b5-green2));
+  border-radius:20px 0 0 20px;
+  opacity:.75;
+}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{
+  text-align:center;
+  background:#fff;
+  border:1px solid var(--b5-line);
+  border-radius:14px;
+  padding:12px 10px;
+}
+.stat b{display:block;font-family:'Outfit',sans-serif;font-size:24px;color:var(--b5-green)!important;font-weight:800}
+.stat span{font-size:11px;color:var(--b5-muted);font-weight:600}
+.member{
+  background:#fff;
+  border:1px solid var(--b5-line);
+  border-radius:15px;
+  padding:14px;
+  margin-top:10px;
+  box-shadow:0 2px 8px rgba(4,38,25,.04);
+  transition:border-color .15s ease,box-shadow .15s ease;
+}
+.member.is-selected{
+  border:2px solid var(--b5-copper)!important;
+  background:#FFFDF9;
+  box-shadow:0 6px 20px rgba(200,90,23,.12);
+}
+.small{font-size:11.5px;color:var(--b5-muted);line-height:1.45}
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  background:#FBF6E8!important;
+  color:#8A691B!important;
+  border:1px solid rgba(197,155,56,.45);
+  padding:5px 10px;
+  border-radius:999px;
+  font-size:10.5px;
+  font-weight:800;
+  letter-spacing:.5px;
+}
+.info{
+  background:#FBF8F1!important;
+  border:1px solid #E6DEC8;
+  border-left:4px solid var(--b5-gold)!important;
+  padding:12px 14px;
+  border-radius:12px;
+  font-size:12.5px;
+  line-height:1.55;
+  color:var(--b5-ink);
+}
+.success{
+  background:#E8F5EE!important;
+  color:#0F6E43!important;
+  border:1px solid rgba(15,110,67,.24);
+  border-radius:12px;
+  padding:12px 14px;
+  font-size:12.5px;
+  line-height:1.55;
+}
+.warn{
+  background:#FEF3E2!important;
+  color:#8C4A08!important;
+  border:1px solid rgba(180,91,14,.28)!important;
+  border-radius:12px;
+  padding:12px 14px;
+  font-size:12.5px;
+  line-height:1.55;
+  margin-top:9px;
+}
+button,.primary,.send{
+  background:linear-gradient(135deg,#C85A17 0%,#A9470D 100%)!important;
+  color:#fff!important;
+  width:100%;
+  min-height:44px;
+  margin-top:10px;
+  border:0;
+  border-radius:12px!important;
+  padding:11px 14px;
+  font-weight:800;
+  font-size:13px;
+  cursor:pointer;
+  box-shadow:0 6px 16px rgba(200,90,23,.22);
+  transition:transform .12s ease,opacity .15s ease;
+}
+button:hover,.primary:hover,.send:hover{transform:translateY(-1px)}
+button:disabled,.primary:disabled{cursor:not-allowed;transform:none}
+.secondary{
+  background:#fff!important;
+  color:var(--b5-green)!important;
+  border:1.5px solid var(--b5-green)!important;
+  width:100%;
+  min-height:42px;
+  padding:10px 14px;
+  border-radius:12px!important;
+  font-weight:800;
+  cursor:pointer;
+  margin-top:8px;
+  box-shadow:none!important;
+}
+.secondary:hover{background:#EAF4EE!important}
+.danger{
+  background:#FDECEC!important;
+  color:#B42318!important;
+  border:1px solid rgba(180,35,24,.35)!important;
+  width:100%;
+  min-height:42px;
+  padding:10px 14px;
+  border-radius:12px!important;
+  font-weight:800;
+  box-shadow:none!important;
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.account{border:1px solid var(--b5-line);border-radius:14px;padding:12px;background:#fff}
+.account h4{margin:0 0 8px;color:var(--b5-green)!important;font-size:14px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #EAECE9;font-size:12.5px}
+.row:last-child{border-bottom:0}
+.badge{padding:5px 10px;border-radius:999px;background:#E8F5EE!important;color:#0F6E43!important;font-weight:800;font-size:10.5px}
+input,select,textarea{
+  width:100%;
+  min-height:42px;
+  padding:10px 12px;
+  border:1.5px solid #CED7D1!important;
+  border-radius:11px!important;
+  font:inherit;
+  background:#fff;
+  color:var(--b5-ink)!important;
+  margin:5px 0 10px;
+}
+input[readonly]{background:#F5F4EF;font-family:'JetBrains Mono',monospace;font-size:12.5px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)!important;box-shadow:0 0 0 3px rgba(197,155,56,.18)!important}
+label{font-size:11px;font-weight:800;color:var(--b5-muted);text-transform:uppercase;letter-spacing:.4px;display:block}
+.hidden{display:none!important}
+.tableWrap{overflow-x:auto}
+.reportTable{width:100%;border-collapse:collapse;font-size:11.5px}
+.reportTable th,.reportTable td{padding:10px 8px;border-bottom:1px solid #EAECE9;text-align:left;white-space:nowrap}
+.reportTable th{background:#F3F1EA;color:var(--b5-green)!important;font-weight:800}
+.title{
+  font-family:'Outfit','Plus Jakarta Sans',sans-serif!important;
+  font-weight:800!important;
+  font-size:18px!important;
+  color:var(--b5-green)!important;
+  letter-spacing:-.2px;
+}
+.title::after{content:'⌄';float:right;color:var(--b5-gold);font-size:18px;font-weight:900}
+.split{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.split div{border:1px solid var(--b5-line);background:#FBF9F4;border-radius:12px;padding:10px;text-align:center;font-size:10.5px;font-weight:700;color:var(--b5-muted)}
+.split b{display:block;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--b5-green);margin-top:3px}
 .b5-accordion-card>.b5-accordion-head,.b5-account-card>h4{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;user-select:none}
-.b5-accordion-head:after,.b5-account-card>h4:after{content:'⌄';font-size:16px;color:var(--b5-gold);transition:transform .2s ease}
-.b5-accordion-card.is-collapsed>.b5-accordion-head:after,.b5-account-card.is-collapsed>h4:after{transform:rotate(-90deg)}
-.b5-accordion-body{overflow:hidden;max-height:5000px;opacity:1;transition:max-height .25s ease,opacity .18s ease,padding .2s ease}
-.b5-accordion-card.is-collapsed>.b5-accordion-body,.b5-account-card.is-collapsed>.b5-account-body{max-height:0;opacity:0;overflow:hidden;padding-top:0!important;padding-bottom:0!important}
-.b5-accordion-card>.b5-accordion-head{padding:2px 0 8px;margin-bottom:2px}
-.b5-accordion-card.is-collapsed>.b5-accordion-head{margin-bottom:0}
+.b5-accordion-card.is-collapsed>.b5-accordion-head::after,.b5-account-card.is-collapsed>h4::after{transform:rotate(-90deg)}
+.b5-accordion-body{overflow:visible!important;max-height:none;opacity:1;transition:opacity .18s ease}
+.card.is-collapsed>.b5-accordion-body,.b5-account-card.is-collapsed>.b5-account-body{max-height:0!important;opacity:0;overflow:hidden!important;padding-top:0!important;padding-bottom:0!important}
 .b5-account-card{padding:12px!important;border-radius:14px!important;background:#fff!important;border:1px solid var(--b5-line)!important}
-.b5-account-card>h4{margin:0!important;padding:2px 0!important;color:var(--b5-green)!important;font-size:13px!important}
-.b5-account-body{max-height:5000px;overflow:hidden;opacity:1;transition:max-height .25s ease,opacity .18s ease,padding .2s ease;padding-top:9px}
-.b5-account-card>h4:before{content:'▸';font-size:10px;color:var(--b5-gold);margin-right:2px}.b5-account-card:not(.is-collapsed)>h4:before{content:'▾'}
-.b5-level-row{border:1px solid var(--b5-line);border-radius:14px;margin:8px 0;overflow:hidden;background:#fff}.b5-level-row .b5-level-head{padding:12px;background:var(--b5-soft);font-weight:850;color:var(--b5-green);cursor:pointer;display:flex;justify-content:space-between}.b5-level-row .b5-level-body{padding:10px}
-@media(max-width:600px){.card{border-radius:16px!important}.hero{border-radius:18px!important}.b5-account-card{margin-bottom:8px!important}}
-
-/* V9 Royal Level Tracking Admin */
-body{background:radial-gradient(circle at 15% 0,#eef6f0 0,#f6f8f5 35%,#f3f4f1 100%)!important}
-.top{height:72px!important;box-shadow:0 4px 18px rgba(6,75,53,.07)!important}
-.logo{width:46px!important;height:46px!important;border-radius:15px!important}
-.card{border-radius:22px!important;padding:18px!important;box-shadow:0 10px 30px rgba(6,75,53,.065)!important;position:relative;overflow:hidden}
-.card:before{content:"";position:absolute;left:0;top:0;width:4px;height:100%;background:linear-gradient(180deg,var(--b5-gold),transparent);opacity:.55}
-.title{font-size:18px!important;color:var(--b5-green)!important}.title:after{content:'⌄';float:right;color:var(--b5-gold);font-size:18px;font-weight:900}
-.b5-accordion-body{overflow:hidden;max-height:1600px;opacity:1;transition:max-height .28s ease,opacity .2s ease}
-.card.is-collapsed .b5-accordion-body{max-height:0;opacity:0;padding-top:0!important;padding-bottom:0!important}
-#ltRequests,#ltPayments,#ltAccounts,#ltSeniority,#ltReports,#ltHistory{scroll-margin-top:90px}
-.b5-senior-auto{border:1px solid #d9c18d;background:linear-gradient(135deg,#fffaf0,#f8f4ea);border-radius:16px;padding:13px;margin:4px 0 12px;box-shadow:0 5px 16px rgba(200,154,75,.10)}
-.b5-senior-kicker{font-size:9px;font-weight:900;letter-spacing:1px;color:var(--b5-gold);margin-bottom:4px}.b5-senior-auto #seniorAutoText{font-size:14px;font-weight:850;color:var(--b5-green);line-height:1.45}
-.b5-queue-card{border:1px solid var(--b5-line);border-radius:16px;margin:9px 0;overflow:hidden;background:#fff}.b5-queue-head{padding:13px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#f8fbf8,#fff);color:var(--b5-green);font-weight:900}.b5-queue-head:after{content:'⌄';color:var(--b5-gold);font-size:17px;transition:transform .2s}.b5-queue-card.closed .b5-queue-head:after{transform:rotate(-90deg)}.b5-queue-body{max-height:1800px;overflow:hidden;transition:max-height .28s ease,opacity .2s;padding:0 10px 10px}.b5-queue-card.closed .b5-queue-body{max-height:0;opacity:0;padding-top:0;padding-bottom:0}.b5-queue-next{margin:0 0 8px;padding:10px;border-radius:11px;background:#edf7f0;color:#246b47;font-size:11px}.b5-queue-table{width:100%;border-collapse:collapse;font-size:10px}.b5-queue-table th,.b5-queue-table td{padding:8px 6px;border-bottom:1px solid #edf0ed;text-align:left;white-space:nowrap}.b5-queue-table th{color:var(--b5-green);background:#f7faf7}.b5-pos{font-weight:900;color:var(--b5-gold);font-size:12px}.b5-status-active{color:#246b47;font-weight:900}.b5-status-completed{color:#7b8496;font-weight:800}
-@media(max-width:650px){.b5-queue-table{font-size:9px}.b5-queue-table th,.b5-queue-table td{padding:7px 4px}}
+.b5-account-body{max-height:5000px;overflow:visible;opacity:1;padding-top:9px}
+#ltRequests,#ltPayments,#ltAccounts,#ltSeniority,#ltReports,#ltHistory{scroll-margin-top:86px}
+.b5-senior-auto{
+  border:1.5px solid var(--b5-gold);
+  background:linear-gradient(135deg,#FFFDF7,#FBF5E4);
+  border-radius:16px;
+  padding:14px;
+  margin:6px 0 12px;
+  box-shadow:0 6px 18px rgba(197,155,56,.12);
+}
+.b5-senior-kicker{font-size:10px;font-weight:900;letter-spacing:1px;color:#8A691B;margin-bottom:4px}
+.b5-senior-auto #seniorAutoText{font-size:14px;font-weight:800;color:var(--b5-green);line-height:1.45}
+.b5-queue-card{border:1px solid var(--b5-line);border-radius:16px;margin:10px 0;overflow:hidden;background:#fff}
+.b5-queue-head{padding:13px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#F5F7F5,#FFF);color:var(--b5-green);font-weight:800}
+.b5-queue-head::after{content:'⌄';color:var(--b5-gold);font-size:17px;transition:transform .2s}
+.b5-queue-card.closed .b5-queue-head::after{transform:rotate(-90deg)}
+.b5-queue-body{max-height:2200px;overflow:hidden;transition:max-height .28s ease,opacity .2s;padding:0 12px 12px}
+.b5-queue-card.closed .b5-queue-body{max-height:0;opacity:0;padding-top:0;padding-bottom:0}
+.b5-queue-next{margin:0 0 10px;padding:10px 12px;border-radius:11px;background:#E8F5EE;color:#0F6E43;font-size:12px}
+.b5-queue-table{width:100%;border-collapse:collapse;font-size:11px}
+.b5-queue-table th,.b5-queue-table td{padding:9px 7px;border-bottom:1px solid #EAECE9;text-align:left;white-space:nowrap}
+.b5-queue-table th{color:var(--b5-green);background:#F3F6F4;font-weight:800}
+.b5-pos{font-family:'JetBrains Mono',monospace;font-weight:800;color:#8A691B;font-size:12px}
+.b5-status-active{color:#0F6E43;font-weight:800}
+.b5-status-completed{color:#6E7D75;font-weight:700}
+#b5AdminToast{
+  position:fixed;
+  right:16px;
+  bottom:16px;
+  z-index:9998;
+  max-width:380px;
+  background:#042619;
+  color:#fff;
+  border:1.5px solid var(--b5-gold);
+  border-radius:14px;
+  padding:12px 16px;
+  box-shadow:0 14px 34px rgba(4,38,25,.35);
+  font-size:13px;
+  font-weight:700;
+  display:none;
+}
+.b5-filter-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 12px}
+.b5-filter-bar input,.b5-filter-bar select{margin:0!important;flex:1 1 170px;min-height:42px}
+.b5-chip-group{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+.b5-chip{
+  width:auto!important;
+  min-height:38px!important;
+  margin:0!important;
+  padding:7px 12px!important;
+  border-radius:999px!important;
+  font-size:11.5px!important;
+  font-weight:800!important;
+  background:#fff!important;
+  color:var(--b5-green)!important;
+  border:1.5px solid var(--b5-line)!important;
+  box-shadow:none!important;
+}
+.b5-chip.is-active{
+  background:var(--b5-green)!important;
+  color:#fff!important;
+  border-color:var(--b5-gold)!important;
+}
+.b5-pay-meta{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px 10px;
+  background:#F8F7F2;
+  border:1px solid #E5E9E4;
+  border-radius:11px;
+  padding:9px 11px;
+  margin-top:8px;
+  font-size:11.5px;
+}
+.b5-pay-meta div{overflow-wrap:anywhere}
+.b5-proof-box{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:9px;
+  padding:9px;
+  border:1px dashed rgba(4,38,25,.24);
+  border-radius:12px;
+  background:#FCFBF8;
+}
+.b5-proof-thumb{
+  width:116px;
+  height:86px;
+  object-fit:cover;
+  border:1.5px solid #DFE5DF;
+  border-radius:10px;
+  background:#F7F9F7;
+  cursor:zoom-in;
+  flex-shrink:0;
+}
+@media(max-width:650px){
+  .grid2,.grid3,.split,.b5-pay-meta{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .b5-queue-table,.reportTable{font-size:10.5px;white-space:normal}
+  .b5-queue-table th,.b5-queue-table td,.reportTable th,.reportTable td{padding:7px 5px;white-space:normal;word-break:break-word}
+  .top{padding-left:68px!important;padding-right:10px!important}
+  .wrap{padding:12px 10px 38px}
+  .card{padding:14px 12px!important}
+  .hero h1{font-size:21px}
+  button,.primary,.secondary,.danger,.b5-chip{min-height:44px!important}
+}
 </style>
-
-<style id="b5-live-payment-scroll-fix">.card:not(.is-collapsed){overflow:visible!important}.b5-accordion-body{overflow:visible!important}.card.is-collapsed>.b5-accordion-body{overflow:hidden!important}.b5-account-card.is-collapsed>.b5-account-body{overflow:hidden!important}</style></head><body>
-<header class="top"><div class="logo"><img src="b5-logo.png" alt="B5 Logo"></div><div class="brand"><b>BORNTOWIN5 ADMIN</b><small>Level Tracking • Payment Control Center</small></div><div class="top-actions"><button onclick="levelTrackAdminLogout()">Logout</button></div></header>
+</head>
+<body>
+<header class="top">
+  <div class="logo"><img src="b5-logo.png" alt="B5 Logo"></div>
+  <div class="brand"><b>BORNTOWIN5 ADMIN</b><small>Emerald Sovereign • Level Tracking &amp; Payment Control</small></div>
+  <div class="top-actions">
+    <button type="button" onclick="manualAdminRefresh()" title="Refresh Live Data">↻ Refresh</button>
+    <button type="button" onclick="levelTrackAdminLogout()">Logout</button>
+  </div>
+</header>
 <main class="wrap">
-<section class="hero"><span class="pill">LEVEL TRACKING</span><h1>Sequential Upgrade Control</h1><p>Payment • Receiver • Trust • Admin • Reports</p></section>
-<section class="card"><div class="stats"><div class="stat"><b id="aLevel">—</b><span>Current Queue Level</span></div><div class="stat"><b id="aRefs">0</b><span>Direct Referrals</span></div><div class="stat"><b id="aNext">—</b><span>Next Level</span></div></div></section>
-<section class="card" id="ltRequests"><div class="title">Upgrade Request & Approval</div><div id="adminRequest"><div class="warn">Loading…</div></div></section>
-<section class="card" id="ltPayments"><div class="title">Send Payment Details</div><div id="selectedInfo" class="info">Select an upgrade request above. The seniority receiver will be selected automatically by the system.</div>
-<div id="paymentForm" class="hidden"><div id="seniorAutoBox" class="b5-senior-auto"><div class="b5-senior-kicker">AUTO SENIORITY RECEIVER</div><div id="seniorAutoText">Finding the next eligible senior…</div></div><label>Receiver Member ID</label><input id="receiverIdInput" readonly><div id="receiverLookup" class="small"></div><div class="grid2"><div><label>Receiver Name</label><input id="receiverName" readonly></div><div><label>Receiver Phone</label><input id="receiverPhone" readonly></div></div><div class="grid2"><div><label>Account Holder</label><input id="accountHolder" readonly></div><div><label>Bank Name</label><input id="bankName" readonly></div></div><div class="grid2"><div><label>Account Number</label><input id="accountNumber" readonly></div><div><label>IFSC</label><input id="ifsc" readonly></div></div><div class="grid2"><div><label>Branch</label><input id="branchName" readonly></div><div><label>UPI</label><input id="upi" readonly></div></div><label id="amountLabel">Amount</label><input id="amount" type="number" readonly><div id="splitPreview"></div><button class="primary" onclick="sendDetails()">SEND PAYMENT DETAILS TO MEMBER</button></div></section>
-<section class="card" id="ltAccounts"><div class="title">Payment Account Management</div><div class="info" style="margin-top:8px">Admin account rotation is automatic: A → B → C → A. Old payment records keep the account snapshot used at that time.</div><div id="accountsEditor" style="margin-top:10px"></div><div class="account" style="margin-top:10px"><h4>🏛 Trust Account</h4><div class="grid2"><div><label>Trust Name</label><input id="trustName"></div><div><label>Account Holder</label><input id="trustHolder"></div></div><div class="grid2"><div><label>Bank</label><input id="trustBank"></div><div><label>Account Number</label><input id="trustAccount"></div></div><div class="grid2"><div><label>IFSC</label><input id="trustIfsc"></div><div><label>UPI</label><input id="trustUpi"></div></div><button class="secondary" onclick="saveTrust()">SAVE TRUST ACCOUNT</button></div><button class="secondary" onclick="loadSettings()">REFRESH ACCOUNT SETTINGS</button></section>
-<section class="card" id="ltSeniority"><div class="title">Level-wise Seniority Queue</div><div class="info" style="margin-top:8px">Every member gets a separate seniority position for each level they reach. Position is based on the exact server timestamp when that level is completed. The first ACTIVE position is automatically selected for payments.</div><div id="allQueueTables" style="margin-top:10px"><div class="info">Loading Seniority Queue…</div></div></section>
-<section class="card" id="ltReports"><div class="title">Payment Reports / Schedule</div><div class="grid2"><div><label>From Date</label><input id="fromDate" type="date"></div><div><label>To Date</label><input id="toDate" type="date"></div></div><div class="grid2"><div><label>Member ID / Name</label><input id="reportQ" placeholder="Optional search"></div><div><label>Level</label><select id="reportLevel"><option value="">All Levels</option><option value="1">L1 → L2</option><option value="2">L2 → L3</option><option value="3">L3 → L4</option><option value="4">L4 → L5</option><option value="5">L5 → L6</option><option value="6">L6 → L7</option></select></div></div><div class="grid3"><button class="secondary" onclick="quickDate('today')">TODAY</button><button class="secondary" onclick="quickDate('week')">THIS WEEK</button><button class="secondary" onclick="quickDate('month')">THIS MONTH</button></div><button class="primary" onclick="runReport()">SEARCH PAYMENT SCHEDULE</button><div id="reportSummary" style="margin-top:10px"></div><div id="reportTable" class="tableWrap" style="margin-top:10px"></div></section>
-<section class="card" id="ltHistory"><div class="title">Upgrade History</div><div id="history"><div class="small">No upgrade history yet.</div></div></section>
+  <section class="hero">
+    <span class="pill">LEVEL TRACKING COMMAND</span>
+    <h1>Sequential Upgrade &amp; Seniority Control</h1>
+    <p>L1→L7 Upgrades • ₹1,000 Additional Upgrade (L2 Seniority) • Slot Capacities (L2:5, L3:10, L4:10, L5–L7:5) • 24h Deadline Protection</p>
+    <div class="hero-bar">
+      <span class="b5-db-pill" id="b5PersistenceBadge">● Persistence: Checking…</span>
+      <span class="small" id="b5LastSynced" style="color:rgba(246,244,238,.82)">Live sync active</span>
+    </div>
+  </section>
+
+  <section class="card" id="ltStatsCard">
+    <div class="stats">
+      <div class="stat"><b id="aLevel">—</b><span>Current Queue Level</span></div>
+      <div class="stat"><b id="aRefs">0</b><span>Qualifying Referrals</span></div>
+      <div class="stat"><b id="aNext">—</b><span>Target Level</span></div>
+    </div>
+  </section>
+
+  <section class="card" id="ltRequests">
+    <div class="title">Upgrade Request &amp; Approval</div>
+    <div id="adminRequest"><div class="warn">Loading upgrade requests…</div></div>
+  </section>
+
+  <section class="card" id="ltPayments">
+    <div class="title">Send Payment Details</div>
+    <div id="selectedInfo" class="info">Select an upgrade request above. The eligible seniority receiver is selected automatically by the server.</div>
+    <div id="paymentForm" class="hidden">
+      <div id="seniorAutoBox" class="b5-senior-auto">
+        <div class="b5-senior-kicker">AUTO SENIORITY RECEIVER (SERVER VERIFIED)</div>
+        <div id="seniorAutoText">Finding the next eligible senior…</div>
+      </div>
+      <label>Receiver Member ID</label>
+      <input id="receiverIdInput" readonly>
+      <div id="receiverLookup" class="small"></div>
+      <div class="grid2">
+        <div><label>Receiver Name</label><input id="receiverName" readonly></div>
+        <div><label>Receiver Phone</label><input id="receiverPhone" readonly></div>
+      </div>
+      <div class="grid2">
+        <div><label>Account Holder</label><input id="accountHolder" readonly></div>
+        <div><label>Bank Name</label><input id="bankName" readonly></div>
+      </div>
+      <div class="grid2">
+        <div><label>Account Number</label><input id="accountNumber" readonly></div>
+        <div><label>IFSC</label><input id="ifsc" readonly></div>
+      </div>
+      <div class="grid2">
+        <div><label>Branch</label><input id="branchName" readonly></div>
+        <div><label>UPI</label><input id="upi" readonly></div>
+      </div>
+      <label id="amountLabel">Amount</label>
+      <input id="amount" type="number" readonly>
+      <div id="splitPreview"></div>
+      <button id="sendDetailsBtn" class="primary" onclick="sendDetails()">SEND PAYMENT DETAILS TO MEMBER</button>
+    </div>
+  </section>
+
+  <section class="card" id="ltAccounts">
+    <div class="title">Payment Account Management</div>
+    <div class="info" style="margin-top:8px">Independent Admin account rotation per level (L4, L5, L6, L7): A → B → C → A. Assigning L4 advances only the L4 counter; L5, L6, and L7 each rotate independently. Existing payment records keep the account snapshot assigned at that time.</div>
+    <div id="accountsEditor" style="margin-top:10px"></div>
+    <div class="account" style="margin-top:10px">
+      <h4>🏛 Trust Account</h4>
+      <div class="grid2"><div><label>Trust Name</label><input id="trustName"></div><div><label>Account Holder</label><input id="trustHolder"></div></div>
+      <div class="grid2"><div><label>Bank</label><input id="trustBank"></div><div><label>Account Number</label><input id="trustAccount"></div></div>
+      <div class="grid2"><div><label>IFSC</label><input id="trustIfsc"></div><div><label>UPI</label><input id="trustUpi"></div></div>
+      <button class="secondary" onclick="saveTrust()">SAVE TRUST ACCOUNT</button>
+    </div>
+    <button class="secondary" onclick="loadSettings()">REFRESH ACCOUNT SETTINGS</button>
+  </section>
+
+  <section class="card" id="ltSeniority">
+    <div class="title">Level-wise Seniority Queue (L2–L7)</div>
+    <div class="info" style="margin-top:8px">Every member gets a separate seniority position for each level they reach based on exact server timestamp. Required slot capacities: <b>L2: 5 • L3: 10 • L4: 10 • L5: 5 • L6: 5 • L7: 5</b> completed approved payments (pending reservations consume capacity immediately). All ₹1,000 Additional / Advanced Referral Upgrades use <b>Level 2 (L2)</b> seniority (excluding the payer's own ID).</div>
+    <div id="allQueueTables" style="margin-top:10px"><div class="info">Loading Seniority Queue…</div></div>
+  </section>
+
+  <section class="card" id="ltReports">
+    <div class="title">Payment Reports / Schedule</div>
+    <div class="grid2"><div><label>From Date</label><input id="fromDate" type="date"></div><div><label>To Date</label><input id="toDate" type="date"></div></div>
+    <div class="grid2">
+      <div><label>Member ID / Name</label><input id="reportQ" placeholder="Optional search"></div>
+      <div>
+        <label>Level</label>
+        <select id="reportLevel">
+          <option value="">All Levels</option>
+          <option value="1">L1 → L2</option>
+          <option value="2">L2 → L3</option>
+          <option value="3">L3 → L4</option>
+          <option value="4">L4 → L5</option>
+          <option value="5">L5 → L6</option>
+          <option value="6">L6 → L7</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid3">
+      <button class="secondary" onclick="quickDate('today')">TODAY</button>
+      <button class="secondary" onclick="quickDate('week')">THIS WEEK</button>
+      <button class="secondary" onclick="quickDate('month')">THIS MONTH</button>
+    </div>
+    <button class="primary" onclick="runReport()">SEARCH PAYMENT SCHEDULE</button>
+    <div id="reportSummary" style="margin-top:10px"></div>
+    <div id="reportTable" class="tableWrap" style="margin-top:10px"></div>
+  </section>
+
+  <section class="card" id="ltHistory">
+    <div class="title">Persistent Payment &amp; Upgrade Proof Ledger</div>
+    <div class="info" style="margin-top:8px">Every payment record and uploaded proof screenshot is permanently preserved with its own Payment ID, Request ID, Sender ID, Receiver ID, and verification status. Approving or rejecting one payment never hides or overwrites another.</div>
+    <div class="b5-filter-bar">
+      <input id="adminPaySearch" type="search" placeholder="Search Payment ID, Request ID, Payer, Receiver, UTR…" oninput="setAdminPaymentSearch(this.value)">
+      <select id="adminPaySort" onchange="setAdminPaymentSort(this.value)" style="max-width:190px">
+        <option value="newest">Sort: Newest First</option>
+        <option value="oldest">Sort: Oldest First</option>
+      </select>
+      <div class="b5-chip-group" id="adminPayFilterChips">
+        <button type="button" class="b5-chip is-active" data-filter="ALL" onclick="setAdminPaymentFilter('ALL')">All</button>
+        <button type="button" class="b5-chip" data-filter="PENDING" onclick="setAdminPaymentFilter('PENDING')">Pending</button>
+        <button type="button" class="b5-chip" data-filter="APPROVED" onclick="setAdminPaymentFilter('APPROVED')">Approved</button>
+        <button type="button" class="b5-chip" data-filter="REJECTED" onclick="setAdminPaymentFilter('REJECTED')">Rejected</button>
+      </div>
+    </div>
+    <div id="history"><div class="small">No payment or upgrade history yet.</div></div>
+  </section>
+
+  <section class="card" id="ltEmailLogs">
+    <div class="title">Email Notification Audit &amp; Delivery Logs</div>
+    <div class="info" style="margin-top:8px">Tracks all 10 automated notification events (Registration, Login Security, Upgrade Request, Request Status, Payment Details Assigned to Payer, Incoming Payment Assigned to Receiver, Proof Submitted, Receiver Confirmed, Final Approval, 24h Deadline Reminder, and Admin Announcements). Distinguishes generated events (<b>eventGenerated: true</b>) from live AIC Cloud SMTP delivery (<b>liveDelivered: true/false</b>).</div>
+    <div id="emailSmtpStatusBanner" class="small" style="margin:8px 0;font-weight:700;color:#042619">Checking SMTP transport status…</div>
+    <div class="b5-filter-bar">
+      <input id="adminEmailSearch" type="search" placeholder="Search Recipient, Member ID, Event Type, Request ID, Payment ID, Subject…" oninput="setAdminEmailSearch(this.value)">
+      <div class="b5-chip-group" id="adminEmailFilterChips">
+        <button type="button" class="b5-chip is-active" data-filter="ALL" onclick="setAdminEmailFilter('ALL')">All Events</button>
+        <button type="button" class="b5-chip" data-filter="SENT" onclick="setAdminEmailFilter('SENT')">Sent (Live SMTP)</button>
+        <button type="button" class="b5-chip" data-filter="SKIPPED_NO_SMTP" onclick="setAdminEmailFilter('SKIPPED_NO_SMTP')">Logged (No SMTP Key)</button>
+        <button type="button" class="b5-chip" data-filter="FAILED" onclick="setAdminEmailFilter('FAILED')">Failed</button>
+      </div>
+    </div>
+    <div id="emailLogsContainer"><div class="small">Loading email notification logs…</div></div>
+  </section>
 </main>
+
+<div id="b5AdminToast" role="status" aria-live="polite"></div>
+
 <script>
-const splitRules={1:{total:1000,member:1000,trust:0,admin:0},2:{total:3000,member:3000,trust:0,admin:0},3:{total:20000,member:15600,trust:2400,admin:2000},4:{total:100000,member:72000,trust:16000,admin:12000},5:{total:200000,member:148000,trust:32000,admin:20000},6:{total:500000,member:240000,trust:160000,admin:100000}};
-let state={dashboard:null,selectedRequest:null,settingsLoaded:false,busy:false};const $=id=>document.getElementById(id);const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-async function api(url,opt={}){const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opt});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.error||'Request failed');return d}
-function memberMap(){const a=state.dashboard?.members||[];return Object.fromEntries(a.map(m=>[m.memberId,m]))}
-function renderAdminDashboard(d){state.dashboard=d;renderQueue();const members=memberMap();const requests=(d.requests||[]).filter(r=>r.status!=='Completed');const first=requests[0];$('aLevel').textContent=first?'L'+first.from:'—';$('aRefs').textContent=first?(first.directReferralCount??'—'):'—';$('aNext').textContent=first?'L'+first.to:'—';$('adminRequest').innerHTML=requests.length?requests.map(r=>{const m=members[r.memberId]||{name:r.memberId,mobile:'',memberId:r.memberId};const u=(d.upgrades||[]).find(x=>x.requestId===r.id);const pay=(d.payments||[]).find(x=>x.upgradeId===u?.id);const label=r.kind==='REFERRAL_UPGRADE'?`Upgrade • Seniority L${r.seniorityLevel||r.from}`:`L${r.from} → L${r.to}`;const selected=state.selectedRequest?.id===r.id;let action=selected?`<button class="primary" disabled style="opacity:.72">✓ REQUEST SELECTED</button>`:`<button class="primary" onclick="selectRequest('${r.id}')">SELECT REQUEST</button>`;if(u&&pay&&!u.adminApproved){if(pay.expired||pay.locked||pay.status==='RELEASED'||r.status==='Blacklisted'){action=`<div class="warn"><b>PAYMENT DETAILS LOCKED / ADMIN REVIEW</b><br>Deadline: ${esc(pay.expiresAt?new Date(pay.expiresAt).toLocaleString():'—')}<br>Old payment details cannot be used.</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="secondary" onclick="adminRequestAction('${r.id}','extend-deadline')">EXTEND 24 HOURS</button><button class="primary" onclick="adminRequestAction('${r.id}','restore-reassign')">RESTORE & REASSIGN</button><button class="secondary" onclick="adminRequestAction('${r.id}','release-slot')">RELEASE SLOT</button><button class="secondary" onclick="adminRequestAction('${r.id}','blacklist-member')">BLACKLIST MEMBER</button></div>`}else{const submittedParts=(pay.parts||[]).filter(x=>x.screenshot||x.utr);const proofHtml=submittedParts.length?`<div class="info" style="margin-top:8px"><b>PAYMENT PROOFS TO CHECK</b>${submittedParts.map(x=>`<div class="pay" style="margin-top:7px;border-top:1px solid #e5e9e5;padding-top:7px"><b>${esc(x.label||'PAYMENT')}</b><br><span class="small">UTR: ${esc(x.utr||'—')} • Status: ${esc(x.status||'PENDING')}</span>${x.screenshot?`<img src="${x.screenshot}" alt="Payment screenshot" onclick="openPaymentImage(this.src)" style="display:block;width:120px;height:90px;object-fit:cover;margin-top:7px;border:1px solid #dfe5df;border-radius:10px;background:#f7f9f7;cursor:zoom-in"><div class="small" style="margin-top:5px">Click image to view full size</div>`:''}</div>`).join('')}</div>`:'';action=`<div class="success">✓ PAYMENT DETAILS SENT • ${pay.memberAccepted?'RECEIVER CONFIRMED':'WAITING FOR MEMBER PAYMENT'}${pay.memberPaid?'<br>✓ Payment proofs received. Admin can check the screenshots below.':''}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="secondary" onclick="viewAssignedRequest('${r.id}')">VIEW PAYMENT DETAILS</button><button class="secondary" onclick="resendDetails('${r.id}')">RESEND DETAILS</button></div>${proofHtml}`;if(u&&pay?.memberAccepted&&!u.adminApproved)action+=`<button class="primary" style="background:#b7791f" onclick="approvePayment('${u.id}')">✓ CHECK & APPROVE PAYMENTS</button>`;}}if(u&&u.adminApproved)action=`<div class="success">✓ Completed • ${esc(label)}</div>`;return `<div class="member"><b>${esc(m.name)}</b><div class="small">${esc(m.mobile)} • ${esc(m.memberId)}</div><div class="small">${esc(label)} • ${esc(r.status)}</div>${pay?`<div class="small">Payment: ${pay.adminApproved?'Approved':pay.memberAccepted?'Receiver Confirmed':pay.memberPaid?'Proof Submitted':'Pending'}</div>`:''}${action}</div>`}).join(''):'<div class="warn">No active upgrade request.</div>';const hist=(d.upgrades||[]).filter(x=>x.status==='Completed'||x.adminApproved).slice(0,50);$('history').innerHTML=hist.length?hist.map(x=>`<div class="member"><b>${esc(x.memberId)} — ${x.kind==='REFERRAL_UPGRADE'?`Upgrade • Seniority L${x.seniorityLevel||x.from}`:`L${x.from} → L${x.to}`}</b><div class="small">${x.completedAt?new Date(x.completedAt).toLocaleString():''}</div></div>`).join(''):'<div class="small">No upgrade history yet.</div>'}
-async function load(){try{const d=await api('/api/leveltrack/admin/dashboard');if(!d||!d.seniority||typeof d.seniority!=='object'){throw new Error('Admin dashboard response is missing Seniority Queue data. Check the deployed server version/API response.')}renderAdminDashboard(d);if(!state.settingsLoaded){await loadSettings();state.settingsLoaded=true}}catch(e){const msg=esc(e.message||'Could not load Admin dashboard.');$('adminRequest').innerHTML='<div class="warn">Dashboard load failed: '+msg+'</div>';$('allQueueTables').innerHTML='<div class="warn"><b>Seniority Queue did not load.</b><br>'+msg+'<br><span class="small">This message helps identify whether the API or deployed version is the cause.</span></div>'}}
-async function refreshAdminLive(){if(state.busy)return;try{const selectedId=state.selectedRequest?.id;const d=await api('/api/leveltrack/admin/dashboard');if(state.busy)return;if(selectedId){const latest=(d.requests||[]).find(x=>x.id===selectedId);state.selectedRequest=latest&&latest.status!=='Completed'?latest:null;}renderAdminDashboard(d);}catch(e){/* keep current admin screen on transient refresh errors */}}
-function renderQueue(){const wrap=$('allQueueTables');if(!wrap)return;const existing=[...wrap.querySelectorAll('.b5-queue-card[data-level]')];const openLevels=new Set(existing.length?existing.filter(c=>!c.classList.contains('closed')).map(c=>Number(c.dataset.level)):[2]);const levels=[2,3,4,5,6,7];wrap.innerHTML=levels.map(level=>{const q=state.dashboard?.seniority?.[level]||[];const active=q.find(x=>x.status==='ACTIVE');const next=active?`#${active.position} • ${esc(active.name)} • ${esc(active.memberId)}`:'No active receiver';const rows=q.length?q.map(x=>`<tr><td class="b5-pos">#${x.position}</td><td><b>${esc(x.name)}</b><br><span class="small">${esc(x.memberId)} • ${esc(x.mobile)}</span></td><td>${esc(x.reachedAt?new Date(x.reachedAt).toLocaleString():'—')}</td><td>${x.completed}/${x.required} completed<br><span class="small">${x.reserved||0} pending slots</span></td><td class="${x.status==='ACTIVE'?'b5-status-active':'b5-status-completed'}">${esc(x.status)}</td></tr>`).join(''):`<tr><td colspan="5" class="small">No members have reached L${level} yet.</td></tr>`;return `<div data-level="${level}" class="b5-queue-card ${openLevels.has(level)?'':'closed'}"><div class="b5-queue-head" onclick="this.parentElement.classList.toggle('closed')"><span>LEVEL ${level} <span class="small">• ${q.length} senior${q.length===1?'':'s'}</span></span><span style="font-size:10px;font-weight:700">Next: ${next}</span></div><div class="b5-queue-body"><div class="b5-queue-next">Payment system will automatically use: <b>${next}</b></div><div class="tableWrap"><table class="b5-queue-table"><thead><tr><th>Senior</th><th>Member</th><th>Reached</th><th>Earnings</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`}).join('')}
-async function selectRequest(id){if(state.busy)return;const r=(state.dashboard.requests||[]).find(x=>x.id===id);if(!r)return;state.selectedRequest=r;const btn=document.querySelector(`button[onclick="selectRequest('${id}')"]`);if(btn){btn.disabled=true;btn.textContent='✓ REQUEST SELECTED';btn.style.opacity='.65'}const label=r.kind==='REFERRAL_UPGRADE'?`Upgrade • Seniority L${r.seniorityLevel||r.from}`:`L${r.from} → L${r.to}`;$('selectedInfo').innerHTML=`<b>Selected:</b> ${esc(r.memberId)} • ${esc(label)}`;$('paymentForm').classList.remove('hidden');$('receiverIdInput').value='';$('receiverLookup').textContent='';$('seniorAutoText').textContent='Finding the next eligible senior…';['receiverName','receiverPhone','accountHolder','bankName','accountNumber','ifsc','branchName','upi'].forEach(id=>$(id).value='');$('amount').value=r.kind==='REFERRAL_UPGRADE'?1000:(splitRules[r.from]?.total||'');$('amountLabel').textContent=r.kind==='REFERRAL_UPGRADE'?'Additional Upgrade Amount':'Total Upgrade Amount';if(r.kind==='REFERRAL_UPGRADE')renderSplitPreview(null,true);else renderSplitPreview(r.from,false);await useNextSeniorReceiver()}
-async function useNextSeniorReceiver(){const r=state.selectedRequest;if(!r)return;try{const level=r.kind==='REFERRAL_UPGRADE'?2:r.to;const exclude=r.kind==='REFERRAL_UPGRADE'?r.memberId:'';const d=await api('/api/leveltrack/admin/next-receiver/'+encodeURIComponent(level)+'?excludeMemberId='+encodeURIComponent(exclude));const next=d.receiver;if(!next){$('seniorAutoText').textContent='No active seniority receiver is available for L'+level+' yet.';return}$('receiverIdInput').value=next.memberId;$('seniorAutoText').innerHTML=`<b>#${next.position}</b> ${esc(next.name)} • ${esc(next.memberId)}<br><span class="small">L${level} seniority • ${next.completed}/${next.required} completed</span>`;await fillReceiver()}catch(e){$('seniorAutoText').textContent=e.message}}
-function renderSplitPreview(level,isExtra=false){if(isExtra){$('splitPreview').innerHTML='<div class="split"><div>ADDITIONAL UPGRADE<b>₹1,000</b></div></div><div class="small" style="margin-top:6px">This is the additional Upgrade payment. It is not a Level 1 payment.</div>';return}const r=splitRules[level];if(!r){$('splitPreview').innerHTML='';return}const cells=[['MEMBER',r.member],['TRUST',r.trust],['ADMIN',r.admin]].filter(x=>x[1]>0);$('splitPreview').innerHTML='<div class="split">'+cells.map(x=>`<div>${x[0]}<b>₹${Number(x[1]).toLocaleString()}</b></div>`).join('')+'</div>'}
-async function fillReceiver(){const id=$('receiverIdInput').value.trim();if(!id){$('receiverLookup').textContent='';return}try{const d=await api('/api/leveltrack/admin/member-details/'+encodeURIComponent(id));const m=d.member||{};$('receiverName').value=m.name||'';$('receiverPhone').value=m.mobile||'';$('accountHolder').value=m.accountHolder||m.name||'';$('bankName').value=m.bank||'';$('accountNumber').value=m.account||'';$('ifsc').value=m.ifsc||'';$('branchName').value=m.branch||'';$('upi').value=m.upi||'';$('receiverLookup').innerHTML='<span style="color:#227442;font-weight:800">✓ Receiver found</span>'}catch(e){$('receiverLookup').innerHTML='<span style="color:#b42318">✕ Member ID not found</span>'}}
-async function viewAssignedRequest(id){
-  const r=(state.dashboard.requests||[]).find(x=>x.id===id);
+const splitRules={
+  1:{total:1000,member:1000,trust:0,admin:0},
+  2:{total:3000,member:3000,trust:0,admin:0},
+  3:{total:20000,member:15600,trust:2400,admin:2000},
+  4:{total:100000,member:72000,trust:16000,admin:12000},
+  5:{total:200000,member:148000,trust:32000,admin:20000},
+  6:{total:500000,member:240000,trust:160000,admin:100000}
+};
+let state={dashboard:null,selectedRequest:null,settingsLoaded:false,busy:false,refreshing:false,payFilter:'ALL',paySort:'newest',paySearch:'',emailFilter:'ALL',emailSearch:'',emailLogs:[],smtpConfigured:false};
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+function withAdminProofAuth(url){
+  const u=String(url||'');
+  const tok=localStorage.getItem('B5_ADMIN_TOKEN')||'';
+  if(u.startsWith('/api/leveltrack/proofs/')&&tok&&!u.includes('authToken=')){
+    return u+(u.includes('?')?'&':'?')+'authToken='+encodeURIComponent(tok);
+  }
+  return u;
+}
+
+function showToast(msg,isError=false){
+  const t=$('b5AdminToast');
+  if(!t)return;
+  t.textContent=msg;
+  t.style.background=isError?'#8B1E1E':'#042619';
+  t.style.display='block';
+  clearTimeout(window.__b5ToastTimer);
+  window.__b5ToastTimer=setTimeout(()=>{t.style.display='none'},4200);
+}
+
+async function api(url,opt={}){
+  const tok=localStorage.getItem('B5_ADMIN_TOKEN')||'';
+  const r=await fetch(url,{
+    cache:'no-store',
+    credentials:'same-origin',
+    ...opt,
+    headers:{
+      'Content-Type':'application/json',
+      'Cache-Control':'no-cache',
+      ...(tok?{'x-admin-token':tok}:{}),
+      ...(opt.headers||{})
+    }
+  });
+  let d={};
+  try{d=await r.json()}catch{}
+  if(r.status===401){
+    localStorage.removeItem('B5_ADMIN_LOGIN');
+    localStorage.removeItem('B5_ADMIN_TOKEN');
+    try{if(window.parent&&window.parent!==window){window.parent.location.reload();}}catch(_){}
+  }
+  if(!r.ok)throw new Error(d.error||'Request failed');
+  return d;
+}
+
+function memberMap(){
+  const a=state.dashboard?.members||[];
+  return Object.fromEntries(a.map(m=>[m.memberId,m]));
+}
+
+function ensurePaymentSectionVisible(){
+  const payCard=$('ltPayments');
+  const reqCard=$('ltRequests');
+  if(payCard){
+    payCard.classList.add('b5-v12-show');
+    payCard.classList.remove('is-collapsed');
+  }
+  if(reqCard){
+    reqCard.classList.add('b5-v12-show');
+    reqCard.classList.remove('is-collapsed');
+  }
+}
+
+function setAdminPaymentFilter(f){
+  state.payFilter=f||'ALL';
+  document.querySelectorAll('#adminPayFilterChips .b5-chip').forEach(btn=>{
+    btn.classList.toggle('is-active',btn.dataset.filter===state.payFilter);
+  });
+  renderAdminPaymentLedger();
+}
+function setAdminPaymentSort(s){
+  state.paySort=s||'newest';
+  renderAdminPaymentLedger();
+}
+function setAdminPaymentSearch(q){
+  state.paySearch=String(q||'').trim().toLowerCase();
+  renderAdminPaymentLedger();
+}
+
+function renderAdminPaymentLedger(){
+  const d=state.dashboard;
+  const box=$('history');
+  if(!box||!d)return;
+  const members=memberMap();
+  const payments=[...(d.payments||[])];
+
+  const getStatusGroup=p=>{
+    if(p.adminApproved||p.approvalStatus==='APPROVED')return 'APPROVED';
+    if(p.rejected||p.status==='REJECTED'||p.approvalStatus==='REJECTED')return 'REJECTED';
+    return 'PENDING';
+  };
+
+  let filtered=payments.filter(p=>{
+    const grp=getStatusGroup(p);
+    if(state.payFilter!=='ALL'&&grp!==state.payFilter)return false;
+    if(state.paySearch){
+      const hay=[
+        p.id,p.paymentId,p.requestId,p.upgradeId,
+        p.fromMemberId,p.senderName,p.payeeId,p.receiverName,
+        p.utr,...(p.parts||[]).map(x=>x.utr||'')
+      ].join(' ').toLowerCase();
+      if(!hay.includes(state.paySearch))return false;
+    }
+    return true;
+  });
+
+  filtered.sort((a,b)=>{
+    const ta=new Date(a.submittedAt||a.createdAt||0).getTime()||0;
+    const tb=new Date(b.submittedAt||b.createdAt||0).getTime()||0;
+    return state.paySort==='oldest'?(ta-tb):(tb-ta);
+  });
+
+  if(!filtered.length){
+    box.innerHTML=`<div class="info">No payment records match the current filter (${esc(state.payFilter)}).</div>`;
+    return;
+  }
+
+  box.innerHTML=filtered.map(p=>{
+    const u=(d.upgrades||[]).find(x=>x.id===p.upgradeId);
+    const reqId=p.requestId||u?.requestId||'—';
+    const sender=members[p.fromMemberId]||{name:p.senderName||p.fromMemberId,memberId:p.fromMemberId};
+    const receiver=members[p.payeeId]||{name:p.receiverName||p.payeeId,memberId:p.payeeId};
+    const grp=getStatusGroup(p);
+    const levelLabel=p.kind==='REFERRAL_UPGRADE'
+      ?`Additional Upgrade • ₹1,000 (Seniority L${p.seniorityLevel||2})`
+      :`L${p.from||u?.from||'?'} → L${p.to||u?.to||'?'}${p.assignedAdminAccount?' • Admin '+p.assignedAdminAccount:''}`;
+    const statusPill=grp==='APPROVED'
+      ?'<span class="badge" style="background:#E8F5EE!important;color:#0F6E43!important">✓ APPROVED</span>'
+      :grp==='REJECTED'
+      ?'<span class="badge" style="background:#FDECEC!important;color:#B42318!important">✕ REJECTED</span>'
+      :(p.memberAccepted?'<span class="pill">RECEIVER CONFIRMED • AWAITING ADMIN</span>':'<span class="pill">PENDING VERIFICATION</span>');
+
+    const submittedParts=(p.parts||[]).filter(x=>x.screenshot||x.utr||x.proofUrl||x.proofRef);
+    const proofsHtml=submittedParts.length?submittedParts.map(x=>{
+      const rawSrc=(x.screenshot&&x.screenshot!=='existing')?x.screenshot:(x.proofRef||x.proofUrl||p.proofRef||'');
+      const imgSrc=withAdminProofAuth(rawSrc);
+      return `<div class="b5-proof-box">
+        ${imgSrc?`<img class="b5-proof-thumb" src="${imgSrc}" alt="Proof ${esc(p.id)} ${esc(x.type)}" onclick="openPaymentImage(this.src,'${esc(p.id)}','${esc(reqId)}','${esc(p.fromMemberId)}','${esc(x.utr||'')}')">`:''}
+        <div style="flex:1;min-width:160px">
+          <b>${esc(x.label||x.type||'PAYMENT')} — ₹${Number(x.amount||0).toLocaleString()}</b>
+          <div class="small">UTR: <b style="font-family:'JetBrains Mono',monospace">${esc(x.utr||'—')}</b> • Part Status: <b>${esc(x.status||'PENDING')}</b></div>
+          ${imgSrc?`<button type="button" class="secondary" style="width:auto!important;min-height:36px!important;padding:6px 12px!important;margin-top:6px;font-size:11.5px" onclick="openPaymentImage('${imgSrc}','${esc(p.id)}','${esc(reqId)}','${esc(p.fromMemberId)}','${esc(x.utr||'')}')">🔍 VIEW FULL PROOF (${esc(p.id)})</button>`:''}
+        </div>
+      </div>`;
+    }).join(''):'<div class="small" style="margin-top:6px">No proof screenshot uploaded yet for this payment record.</div>';
+
+    let rowActions='';
+    if(grp==='PENDING'&&u&&!u.adminApproved){
+      rowActions=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        ${p.memberAccepted?`<button class="primary" style="flex:1 1 200px" data-approve-btn="${esc(u.id)}" onclick="approvePayment('${esc(u.id)}','${esc(p.id)}','${esc(reqId)}')">✓ APPROVE PAYMENT (${esc(p.id)})</button>`:''}
+        ${p.memberPaid?`<button class="danger" style="flex:1 1 160px" onclick="rejectAdminPayment('${esc(p.id)}','${esc(reqId)}')">✕ REJECT PAYMENT (${esc(p.id)})</button>`:''}
+      </div>`;
+    }
+
+    return `<div class="member" id="ledgerPay_${esc(p.id)}" data-payment-id="${esc(p.id)}" data-request-id="${esc(reqId)}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+        <div>
+          <b style="font-size:14.5px;color:#042619">${esc(sender.name)} (${esc(p.fromMemberId)}) → ${esc(receiver.name)} (${esc(p.payeeId||'—')})</b>
+          <div class="small" style="font-weight:700;color:#111C17;margin-top:2px">${esc(levelLabel)} • Total ₹${Number(p.amount||0).toLocaleString()}</div>
+        </div>
+        ${statusPill}
+      </div>
+      <div class="b5-pay-meta">
+        <div><b>Payment ID:</b> <span style="font-family:'JetBrains Mono',monospace">${esc(p.id)}</span></div>
+        <div><b>Upgrade Request ID:</b> <span style="font-family:'JetBrains Mono',monospace">${esc(reqId)}</span></div>
+        <div><b>Sender ID:</b> <span style="font-family:'JetBrains Mono',monospace">${esc(p.fromMemberId)}</span></div>
+        <div><b>Receiver ID:</b> <span style="font-family:'JetBrains Mono',monospace">${esc(p.payeeId||'—')}</span></div>
+        <div><b>Submitted At:</b> ${esc(p.submittedAt?new Date(p.submittedAt).toLocaleString():'Not submitted yet')}</div>
+        <div><b>Verification:</b> ${esc(p.verificationStatus||'AWAITING')} / <b>Approval:</b> ${esc(p.approvalStatus||'PENDING')}</div>
+      </div>
+      ${p.rejectionReason?`<div class="warn"><b>Rejection Reason:</b> ${esc(p.rejectionReason)}</div>`:''}
+      ${proofsHtml}
+      ${rowActions}
+    </div>`;
+  }).join('');
+}
+
+function renderAdminDashboard(d){
+  state.dashboard=d;
+  renderQueue();
+  const members=memberMap();
+  const requests=(d.requests||[]).filter(r=>r.status!=='Completed');
+  const first=requests[0];
+  $('aLevel').textContent=first?'L'+first.from:'—';
+  $('aRefs').textContent=first?(first.directReferralCount??'—'):'—';
+  $('aNext').textContent=first?(first.kind==='REFERRAL_UPGRADE'?'L2 Seniority':'L'+first.to):'—';
+
+  const syncEl=$('b5LastSynced');
+  if(syncEl)syncEl.textContent='Synced '+new Date().toLocaleTimeString();
+
+  $('adminRequest').innerHTML=requests.length?requests.map(r=>{
+    const m=members[r.memberId]||{name:r.memberId,mobile:'',memberId:r.memberId};
+    const u=(d.upgrades||[]).find(x=>x.requestId===r.id);
+    const pay=(d.payments||[]).find(x=>x.upgradeId===u?.id&&!x._superseded)||(d.payments||[]).find(x=>x.upgradeId===u?.id);
+    const label=r.kind==='REFERRAL_UPGRADE'
+      ?`Additional / Advanced Referral Upgrade • ₹1,000 (Seniority L${r.seniorityLevel||2})`
+      :`Level Upgrade • L${r.from} → L${r.to}`;
+    const selected=state.selectedRequest?.id===r.id;
+    let action=selected
+      ?`<button class="primary" disabled style="opacity:.78">✓ REQUEST SELECTED BELOW</button>`
+      :`<button class="primary" onclick="selectRequest('${r.id}')">SELECT REQUEST &amp; ASSIGN RECEIVER</button>`;
+
+    if(u&&pay&&!u.adminApproved){
+      if(pay.expired||pay.locked||pay.status==='RELEASED'||r.status==='Blacklisted'){
+        action=`<div class="warn"><b>PAYMENT DETAILS LOCKED / 24H DEADLINE REVIEW</b><br>Deadline: ${esc(pay.expiresAt?new Date(pay.expiresAt).toLocaleString():'—')}<br>Expired or locked payment details cannot be used by the member.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="secondary" onclick="adminRequestAction('${r.id}','extend-deadline')">EXTEND +24 HOURS</button>
+          <button class="primary" onclick="adminRequestAction('${r.id}','restore-reassign')">RESTORE &amp; REASSIGN</button>
+          <button class="secondary" onclick="adminRequestAction('${r.id}','release-slot')">RELEASE SLOT</button>
+          <button class="danger" onclick="adminRequestAction('${r.id}','blacklist-member')">BLACKLIST / LOCK</button>
+        </div>`;
+      }else{
+        const submittedParts=(pay.parts||[]).filter(x=>x.screenshot||x.utr||x.proofUrl||x.proofRef);
+        const proofHtml=submittedParts.length?`<div class="info" style="margin-top:8px"><b>PAYMENT PROOFS SUBMITTED (${submittedParts.length}/${(pay.parts||[]).length}) • Payment ID: <span style="font-family:'JetBrains Mono',monospace">${esc(pay.id)}</span></b>${submittedParts.map(x=>{
+          const rawSrc=(x.screenshot&&x.screenshot!=='existing')?x.screenshot:(x.proofRef||x.proofUrl||pay.proofRef||'');
+          const imgSrc=withAdminProofAuth(rawSrc);
+          return `<div class="pay" style="margin-top:7px;border-top:1px solid #e5e9e5;padding-top:7px"><b>${esc(x.label||'PAYMENT')} (₹${Number(x.amount||0).toLocaleString()})</b><br><span class="small">UTR: <b>${esc(x.utr||'—')}</b> • Status: <b>${esc(x.status||'PENDING')}</b></span>${imgSrc?`<img src="${imgSrc}" alt="Payment screenshot ${esc(pay.id)}" onclick="openPaymentImage(this.src,'${esc(pay.id)}','${esc(r.id)}','${esc(r.memberId)}','${esc(x.utr||'')}')"`+` style="display:block;width:128px;height:94px;object-fit:cover;margin-top:7px;border:1px solid #dfe5df;border-radius:10px;background:#f7f9f7;cursor:zoom-in"><div class="small" style="margin-top:4px">Click screenshot to inspect full size (${esc(pay.id)})</div>`:''}</div>`;
+        }).join('')}</div>`:'';
+        action=`<div class="success"><b>✓ PAYMENT DETAILS SENT</b> • ${pay.memberAccepted?'<b>RECEIVER CONFIRMED ✓</b>':'WAITING FOR MEMBER / RECEIVER'}${pay.memberPaid?'<br>✓ Member submitted payment proof(s).':''}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="secondary" onclick="viewAssignedRequest('${r.id}')">VIEW ASSIGNED DETAILS</button>
+          <button class="secondary" onclick="resendDetails('${r.id}')">RESEND DETAILS</button>
+        </div>${proofHtml}`;
+        if(u&&pay?.memberAccepted&&!u.adminApproved){
+          action+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <button class="primary" style="flex:1 1 220px" data-approve-btn="${u.id}" onclick="approvePayment('${u.id}','${esc(pay.id)}','${esc(r.id)}')">✓ CHECK &amp; APPROVE UPGRADE (${esc(r.memberId)} • ${esc(pay.id)})</button>
+            <button class="danger" style="flex:1 1 160px" onclick="rejectAdminPayment('${esc(pay.id)}','${esc(r.id)}')">✕ REJECT PROOF</button>
+          </div>`;
+        }
+      }
+    }
+    if(u&&u.adminApproved){
+      action=`<div class="success">✓ Completed • ${esc(label)}</div>`;
+    }
+    const reservedBadge=(!pay&&r.reservedReceiverId)?`<div class="small" style="margin-top:4px;color:#0F6E43;font-weight:700">✓ Seniority Slot Reserved: <span style="font-family:'JetBrains Mono',monospace">${esc(r.reservedReceiverId)}</span></div>`:'';
+    return `<div class="member ${selected?'is-selected':''}" id="reqCard_${esc(r.id)}" data-request-id="${esc(r.id)}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+        <div>
+          <b style="font-size:15px;color:#042619">${esc(m.name)}</b>
+          <div class="small">${esc(m.mobile)} • <span style="font-family:'JetBrains Mono',monospace;font-weight:700">${esc(m.memberId)}</span> • Req: <span style="font-family:'JetBrains Mono',monospace">${esc(r.id)}</span></div>
+        </div>
+        <span class="pill">${esc(r.status)}</span>
+      </div>
+      <div class="small" style="margin-top:6px;font-weight:700;color:#111C17">${esc(label)}</div>
+      ${reservedBadge}
+      ${pay?`<div class="small" style="margin-top:4px">Payment ID: <b style="font-family:'JetBrains Mono',monospace">${esc(pay.id)}</b> • Receiver: <b>${esc(pay.payeeId||r.payeeId||'—')}</b> • Status: <b>${pay.adminApproved?'Approved':pay.rejected?'Rejected':pay.memberAccepted?'Receiver Confirmed':pay.memberPaid?'Proof Submitted':'Assigned (Awaiting Proof)'}</b></div>`:''}
+      ${action}
+    </div>`;
+  }).join(''):'<div class="info">No active upgrade requests waiting in queue.</div>';
+
+  renderAdminPaymentLedger();
+  if(d.emailNotifications){
+    state.smtpConfigured=!!d.emailNotifications.smtpConfigured;
+    if(!state.emailLogs.length&&Array.isArray(d.emailNotifications.recent)){
+      state.emailLogs=d.emailNotifications.recent;
+    }
+  }
+  loadEmailLogs();
+}
+
+function setAdminEmailFilter(f){
+  state.emailFilter=f||'ALL';
+  document.querySelectorAll('#adminEmailFilterChips .b5-chip').forEach(btn=>{
+    btn.classList.toggle('is-active',btn.dataset.filter===state.emailFilter);
+  });
+  renderEmailLogs();
+}
+function setAdminEmailSearch(q){
+  state.emailSearch=String(q||'').trim().toLowerCase();
+  renderEmailLogs();
+}
+async function loadEmailLogs(){
+  try{
+    const res=await api('/api/leveltrack/admin/email-log');
+    state.smtpConfigured=!!res.smtpConfigured;
+    state.emailLogs=Array.isArray(res.logs)?res.logs:[];
+    renderEmailLogs();
+  }catch(e){
+    renderEmailLogs();
+  }
+}
+function renderEmailLogs(){
+  const box=$('emailLogsContainer');
+  const banner=$('emailSmtpStatusBanner');
+  if(!box)return;
+  const all=Array.isArray(state.emailLogs)?state.emailLogs:[];
+  if(banner){
+    banner.innerHTML=state.smtpConfigured
+      ?`<span class="badge">● AIC Cloud SMTP Active (mail.aiccloud.in:587)</span> • Total Logged Events: <b>${all.length}</b>`
+      :`<span class="pill">● Local Event Audit Mode (SMTP_PASS not set in environment)</span> • Total Generated Events: <b>${all.length}</b>`;
+  }
+  const filtered=all.filter(item=>{
+    const st=String(item.deliveryStatus||item.status||'PENDING');
+    if(state.emailFilter!=='ALL'&&st!==state.emailFilter)return false;
+    if(state.emailSearch){
+      const hay=[
+        item.id,item.eventType,item.eventKey,item.to,item.recipientId,
+        item.subject,item.bodyPreview,item.error,
+        item.metadata?.requestId,item.metadata?.paymentId,item.metadata?.memberId
+      ].join(' ').toLowerCase();
+      if(!hay.includes(state.emailSearch))return false;
+    }
+    return true;
+  });
+  if(!filtered.length){
+    box.innerHTML=`<div class="info">No email notification log entries match the current filter (${esc(state.emailFilter)}).</div>`;
+    return;
+  }
+  box.innerHTML=`<div class="tableWrap"><table class="reportTable" id="adminEmailLogTable">
+    <thead><tr><th>Timestamp</th><th>Event Type</th><th>Recipient</th><th>Related Ref</th><th>Subject &amp; Preview</th><th>Delivery Status</th></tr></thead>
+    <tbody>`+filtered.slice(0,100).map(item=>{
+      const st=String(item.deliveryStatus||item.status||'PENDING');
+      const badge=st==='SENT'
+        ?`<span class="badge">✓ SENT (LIVE)</span>`
+        :st==='FAILED'
+        ?`<span class="badge rejected" style="background:#FDECEC!important;color:#B42318!important">✕ FAILED</span>`
+        :`<span class="pill">${esc(st)}</span>`;
+      const refParts=[];
+      if(item.metadata?.requestId)refParts.push('Req: '+item.metadata.requestId);
+      if(item.metadata?.paymentId)refParts.push('Pay: '+item.metadata.paymentId);
+      const refText=refParts.length?refParts.join(' • '):(item.eventKey||'—');
+      return `<tr data-email-id="${esc(item.id)}">
+        <td data-label="Timestamp">${esc(item.createdAt?new Date(item.createdAt).toLocaleString():'—')}</td>
+        <td data-label="Event Type"><b style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#042619">${esc(item.eventType)}</b></td>
+        <td data-label="Recipient"><b>${esc(item.recipientId||'—')}</b><br><span class="small">${esc(item.to||'No email')}</span></td>
+        <td data-label="Related Ref"><span style="font-family:'JetBrains Mono',monospace;font-size:11px">${esc(refText)}</span></td>
+        <td data-label="Subject & Preview"><b>${esc(item.subject)}</b><br><span class="small">${esc((item.bodyPreview||'').slice(0,110))}</span>${item.error?`<br><span class="small" style="color:#8C4A08">Note: ${esc(item.error)}</span>`:''}</td>
+        <td data-label="Delivery Status">${badge}</td>
+      </tr>`;
+    }).join('')+`</tbody></table></div>`;
+}
+
+async function checkPersistenceStatus(){
+  try{
+    const s=await api('/api/leveltrack/admin/status');
+    const b=$('b5PersistenceBadge');
+    if(b){
+      b.textContent=s.supabaseEnabled
+        ?`● Persistence: Supabase + Local JSON (${s.members||0} Members)`
+        :`● Persistence: Local Atomic JSON (${s.members||0} Members)`;
+    }
+  }catch(e){}
+}
+
+async function load(){
+  try{
+    const d=await api('/api/leveltrack/admin/dashboard');
+    if(!d||!d.seniority||typeof d.seniority!=='object'){
+      throw new Error('Admin dashboard response is missing Seniority Queue data.');
+    }
+    if(state.selectedRequest){
+      const latest=(d.requests||[]).find(x=>x.id===state.selectedRequest.id);
+      if(!latest||latest.status==='Completed'){
+        state.selectedRequest=null;
+        $('paymentForm')?.classList.add('hidden');
+        $('selectedInfo').innerHTML='Select an upgrade request above. The eligible seniority receiver is selected automatically by the server.';
+      }else{
+        state.selectedRequest=latest;
+      }
+    }
+    renderAdminDashboard(d);
+    checkPersistenceStatus();
+    if(!state.settingsLoaded){
+      await loadSettings();
+      state.settingsLoaded=true;
+    }
+  }catch(e){
+    const msg=esc(e.message||'Could not load Admin dashboard.');
+    $('adminRequest').innerHTML='<div class="warn">Dashboard load failed: '+msg+'</div>';
+    $('allQueueTables').innerHTML='<div class="warn"><b>Seniority Queue did not load.</b><br>'+msg+'</div>';
+  }
+}
+
+async function manualAdminRefresh(){
+  showToast('Refreshing live Admin state…');
+  await load();
+  showToast('✓ Admin dashboard synced');
+}
+
+async function refreshAdminLive(){
+  if(state.busy||state.refreshing)return;
+  state.refreshing=true;
+  try{
+    const selectedId=state.selectedRequest?.id;
+    const d=await api('/api/leveltrack/admin/dashboard');
+    if(state.busy)return;
+    if(selectedId){
+      const latest=(d.requests||[]).find(x=>x.id===selectedId);
+      if(!latest||latest.status==='Completed'){
+        state.selectedRequest=null;
+        $('paymentForm')?.classList.add('hidden');
+      }else{
+        state.selectedRequest=latest;
+      }
+    }
+    renderAdminDashboard(d);
+  }catch(e){
+    /* preserve current UI state on transient poll error */
+  }finally{
+    state.refreshing=false;
+  }
+}
+
+function renderQueue(){
+  const wrap=$('allQueueTables');
+  if(!wrap)return;
+  const existing=[...wrap.querySelectorAll('.b5-queue-card[data-level]')];
+  const openLevels=new Set(existing.length?existing.filter(c=>!c.classList.contains('closed')).map(c=>Number(c.dataset.level)):[2]);
+  const levels=[2,3,4,5,6,7];
+  const levelCapMap={2:5,3:10,4:10,5:5,6:5,7:5};
+  const renderAllocations=arr=>{
+    if(!Array.isArray(arr)||!arr.length)return '';
+    return `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">`+arr.map(a=>{
+      const bg=a.stage==='APPROVED'?'#E8F5EE':(a.stage==='RESERVED'?'#FBF5E6':'#EEF4FF');
+      const col=a.stage==='APPROVED'?'#0F6E43':(a.stage==='RESERVED'?'#8A691B':'#1D4ED8');
+      return `<span style="display:inline-block;padding:2px 7px;border-radius:999px;background:${bg};color:${col};font-size:10px;font-weight:700;border:1px solid rgba(4,38,25,.12)">${esc(a.payerMemberId)} • ${esc(a.stage)}${a.requestId?' ('+esc(a.requestId)+')':''}</span>`;
+    }).join('')+`</div>`;
+  };
+  wrap.innerHTML=levels.map(level=>{
+    const q=state.dashboard?.seniority?.[level]||[];
+    const currentList=state.dashboard?.seniorityCurrent?.[level]||q.filter(x=>x.status!=='COMPLETED');
+    const completedList=state.dashboard?.seniorityCompleted?.[level]||q.filter(x=>x.status==='COMPLETED');
+    const cap=q[0]?.required||levelCapMap[level]||5;
+    const active=currentList.find(x=>x.availableSlots>0||x.status==='ACTIVE');
+    const next=active?`#${active.position} • ${esc(active.name)} • ${esc(active.memberId)} (${active.availableSlots??(cap-(active.completed||0)-(active.reserved||0))} slots open)`:'No open receiver slot';
+    const currentRows=currentList.length?currentList.map(x=>{
+      const left=x.availableSlots??Math.max(0,(x.required||cap)-(x.completed||0)-(x.reserved||0));
+      const statusBadge=x.status==='ACTIVE'
+        ?`<span class="b5-status-active">● ACTIVE (${left} open)</span>`
+        :`<span class="pill" style="background:#FEF3E2!important;color:#8C4A08!important">⏳ RESERVED (${x.reserved||0} pending)</span>`;
+      return `<tr>
+        <td class="b5-pos" data-label="Position">#${x.position}</td>
+        <td data-label="Member & Allocations"><b>${esc(x.name)}</b><br><span class="small">${esc(x.memberId)} • ${esc(x.mobile)}</span>${renderAllocations(x.allocatedRequests)}</td>
+        <td data-label="Timestamp">${esc(x.reachedAt?new Date(x.reachedAt).toLocaleString():'—')}</td>
+        <td data-label="Slot Capacity"><b>${x.completed}/${x.required}</b> approved<br><span class="small">${x.reserved||0} active / reserved • ${left} available</span></td>
+        <td data-label="Status">${statusBadge}</td>
+      </tr>`;
+    }).join(''):`<tr><td colspan="5" class="small">No active or reserved seniorities in L${level} current queue.</td></tr>`;
+
+    const completedRows=completedList.length?completedList.map(x=>`<tr>
+      <td class="b5-pos" data-label="Position">#${x.position}</td>
+      <td data-label="Member & Approved Payments"><b>${esc(x.name)}</b><br><span class="small">${esc(x.memberId)} • ${esc(x.mobile)}</span>${renderAllocations(x.allocatedRequests)}</td>
+      <td data-label="Timestamp">${esc(x.reachedAt?new Date(x.reachedAt).toLocaleString():'—')}</td>
+      <td data-label="Completed Slots"><b>${x.completed}/${x.required}</b> approved</td>
+      <td class="b5-status-completed" data-label="Status">✓ COMPLETED</td>
+    </tr>`).join(''):`<tr><td colspan="5" class="small">No L${level} seniorities have completed all ${cap} approved payments yet.</td></tr>`;
+
+    return `<div data-level="${level}" class="b5-queue-card ${openLevels.has(level)?'':'closed'}">
+      <div class="b5-queue-head" onclick="this.parentElement.classList.toggle('closed')">
+        <span>LEVEL ${level} SENIORITY <span class="pill" style="margin-left:6px">${cap} Slot Cap</span> ${level===2?'<span class="pill" style="margin-left:6px">Includes ₹1,000 Additional Upgrades</span>':''} <span class="small">• ${currentList.length} Current / ${completedList.length} Completed</span></span>
+        <span style="font-size:11px;font-weight:800">Next: ${next}</span>
+      </div>
+      <div class="b5-queue-body">
+        <div class="b5-queue-next">Next Auto-Assigned Receiver for L${level}: <b>${next}</b></div>
+        <div class="small" style="font-weight:800;color:#042619;margin:6px 0 4px;text-transform:uppercase;letter-spacing:.4px">Current Queue — Active, Pending &amp; Reserved Seniorities (${currentList.length})</div>
+        <div class="tableWrap">
+          <table class="b5-queue-table" data-queue-section="current" data-level="${level}">
+            <thead><tr><th>Pos</th><th>Member &amp; Allocated Requests</th><th>Timestamp</th><th>Slot Capacity (${cap} Max)</th><th>Status</th></tr></thead>
+            <tbody>${currentRows}</tbody>
+          </table>
+        </div>
+        <div class="small" style="font-weight:800;color:#4A5D53;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.4px">Completed Seniorities List — All ${cap}/${cap} Payments Approved (${completedList.length})</div>
+        <div class="tableWrap">
+          <table class="b5-queue-table" data-queue-section="completed" data-level="${level}">
+            <thead><tr><th>Pos</th><th>Member &amp; Approved Payments</th><th>Timestamp</th><th>Completed Slots (${cap}/${cap})</th><th>Status</th></tr></thead>
+            <tbody>${completedRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function selectRequest(id){
+  if(state.busy)return;
+  const r=(state.dashboard?.requests||[]).find(x=>x.id===id);
   if(!r)return;
   state.selectedRequest=r;
-  const label=r.kind==='REFERRAL_UPGRADE'?`Upgrade • Seniority L${r.seniorityLevel||r.from}`:`L${r.from} → L${r.to}`;
+  ensurePaymentSectionVisible();
+  renderAdminDashboard(state.dashboard);
+
+  const label=r.kind==='REFERRAL_UPGRADE'
+    ?`Additional / Advanced Referral Upgrade • ₹1,000 (Seniority L${r.seniorityLevel||2})`
+    :`Level Upgrade • L${r.from} → L${r.to}`;
+  $('selectedInfo').innerHTML=`<b>Selected Request:</b> ${esc(r.memberId)} • ${esc(label)}`;
+  $('paymentForm').classList.remove('hidden');
+
+  const sendBtn=$('sendDetailsBtn')||document.querySelector('#paymentForm button[onclick="sendDetails()"]');
+  if(sendBtn){
+    sendBtn.disabled=false;
+    sendBtn.textContent='SEND PAYMENT DETAILS TO MEMBER';
+    sendBtn.style.opacity='1';
+  }
+
+  $('receiverIdInput').value='';
+  $('receiverLookup').textContent='';
+  $('seniorAutoText').textContent='Finding the next eligible senior…';
+  ['receiverName','receiverPhone','accountHolder','bankName','accountNumber','ifsc','branchName','upi'].forEach(k=>$(k).value='');
+  $('amount').value=r.kind==='REFERRAL_UPGRADE'?1000:(splitRules[r.from]?.total||'');
+  $('amountLabel').textContent=r.kind==='REFERRAL_UPGRADE'?'Additional Upgrade Amount (₹1,000)':'Total Upgrade Amount';
+  if(r.kind==='REFERRAL_UPGRADE')renderSplitPreview(null,true);
+  else renderSplitPreview(r.from,false);
+
+  await useNextSeniorReceiver();
+  setTimeout(()=>{
+    $('ltPayments')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },60);
+}
+
+async function useNextSeniorReceiver(){
+  const r=state.selectedRequest;
+  if(!r)return;
+  try{
+    const level=r.kind==='REFERRAL_UPGRADE'?2:r.to;
+    const exclude=r.kind==='REFERRAL_UPGRADE'?r.memberId:'';
+    const d=await api('/api/leveltrack/admin/next-receiver/'+encodeURIComponent(level)+'?excludeMemberId='+encodeURIComponent(exclude)+'&requestId='+encodeURIComponent(r.id));
+    const next=d.receiver;
+    if(!next){
+      $('seniorAutoText').textContent='No active seniority receiver is available for L'+level+' yet.';
+      return;
+    }
+    $('receiverIdInput').value=next.memberId;
+    $('seniorAutoText').innerHTML=`<b>#${next.position}</b> ${esc(next.name)} • <span style="font-family:'JetBrains Mono',monospace">${esc(next.memberId)}</span><br><span class="small">L${level} Seniority Queue • ${next.completed}/${next.required} completed (${next.reserved||0} active / reserved)${r.kind==='REFERRAL_UPGRADE'?' • Payer self-ID excluded':''}</span>`;
+    await fillReceiver();
+  }catch(e){
+    $('seniorAutoText').textContent=e.message;
+  }
+}
+
+function renderSplitPreview(level,isExtra=false){
+  if(isExtra){
+    $('splitPreview').innerHTML='<div class="split"><div>MEMBER / RECEIVER (L2 SENIORITY)<b>₹1,000</b></div></div><div class="small" style="margin-top:6px">100% of the ₹1,000 Additional / Advanced Referral Upgrade goes to the next eligible L2 Seniority receiver.</div>';
+    return;
+  }
+  const r=splitRules[level];
+  if(!r){$('splitPreview').innerHTML='';return;}
+  const cells=[['MEMBER',r.member],['TRUST',r.trust],['ADMIN (ROTATION A/B/C)',r.admin]].filter(x=>x[1]>0);
+  $('splitPreview').innerHTML='<div class="split">'+cells.map(x=>`<div>${x[0]}<b>₹${Number(x[1]).toLocaleString()}</b></div>`).join('')+'</div>';
+}
+
+async function fillReceiver(){
+  const id=$('receiverIdInput').value.trim();
+  if(!id){$('receiverLookup').textContent='';return;}
+  try{
+    const d=await api('/api/leveltrack/admin/member-details/'+encodeURIComponent(id));
+    const m=d.member||{};
+    $('receiverName').value=m.name||'';
+    $('receiverPhone').value=m.mobile||'';
+    $('accountHolder').value=m.accountHolder||m.name||'';
+    $('bankName').value=m.bank||'';
+    $('accountNumber').value=m.account||'';
+    $('ifsc').value=m.ifsc||'';
+    $('branchName').value=m.branch||'';
+    $('upi').value=m.upi||'';
+    $('receiverLookup').innerHTML='<span style="color:#0F6E43;font-weight:800">✓ Eligible seniority receiver verified</span>';
+  }catch(e){
+    $('receiverLookup').innerHTML='<span style="color:#b42318">✕ Receiver Member ID not found</span>';
+  }
+}
+
+async function viewAssignedRequest(id){
+  const r=(state.dashboard?.requests||[]).find(x=>x.id===id);
+  if(!r)return;
+  state.selectedRequest=r;
+  ensurePaymentSectionVisible();
+  const label=r.kind==='REFERRAL_UPGRADE'
+    ?`Additional / Advanced Referral Upgrade • ₹1,000 (Seniority L${r.seniorityLevel||2})`
+    :`Level Upgrade • L${r.from} → L${r.to}`;
   $('selectedInfo').innerHTML=`<div class="success"><b>✓ PAYMENT DETAILS SENT</b><br>${esc(r.memberId)} • ${esc(label)}</div>`;
   $('paymentForm').classList.remove('hidden');
   $('amount').value=r.kind==='REFERRAL_UPGRADE'?1000:(r.amount||splitRules[r.from]?.total||'');
   $('amountLabel').textContent=r.kind==='REFERRAL_UPGRADE'?'Additional Upgrade Amount':'Total Upgrade Amount';
-  if(r.kind==='REFERRAL_UPGRADE')renderSplitPreview(null,true);else renderSplitPreview(r.from,false);
+  if(r.kind==='REFERRAL_UPGRADE')renderSplitPreview(null,true);
+  else renderSplitPreview(r.from,false);
   $('receiverIdInput').value=r.payeeId||'';
+  $('seniorAutoText').innerHTML=`Assigned Receiver: <b>${esc(r.payeeName||r.payeeId||'—')}</b> (${esc(r.payeeId||'—')})`;
   await fillReceiver();
-  const btn=document.querySelector('#paymentForm button[onclick="sendDetails()"]');
-  if(btn){btn.disabled=true;btn.textContent='✓ PAYMENT DETAILS ALREADY SENT';btn.style.opacity='.72'}
+  const btn=$('sendDetailsBtn')||document.querySelector('#paymentForm button[onclick="sendDetails()"]');
+  if(btn){
+    btn.disabled=true;
+    btn.textContent='✓ PAYMENT DETAILS ALREADY SENT';
+    btn.style.opacity='.75';
+  }
+  setTimeout(()=>{
+    $('ltPayments')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },60);
 }
+
 async function resendDetails(id){
   try{
     const d=await api('/api/leveltrack/admin/requests/'+encodeURIComponent(id)+'/resend-details',{method:'POST'});
-    alert(d.message||'Payment details sent again to the member.');
+    showToast(d.message||'✓ Payment details resent to member');
     await load();
-  }catch(e){alert(e.message)}
+  }catch(e){
+    showToast(e.message,true);
+    alert(e.message);
+  }
 }
-async function adminRequestAction(id,action){const labels={'extend-deadline':'Extend payment deadline by 24 hours?','restore-reassign':'Restore access and assign a new receiver with new payment details?','release-slot':'Release this Seniority slot?','blacklist-member':'Lock this member payment access for Admin review?'};if(!confirm(labels[action]||'Continue?'))return;try{const d=await api('/api/leveltrack/admin/requests/'+encodeURIComponent(id)+'/'+action,{method:'POST'});alert(d.message||'Request updated.');state.selectedRequest=null;await load()}catch(e){alert(e.message)}}
+
+async function adminRequestAction(id,action){
+  const labels={
+    'extend-deadline':'Extend payment deadline by 24 hours?',
+    'restore-reassign':'Restore access and assign a new receiver with new payment details?',
+    'release-slot':'Release this Seniority slot?',
+    'blacklist-member':'Lock this member payment access for Admin review?'
+  };
+  if(!confirm(labels[action]||'Continue?'))return;
+  try{
+    const d=await api('/api/leveltrack/admin/requests/'+encodeURIComponent(id)+'/'+action,{method:'POST'});
+    showToast(d.message||'✓ Request updated');
+    state.selectedRequest=null;
+    $('paymentForm')?.classList.add('hidden');
+    await load();
+  }catch(e){
+    showToast(e.message,true);
+    alert(e.message);
+  }
+}
+
 async function sendDetails(){
-  let r=state.selectedRequest;if(!r)return alert('Select an upgrade request.');
+  let r=state.selectedRequest;
+  if(!r)return alert('Select an upgrade request first.');
   if(state.busy)return;
   state.busy=true;
-  const btn=document.querySelector('#paymentForm button[onclick="sendDetails()"]')||document.querySelector('button[onclick="sendDetails()"]');
-  if(btn){btn.disabled=true;btn.textContent='SENDING…';btn.style.opacity='.65'}
+  const btn=$('sendDetailsBtn')||document.querySelector('#paymentForm button[onclick="sendDetails()"]');
+  if(btn){btn.disabled=true;btn.textContent='SENDING PAYMENT DETAILS…';btn.style.opacity='.68';}
   try{
-    // Re-read the request immediately before sending so the 5-second live refresh
-    // can never leave us with a stale request object.
     const latest=await api('/api/leveltrack/admin/dashboard');
     const fresh=(latest.requests||[]).find(x=>x.id===r.id);
-    if(!fresh)throw new Error('Upgrade request not found. Please refresh the Admin page.');
+    if(!fresh)throw new Error('Upgrade request not found. Refreshing Admin dashboard.');
     if(fresh.status==='Assigned'){
       state.selectedRequest=fresh;
-      if(btn){btn.textContent='✓ PAYMENT DETAILS SENT';btn.style.opacity='1'}
-      $('selectedInfo').innerHTML='<div class="success"><b>✓ PAYMENT DETAILS SENT</b><br>The member can now see the payment instructions.</div>';
+      if(btn){btn.textContent='✓ PAYMENT DETAILS SENT';btn.style.opacity='1';}
+      $('selectedInfo').innerHTML='<div class="success"><b>✓ PAYMENT DETAILS SENT</b><br>The member can now view payment instructions and 24-hour countdown.</div>';
       $('paymentForm').classList.add('hidden');
-      await load();
+      renderAdminDashboard(latest);
+      showToast('✓ Payment details assigned');
       return;
     }
     if(fresh.status!=='Requested')throw new Error('This request is already being processed. Current status: '+fresh.status);
-    r=fresh;state.selectedRequest=r;
+    r=fresh;
+    state.selectedRequest=r;
     const body={amount:Number($('amount').value)};
     const result=await api('/api/leveltrack/admin/requests/'+encodeURIComponent(r.id)+'/assign',{method:'POST',body:JSON.stringify(body)});
-    if(!result?.ok || result.request?.status!=='Assigned')throw new Error('Payment details were not confirmed by the server. Please try again.');
-    state.selectedRequest=result.request;
-    if(btn){btn.textContent='✓ PAYMENT DETAILS SENT';btn.style.opacity='1'}
-    $('selectedInfo').innerHTML='<div class="success"><b>✓ PAYMENT DETAILS SENT</b><br>The member can now see the payment instructions.</div>';
+    if(!result?.ok||result.request?.status!=='Assigned')throw new Error('Payment details were not confirmed by the server. Please try again.');
+    state.selectedRequest=null;
+    if(btn){btn.textContent='✓ PAYMENT DETAILS SENT';btn.style.opacity='1';}
+    $('selectedInfo').innerHTML='<div class="success"><b>✓ PAYMENT DETAILS SENT TO '+esc(r.memberId)+'</b><br>Select the next request above to continue processing.</div>';
     $('paymentForm').classList.add('hidden');
     await load();
+    showToast('✓ Payment details sent to '+r.memberId);
   }catch(e){
-    if(btn){btn.disabled=false;btn.textContent='SEND PAYMENT DETAILS TO MEMBER';btn.style.opacity='1'}
+    if(btn){btn.disabled=false;btn.textContent='SEND PAYMENT DETAILS TO MEMBER';btn.style.opacity='1';}
+    showToast(e.message,true);
     alert(e.message);
-  }finally{state.busy=false}
+  }finally{
+    state.busy=false;
+  }
 }
-async function approvePayment(id){if(state.busy)return;if(!confirm('Approve all confirmed payment parts and complete this process?'))return;state.busy=true;const btn=document.querySelector(`button[onclick="approvePayment('${id}')"]`);if(btn){btn.disabled=true;btn.textContent='SENDING APPROVAL…';btn.style.opacity='.65'}try{const u=(state.dashboard.upgrades||[]).find(x=>x.id===id);const result=await api('/api/leveltrack/admin/payments/by-upgrade/'+encodeURIComponent(id)+'/approve',{method:'POST'});if(!result||!result.ok)throw new Error('Server did not confirm approval.');if(btn){btn.textContent='✓ APPROVAL SENT';btn.style.opacity='1'}await load();alert(u?.kind==='REFERRAL_UPGRADE'?'Upgrade completed.':'Admin approval completed. Member moved to next level.');}catch(e){if(btn){btn.disabled=false;btn.textContent='✓ CHECK & APPROVE PAYMENTS';btn.style.opacity='1'}alert(e.message)}finally{state.busy=false}}
-async function loadSettings(){try{const d=await api('/api/leveltrack/admin/payment-settings');const ps=d.paymentSettings;const arr=ps.admins||[];$('accountsEditor').innerHTML='<div class="grid3">'+arr.map((a,i)=>`<div class="account"><h4>Admin ${esc(a.id)}</h4><label>Name</label><input id="an_${i}" value="${esc(a.name)}"><label>Account Holder</label><input id="ah_${i}" value="${esc(a.accountHolder)}"><label>Bank</label><input id="ab_${i}" value="${esc(a.bank)}"><label>Account Number</label><input id="aa_${i}" value="${esc(a.account)}"><label>IFSC</label><input id="ai_${i}" value="${esc(a.ifsc)}"><label>UPI</label><input id="au_${i}" value="${esc(a.upi)}"><button class="secondary" onclick="saveAdmin(${i})">SAVE ADMIN ${esc(a.id)}</button></div>`).join('')+'</div>';const t=ps.trust||{};$('trustName').value=t.name||'';$('trustHolder').value=t.accountHolder||'';$('trustBank').value=t.bank||'';$('trustAccount').value=t.account||'TEMP-TRUST-001';$('trustIfsc').value=t.ifsc||'';$('trustUpi').value=t.upi||''}catch(e){}}
-async function saveAdmin(i){const d=await api('/api/leveltrack/admin/payment-settings');const a=d.paymentSettings.admins[i];a.name=$('an_'+i).value.trim();a.accountHolder=$('ah_'+i).value.trim();a.bank=$('ab_'+i).value.trim();a.account=$('aa_'+i).value.trim();a.ifsc=$('ai_'+i).value.trim();a.upi=$('au_'+i).value.trim();try{await api('/api/leveltrack/admin/payment-settings',{method:'POST',body:JSON.stringify({admins:d.paymentSettings.admins})});alert('Admin account saved.');state.settingsLoaded=false;await loadSettings();state.settingsLoaded=true}catch(e){alert(e.message)}}
-async function saveTrust(){try{await api('/api/leveltrack/admin/payment-settings',{method:'POST',body:JSON.stringify({trust:{name:$('trustName').value.trim(),accountHolder:$('trustHolder').value.trim(),bank:$('trustBank').value.trim(),account:$('trustAccount').value.trim(),ifsc:$('trustIfsc').value.trim(),upi:$('trustUpi').value.trim()}})});alert('Trust account saved.');state.settingsLoaded=false;await loadSettings();state.settingsLoaded=true}catch(e){alert(e.message)}}
-function fmtDate(d){const x=new Date();if(d==='today'){const z=new Date();return [z,z]}if(d==='week'){const z=new Date();const day=z.getDay()||7;const a=new Date(z);a.setDate(z.getDate()-day+1);return [a,z]}if(d==='month'){const z=new Date();return [new Date(z.getFullYear(),z.getMonth(),1),z]}return [x,x]}
-function iso(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
-function quickDate(kind){const [a,b]=fmtDate(kind);$('fromDate').value=iso(a);$('toDate').value=iso(b);runReport()}
-async function runReport(){const q=new URLSearchParams({from:$('fromDate').value,to:$('toDate').value,q:$('reportQ').value,level:$('reportLevel').value});try{const d=await api('/api/leveltrack/admin/payment-report?'+q.toString());const adminCards=Object.entries(d.adminByAccount||{}).map(([name,amt])=>`<div class="account"><b>${esc(name)}</b><br>₹${Number(amt||0).toLocaleString()}</div>`).join('');$('reportSummary').innerHTML=`<div class="grid3"><div class="account"><b>Member</b><br>₹${Number(d.totals.member||0).toLocaleString()}</div><div class="account"><b>Trust</b><br>₹${Number(d.totals.trust||0).toLocaleString()}</div><div class="account"><b>Admin Total</b><br>₹${Number(d.totals.admin||0).toLocaleString()}</div></div><div class="grid3" style="margin-top:8px">${adminCards||'<div class="account">No admin payments</div>'}</div><div class="success" style="margin-top:8px">${d.count} payment transaction(s) • Total allocated ₹${Number(d.totals.total||0).toLocaleString()}</div>`;if(!d.rows.length){$('reportTable').innerHTML='<div class="small">No payment records for this date range.</div>';return}$('reportTable').innerHTML='<table class="reportTable"><thead><tr><th>Date</th><th>Level</th><th>Payer</th><th>Receiver</th><th>Member</th><th>Trust</th><th>Admin</th><th>Status</th></tr></thead><tbody>'+d.rows.map(r=>{const g=Object.fromEntries(r.parts.map(x=>[x.type,x.amount]));return `<tr><td>${esc(r.date)}</td><td>${esc(r.level)}</td><td>${esc(r.payerMemberId)}</td><td>${esc(r.receiverMemberId)}</td><td>₹${Number(g.member||0).toLocaleString()}</td><td>₹${Number(g.trust||0).toLocaleString()}</td><td>₹${Number(g.admin||0).toLocaleString()}</td><td>${esc(r.status)}</td></tr>`}).join('')+'</tbody></table>'}catch(e){$('reportTable').innerHTML='<div class="warn">'+esc(e.message)+'</div>'}}
+
+async function approvePayment(id,paymentId='',requestId=''){
+  if(state.busy)return;
+  if(!confirm('Approve all confirmed payment parts for '+(paymentId||id)+' and complete this upgrade?'))return;
+  state.busy=true;
+  const btn=document.querySelector(`button[data-approve-btn="${id}"]`)||document.querySelector(`button[onclick*="approvePayment('${id}'"]`);
+  if(btn){btn.disabled=true;btn.textContent='APPROVING & SAVING…';btn.style.opacity='.68';}
+  try{
+    const u=(state.dashboard?.upgrades||[]).find(x=>x.id===id);
+    const body={};
+    if(paymentId)body.paymentId=paymentId;
+    if(requestId)body.requestId=requestId;
+    const result=await api('/api/leveltrack/admin/payments/by-upgrade/'+encodeURIComponent(id)+'/approve',{method:'POST',body:JSON.stringify(body)});
+    if(!result||!result.ok)throw new Error('Server did not confirm approval.');
+    if(state.selectedRequest&&u&&state.selectedRequest.id===u.requestId){
+      state.selectedRequest=null;
+      $('paymentForm')?.classList.add('hidden');
+      $('selectedInfo').innerHTML='Select an upgrade request above. The eligible seniority receiver is selected automatically by the server.';
+    }
+    if(btn){btn.textContent='✓ APPROVED';btn.style.opacity='1';}
+    await load();
+    const doneMsg=u?.kind==='REFERRAL_UPGRADE'
+      ?`✓ Additional Upgrade approved for ${u.memberId}. Next Level Upgrade is now unlocked.`
+      :`✓ Level upgrade approved for ${u?.memberId||'Member'} (moved to L${result.newLevel||u?.to||''}).`;
+    showToast(doneMsg);
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='✓ CHECK & APPROVE PAYMENTS';btn.style.opacity='1';}
+    showToast(e.message,true);
+    alert(e.message);
+  }finally{
+    state.busy=false;
+  }
+}
+
+async function rejectAdminPayment(paymentId,requestId=''){
+  if(!paymentId||state.busy)return;
+  const reason=prompt('Enter rejection reason for Payment '+paymentId+':','Invalid or unverifiable payment proof');
+  if(reason===null)return;
+  state.busy=true;
+  try{
+    const result=await api('/api/leveltrack/admin/payments/'+encodeURIComponent(paymentId)+'/reject',{
+      method:'POST',
+      body:JSON.stringify({requestId,reason})
+    });
+    if(!result||!result.ok)throw new Error('Could not reject payment.');
+    await load();
+    showToast('✕ Payment '+paymentId+' marked Rejected');
+  }catch(e){
+    showToast(e.message,true);
+    alert(e.message);
+  }finally{
+    state.busy=false;
+  }
+}
+
+async function loadSettings(){
+  try{
+    const d=await api('/api/leveltrack/admin/payment-settings');
+    const ps=d.paymentSettings;
+    const arr=ps.admins||[];
+    $('accountsEditor').innerHTML='<div class="grid3">'+arr.map((a,i)=>`<div class="account"><h4>Admin ${esc(a.id)}</h4><label>Name</label><input id="an_${i}" value="${esc(a.name)}"><label>Account Holder</label><input id="ah_${i}" value="${esc(a.accountHolder)}"><label>Bank</label><input id="ab_${i}" value="${esc(a.bank)}"><label>Account Number</label><input id="aa_${i}" value="${esc(a.account)}"><label>IFSC</label><input id="ai_${i}" value="${esc(a.ifsc)}"><label>UPI</label><input id="au_${i}" value="${esc(a.upi)}"><button class="secondary" onclick="saveAdmin(${i})">SAVE ADMIN ${esc(a.id)}</button></div>`).join('')+'</div>';
+    const t=ps.trust||{};
+    $('trustName').value=t.name||'';
+    $('trustHolder').value=t.accountHolder||'';
+    $('trustBank').value=t.bank||'';
+    $('trustAccount').value=t.account||'TEMP-TRUST-001';
+    $('trustIfsc').value=t.ifsc||'';
+    $('trustUpi').value=t.upi||'';
+  }catch(e){}
+}
+
+async function saveAdmin(i){
+  const d=await api('/api/leveltrack/admin/payment-settings');
+  const a=d.paymentSettings.admins[i];
+  a.name=$('an_'+i).value.trim();
+  a.accountHolder=$('ah_'+i).value.trim();
+  a.bank=$('ab_'+i).value.trim();
+  a.account=$('aa_'+i).value.trim();
+  a.ifsc=$('ai_'+i).value.trim();
+  a.upi=$('au_'+i).value.trim();
+  try{
+    await api('/api/leveltrack/admin/payment-settings',{method:'POST',body:JSON.stringify({admins:d.paymentSettings.admins})});
+    showToast('✓ Admin account '+a.id+' saved');
+    state.settingsLoaded=false;
+    await loadSettings();
+    state.settingsLoaded=true;
+  }catch(e){alert(e.message)}
+}
+
+async function saveTrust(){
+  try{
+    await api('/api/leveltrack/admin/payment-settings',{method:'POST',body:JSON.stringify({trust:{name:$('trustName').value.trim(),accountHolder:$('trustHolder').value.trim(),bank:$('trustBank').value.trim(),account:$('trustAccount').value.trim(),ifsc:$('trustIfsc').value.trim(),upi:$('trustUpi').value.trim()}})});
+    showToast('✓ Trust account saved');
+    state.settingsLoaded=false;
+    await loadSettings();
+    state.settingsLoaded=true;
+  }catch(e){alert(e.message)}
+}
+
+function fmtDate(d){
+  const x=new Date();
+  if(d==='today'){const z=new Date();return [z,z];}
+  if(d==='week'){const z=new Date();const day=z.getDay()||7;const a=new Date(z);a.setDate(z.getDate()-day+1);return [a,z];}
+  if(d==='month'){const z=new Date();return [new Date(z.getFullYear(),z.getMonth(),1),z];}
+  return [x,x];
+}
+function iso(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}
+function quickDate(kind){const [a,b]=fmtDate(kind);$('fromDate').value=iso(a);$('toDate').value=iso(b);runReport();}
+
+async function runReport(){
+  const q=new URLSearchParams({from:$('fromDate').value,to:$('toDate').value,q:$('reportQ').value,level:$('reportLevel').value});
+  try{
+    const d=await api('/api/leveltrack/admin/payment-report?'+q.toString());
+    const adminCards=Object.entries(d.adminByAccount||{}).map(([name,amt])=>`<div class="account"><b>${esc(name)}</b><br>₹${Number(amt||0).toLocaleString()}</div>`).join('');
+    $('reportSummary').innerHTML=`<div class="grid3"><div class="account"><b>Member Total</b><br>₹${Number(d.totals.member||0).toLocaleString()}</div><div class="account"><b>Trust Total</b><br>₹${Number(d.totals.trust||0).toLocaleString()}</div><div class="account"><b>Admin Total</b><br>₹${Number(d.totals.admin||0).toLocaleString()}</div></div><div class="grid3" style="margin-top:8px">${adminCards||'<div class="account">No admin payments</div>'}</div><div class="success" style="margin-top:8px">${d.count} payment transaction(s) • Total allocated ₹${Number(d.totals.total||0).toLocaleString()}</div>`;
+    if(!d.rows.length){$('reportTable').innerHTML='<div class="small">No payment records for this date range.</div>';return;}
+    $('reportTable').innerHTML='<table class="reportTable"><thead><tr><th>Date</th><th>Level</th><th>Payer</th><th>Receiver</th><th>Member</th><th>Trust</th><th>Admin</th><th>Status</th></tr></thead><tbody>'+d.rows.map(r=>{const g=Object.fromEntries(r.parts.map(x=>[x.type,x.amount]));return `<tr><td data-label="Date">${esc(r.date)}</td><td data-label="Level">${esc(r.level)}</td><td data-label="Payer">${esc(r.payerMemberId)}</td><td data-label="Receiver">${esc(r.receiverMemberId)}</td><td data-label="Member">₹${Number(g.member||0).toLocaleString()}</td><td data-label="Trust">₹${Number(g.trust||0).toLocaleString()}</td><td data-label="Admin">₹${Number(g.admin||0).toLocaleString()}</td><td data-label="Status">${esc(r.status)}</td></tr>`;}).join('')+'</tbody></table>';
+  }catch(e){$('reportTable').innerHTML='<div class="warn">'+esc(e.message)+'</div>';}
+}
+
 load();
-setInterval(refreshAdminLive,3000);
-</script><script id="b5-unified-accordion">
+setInterval(refreshAdminLive,6000);
+</script>
+
+<script id="b5-unified-accordion">
 (function(){
   function makeCardAccordion(card){
-    if(!card || card.dataset.b5Acc==='1') return;
+    if(!card||card.dataset.b5Acc==='1')return;
     const head=card.querySelector(':scope > .title');
-    if(!head) return;
-    const body=document.createElement('div'); body.className='b5-accordion-body';
+    if(!head)return;
+    const body=document.createElement('div');
+    body.className='b5-accordion-body';
     const nodes=Array.from(card.children).filter(n=>n!==head);
     nodes.forEach(n=>body.appendChild(n));
     head.classList.add('b5-accordion-head');
-    card.insertBefore(body, null);
+    card.insertBefore(body,null);
     card.dataset.b5Acc='1';
     head.addEventListener('click',()=>card.classList.toggle('is-collapsed'));
   }
   function makeAccountAccordion(card){
-    if(!card || card.dataset.b5AccountAcc==='1') return;
+    if(!card||card.dataset.b5AccountAcc==='1')return;
     const head=card.querySelector(':scope > h4');
-    if(!head) return;
-    const body=document.createElement('div'); body.className='b5-account-body';
+    if(!head)return;
+    const body=document.createElement('div');
+    body.className='b5-account-body';
     const nodes=Array.from(card.children).filter(n=>n!==head);
     nodes.forEach(n=>body.appendChild(n));
     card.classList.add('b5-account-card');
@@ -172,55 +1367,88 @@ setInterval(refreshAdminLive,3000);
   function init(){
     document.querySelectorAll('.card').forEach(makeCardAccordion);
     document.querySelectorAll('.account').forEach(makeAccountAccordion);
-    document.querySelectorAll('.level .lh').forEach(h=>{
-      if(h.dataset.b5LevelAcc==='1') return;
-      const body=h.nextElementSibling;
-      if(!body || !body.classList.contains('pay')) return;
-      h.dataset.b5LevelAcc='1'; h.style.cursor='pointer';
-      h.addEventListener('click',()=>{body.classList.toggle('hidden');});
-    });
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
   const obs=new MutationObserver(()=>init());
   obs.observe(document.body,{childList:true,subtree:true});
 })();
 </script>
 
-
 <script id="b5-leveltrack-admin-nav-v12">
 (function(){
-  const sections={requests:'ltRequests',payments:'ltPayments',accounts:'ltAccounts',seniority:'ltSeniority',reports:'ltReports',history:'ltHistory'};
-  const embedded = window.parent !== window;
+  const sections={requests:'ltRequests',payments:'ltPayments',accounts:'ltAccounts',seniority:'ltSeniority',reports:'ltReports',history:'ltHistory',emaillogs:'ltEmailLogs'};
+  const embedded=window.parent!==window;
   function show(key){
-    if(embedded) document.body.classList.add('b5-embedded');
+    if(embedded)document.body.classList.add('b5-embedded');
     else document.body.classList.remove('b5-embedded');
     const hero=document.querySelector('main.wrap > .hero');
     const cards=Array.from(document.querySelectorAll('main.wrap > .card'));
     cards.forEach(c=>c.classList.remove('b5-v12-show'));
-    if(hero) hero.classList.remove('b5-v12-show');
+    if(hero)hero.classList.remove('b5-v12-show');
     if(key==='dashboard'){
-      if(hero) hero.classList.add('b5-v12-show');
-      if(cards[0]) cards[0].classList.add('b5-v12-show');
-    } else {
+      if(hero)hero.classList.add('b5-v12-show');
+      if(cards[0])cards[0].classList.add('b5-v12-show');
+      document.getElementById('ltRequests')?.classList.add('b5-v12-show');
+      document.getElementById('ltPayments')?.classList.add('b5-v12-show');
+    }else if(key==='requests'||key==='payments'){
+      document.getElementById('ltRequests')?.classList.add('b5-v12-show');
+      document.getElementById('ltPayments')?.classList.add('b5-v12-show');
+    }else{
       const el=document.getElementById(sections[key]);
-      if(el) el.classList.add('b5-v12-show');
+      if(el){
+        el.classList.add('b5-v12-show');
+        el.classList.remove('is-collapsed');
+      }
     }
     window.scrollTo({top:0,behavior:'smooth'});
   }
-  function handle(e){if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;show(e.data.section||'dashboard');}
-  window.addEventListener('message',handle);
-  // Standalone Admin URL: leave every section visible. Only use single-section
-  // navigation when this page is embedded inside the main Admin shell.
-  if(embedded) window.addEventListener('load',()=>show('dashboard'));
+  window.addEventListener('message',e=>{
+    if(e.origin!==location.origin||!e.data||e.data.type!=='LEVELTRACK_NAV')return;
+    show(e.data.section||'dashboard');
+  });
+  if(embedded)window.addEventListener('load',()=>show('dashboard'));
 })();
 </script>
 <style id="b5-v12-nav-style">
 .b5-v12-show{display:block!important}
 .b5-embedded main.wrap>.hero,.b5-embedded main.wrap>.card{display:none!important}
 .b5-embedded main.wrap>.hero.b5-v12-show,.b5-embedded main.wrap>.card.b5-v12-show{display:block!important}
-.b5-embedded .wrap{padding-top:10px}
+.b5-embedded .wrap{padding-top:12px}
 </style>
-<script>function levelTrackAdminLogout(){localStorage.removeItem('B5_ADMIN_LOGIN');try{if(window.parent&&window.parent!==window){window.parent.location.reload();return}}catch(e){}location.reload()}</script><style id="b5-final-leveltrack-admin-header">.top{padding-left:72px!important;padding-right:10px!important;position:sticky!important;top:0!important;z-index:20!important}.top .logo{overflow:hidden;background:#fff!important;border:1px solid #d9e3dc!important}.top .logo img{width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit}.top-actions{margin-left:auto;display:flex;gap:8px}.top-actions button{width:auto!important;padding:8px 10px!important;margin:0!important;border-radius:11px!important}@media(max-width:520px){.top{padding-left:72px!important}.top-actions{gap:5px}.top-actions button{font-size:10px;padding:7px 8px!important}}</style>
-<div id="b5ImageModal" onclick="closePaymentImage()" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.78);align-items:center;justify-content:center;padding:18px"><button type="button" onclick="event.stopPropagation();closePaymentImage()" style="position:absolute;right:14px;top:14px;width:42px;height:42px;border-radius:50%;background:#fff;color:#064b35;font-size:22px;z-index:2">×</button><img id="b5ImageModalImg" src="" alt="Payment screenshot full view" style="max-width:96vw;max-height:90vh;width:auto;height:auto;object-fit:contain;border-radius:12px;background:#fff" onclick="event.stopPropagation()"></div>
-<script>function openPaymentImage(src){const m=document.getElementById('b5ImageModal'),i=document.getElementById('b5ImageModalImg');if(!m||!i)return;i.src=src;m.style.display='flex'}function closePaymentImage(){const m=document.getElementById('b5ImageModal'),i=document.getElementById('b5ImageModalImg');if(m)m.style.display='none';if(i)i.src=''}</script>
-</body></html>
+<script>
+function levelTrackAdminLogout(){
+  localStorage.removeItem('B5_ADMIN_LOGIN');
+  localStorage.removeItem('B5_ADMIN_TOKEN');
+  fetch('/api/admin/logout',{method:'POST',credentials:'same-origin'}).finally(()=>{
+    try{if(window.parent&&window.parent!==window){window.parent.location.reload();return;}}catch(e){}
+    location.reload();
+  });
+}
+function openPaymentImage(src,paymentId,requestId,senderId,utr){
+  const m=document.getElementById('b5ImageModal'),i=document.getElementById('b5ImageModalImg'),cap=document.getElementById('b5ImageModalCaption');
+  if(!m||!i)return;
+  i.src=withAdminProofAuth(src);
+  if(cap){
+    const parts=[];
+    if(paymentId)parts.push('Payment: '+paymentId);
+    if(requestId)parts.push('Request: '+requestId);
+    if(senderId)parts.push('Sender: '+senderId);
+    if(utr)parts.push('UTR: '+utr);
+    cap.textContent=parts.length?parts.join(' • '):'Payment Proof Verification';
+  }
+  m.style.display='flex';
+}
+function closePaymentImage(){
+  const m=document.getElementById('b5ImageModal'),i=document.getElementById('b5ImageModalImg');
+  if(m)m.style.display='none';
+  if(i)i.src='';
+}
+</script>
+<div id="b5ImageModal" onclick="closePaymentImage()" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(2,21,14,.88);flex-direction:column;align-items:center;justify-content:center;padding:18px;gap:10px">
+  <button type="button" onclick="event.stopPropagation();closePaymentImage()" style="position:absolute;right:16px;top:16px;width:44px;height:44px;border-radius:50%;background:#fff!important;color:#042619!important;font-size:22px;z-index:2">×</button>
+  <div id="b5ImageModalCaption" onclick="event.stopPropagation()" style="background:rgba(4,38,25,.92);color:#F6F4EE;border:1px solid rgba(197,155,56,.45);border-radius:999px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;max-width:92vw;text-align:center">Payment Proof Verification</div>
+  <img id="b5ImageModalImg" src="" alt="Payment screenshot full view" style="max-width:96vw;max-height:82vh;width:auto;height:auto;object-fit:contain;border-radius:14px;background:#fff" onclick="event.stopPropagation()">
+</div>
+</body>
+</html>
