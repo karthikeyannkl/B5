@@ -329,8 +329,29 @@ button,.b5-primary{
 #unifiedMemberFrame.show{display:block}
 .u-hidden{display:none!important}
 @media(max-width:520px){
-  .b5-grid,.detail-grid,.pinbox{grid-template-columns:1fr}
-  header{padding-left:68px!important;padding-right:10px!important}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  .grid,.b5-grid,.detail-grid,.pinbox{grid-template-columns:1fr!important}
+  .member{flex-wrap:wrap}
+  header{padding:8px 8px 8px 58px!important;gap:8px!important;height:auto!important;min-height:60px!important}
+  #unifiedMemberMenuBtn{top:10px!important;left:8px!important;width:40px!important;height:40px!important;font-size:18px!important;border-radius:10px!important}
+  .logo{width:36px!important;height:36px!important;border-radius:10px!important}
+  .brand{min-width:0;flex:1 1 auto;overflow:hidden}
+  .brand b{font-size:13px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand small{font-size:10px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top-actions{gap:5px!important;flex-shrink:0}
+  .top-actions button{padding:6px 8px!important;font-size:10.5px!important;min-height:34px!important}
+  #B5_MEMBER_GATE{padding:12px 8px}
+  #B5_MEMBER_GATE .gatebox{padding:18px 14px;border-radius:18px}
+}
+@media(max-width:390px){
+  header{padding:8px 6px 8px 52px!important;gap:6px!important}
+  #unifiedMemberMenuBtn{left:6px!important;width:38px!important;height:38px!important}
+  .logo{width:32px!important;height:32px!important}
+  .brand b{font-size:12px!important}
+  .brand small{font-size:9.5px!important}
+  .top-actions button{padding:5px 7px!important;font-size:10px!important}
+  main{padding:12px 8px 36px}
+  .card{padding:14px 11px!important}
 }
 </style>
 </head>

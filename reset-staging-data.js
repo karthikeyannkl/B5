@@ -21,6 +21,7 @@ const crypto = require('crypto');
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PROD_DB_ROOT = path.resolve(ROOT_DIR, 'db.json');
 const PROD_DB_DATA = path.resolve(ROOT_DIR, 'data', 'db.json');
+const PROD_D1_STATE = path.resolve(ROOT_DIR, '.wrangler', 'state', 'v3', 'd1');
 
 function verifyNonProductionSafety(targetDbPath) {
   const resolved = path.resolve(targetDbPath);
@@ -30,11 +31,14 @@ function verifyNonProductionSafety(targetDbPath) {
   if (process.env.B5_LOCAL_TEST_ONLY === '0') {
     throw new Error('ABORTED: Staging reset script requires B5_LOCAL_TEST_ONLY=1.');
   }
+  if (process.env.CLOUDFLARE_API_TOKEN && process.env.B5_LOCAL_TEST_ONLY !== '1') {
+    throw new Error('ABORTED: CLOUDFLARE_API_TOKEN detected without B5_LOCAL_TEST_ONLY=1. Refusing to run.');
+  }
   if (process.env.SUPABASE_SECRET_KEY && process.env.B5_LOCAL_TEST_ONLY !== '1') {
     throw new Error('ABORTED: SUPABASE_SECRET_KEY detected without B5_LOCAL_TEST_ONLY=1. Refusing to run.');
   }
-  if (resolved === PROD_DB_ROOT || resolved === PROD_DB_DATA) {
-    throw new Error(`ABORTED: Target database path (${resolved}) points to a primary/production database file.`);
+  if (resolved === PROD_DB_ROOT || resolved === PROD_DB_DATA || resolved.startsWith(PROD_D1_STATE)) {
+    throw new Error(`ABORTED: Target database path (${resolved}) points to a primary/production database.`);
   }
   if (!resolved.startsWith(path.resolve(__dirname))) {
     throw new Error(`ABORTED: Staging reset target (${resolved}) must reside inside the tests/ directory.`);
@@ -351,6 +355,14 @@ function buildStagingDataset(proofsDir) {
       usedBy: null,
       createdAt: '2026-01-01T00:00:00.000Z'
     });
+  }
+
+  for (const m of db.members) {
+    m.isTestAccount = true;
+    m.testTag = 'SAFE_TEST_MODE';
+  }
+  for (const p of db.leveltrackPayments) {
+    p.isTestPayment = true;
   }
 
   return db;

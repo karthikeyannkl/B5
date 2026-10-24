@@ -308,8 +308,28 @@ button,.btn,.primary,.send{
 #unifiedAdminFrame{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147482997;background:#F6F4EE}
 #unifiedAdminFrame.show{display:block}
 @media(max-width:520px){
-  .grid,.pinbox,.detail-grid,.stats{grid-template-columns:1fr}
-  .top,header{padding-left:68px!important;padding-right:10px!important}
+  .grid,.pinbox,.detail-grid,.stats{grid-template-columns:1fr!important}
+  .mh,.lh,.search{flex-wrap:wrap}
+  .top,header{padding:8px 8px 8px 58px!important;gap:8px!important;height:auto!important;min-height:60px!important}
+  #unifiedAdminMenuBtn{top:10px!important;left:8px!important;width:40px!important;height:40px!important;font-size:18px!important;border-radius:10px!important}
+  .logo{width:36px!important;height:36px!important;border-radius:10px!important}
+  .brand{min-width:0;flex:1 1 auto;overflow:hidden}
+  .brand b{font-size:13px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand small{font-size:10px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top-actions{gap:5px!important;flex-shrink:0}
+  .top-actions button{padding:6px 8px!important;font-size:10.5px!important;min-height:34px!important}
+  #B5_ADMIN_GATE{padding:12px 8px}
+  #B5_ADMIN_GATE .gate{padding:18px 14px;border-radius:18px}
+}
+@media(max-width:390px){
+  .top,header{padding:8px 6px 8px 52px!important;gap:6px!important}
+  #unifiedAdminMenuBtn{left:6px!important;width:38px!important;height:38px!important}
+  .logo{width:32px!important;height:32px!important}
+  .brand b{font-size:12px!important}
+  .brand small{font-size:9.5px!important}
+  .top-actions button{padding:5px 7px!important;font-size:10px!important}
+  .wrap{padding:12px 8px 34px}
+  .card{padding:14px 11px!important}
 }
 </style>
 </head>
@@ -324,10 +344,22 @@ button,.btn,.primary,.send{
   <div class="gate">
     <div class="glogo"><img src="b5-logo.png" alt="BORNTOWIN5"></div>
     <h2>BORNTOWIN5 Admin</h2>
-    <div class="b5sub">Emerald Sovereign • Command Center Login</div>
-    <input id="B5_ADMIN_PASSWORD" type="password" placeholder="Enter Admin Password" autocomplete="off">
-    <button onclick="b5AdminLogin()">LOGIN TO ADMIN PORTAL</button>
-    <button class="secondary" onclick="b5ShowChange()">Change Password</button>
+    <div class="b5sub" id="B5_ADMIN_GATE_SUB">Emerald Sovereign • Command Center Login</div>
+    <div id="B5_ADMIN_BOOTSTRAP_BOX" style="display:none">
+      <div class="msgbox" style="margin-bottom:10px;font-size:12px">
+        <b>First-Admin Bootstrap Setup</b><br>
+        Cloudflare D1 database (<code>b5-level-tracking</code>) is connected and empty. Set the initial Admin password to activate the Command Center.
+      </div>
+      <input id="B5_BOOTSTRAP_TOKEN" type="password" placeholder="Bootstrap Token (only if B5_ADMIN_BOOTSTRAP_TOKEN is set)" style="display:none">
+      <input id="B5_BOOTSTRAP_PASSWORD" type="password" placeholder="Create Initial Admin Password (min 4 chars)" autocomplete="new-password">
+      <input id="B5_BOOTSTRAP_CONFIRM" type="password" placeholder="Confirm Initial Admin Password" autocomplete="new-password">
+      <button onclick="b5AdminBootstrap()">COMPLETE FIRST-ADMIN SETUP</button>
+    </div>
+    <div id="B5_ADMIN_LOGIN_BOX">
+      <input id="B5_ADMIN_PASSWORD" type="password" placeholder="Enter Admin Password" autocomplete="off">
+      <button onclick="b5AdminLogin()">LOGIN TO ADMIN PORTAL</button>
+      <button class="secondary" onclick="b5ShowChange()">Change Password</button>
+    </div>
     <div id="B5_ADMIN_ERR">Incorrect password</div>
     <div id="B5_ADMIN_HINT"></div>
     <div id="B5_CHANGE" style="display:none">
@@ -546,6 +578,49 @@ function tab(id){
   if(id==='pwreset')loadPwReset();
 }
 
+async function checkAdminBootstrapStatus(){
+  try{
+    const r=await fetch('/api/admin/bootstrap-status',{cache:'no-store'});
+    const d=await r.json().catch(()=>({}));
+    const bootBox=document.getElementById('B5_ADMIN_BOOTSTRAP_BOX');
+    const loginBox=document.getElementById('B5_ADMIN_LOGIN_BOX');
+    const tokInput=document.getElementById('B5_BOOTSTRAP_TOKEN');
+    if(d&&d.bootstrapRequired){
+      localStorage.removeItem('B5_ADMIN_LOGIN');
+      localStorage.removeItem('B5_ADMIN_TOKEN');
+      document.getElementById('B5_ADMIN_GATE').style.display='flex';
+      if(bootBox)bootBox.style.display='block';
+      if(loginBox)loginBox.style.display='none';
+      if(tokInput)tokInput.style.display=d.tokenRequired?'block':'none';
+      return true;
+    }else{
+      if(bootBox)bootBox.style.display='none';
+      if(loginBox)loginBox.style.display='block';
+      return false;
+    }
+  }catch(_){
+    return false;
+  }
+}
+
+async function b5AdminBootstrap(){
+  const newPassword=document.getElementById('B5_BOOTSTRAP_PASSWORD')?.value||'';
+  const confirmPassword=document.getElementById('B5_BOOTSTRAP_CONFIRM')?.value||'';
+  const bootstrapToken=document.getElementById('B5_BOOTSTRAP_TOKEN')?.value||'';
+  const errEl=document.getElementById('B5_ADMIN_ERR');
+  if(errEl)errEl.style.display='none';
+  try{
+    const d=await api('/api/admin/bootstrap',{method:'POST',body:JSON.stringify({newPassword,confirmPassword,bootstrapToken})});
+    localStorage.setItem('B5_ADMIN_LOGIN','1');
+    if(d.adminToken)localStorage.setItem('B5_ADMIN_TOKEN',d.adminToken);
+    document.getElementById('B5_ADMIN_GATE').style.display='none';
+    await checkAdminBootstrapStatus();
+    loadAdminData();
+  }catch(e){
+    if(errEl){errEl.textContent=e.message;errEl.style.display='block';}
+  }
+}
+
 async function b5AdminLogin(){
   try{
     const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({password:document.getElementById('B5_ADMIN_PASSWORD').value})});
@@ -554,6 +629,9 @@ async function b5AdminLogin(){
     document.getElementById('B5_ADMIN_GATE').style.display='none';
     loadAdminData();
   }catch(e){
+    if(e.message&&e.message.toLowerCase().includes('bootstrap')){
+      await checkAdminBootstrapStatus();
+    }
     const x=document.getElementById('B5_ADMIN_ERR');
     x.textContent=e.message;
     x.style.display='block';
@@ -623,7 +701,9 @@ async function loadAdminData(){
     if(topToday)topToday.textContent=d.todayRegistrations||0;
     const dbLbl=document.getElementById('dbHealthLabel');
     if(dbLbl&&st){
-      dbLbl.textContent=st.supabaseEnabled?'Supabase + Local':'Local Atomic';
+      dbLbl.textContent=(st.d1Enabled||(st.persistence&&st.persistence.mode==='cloudflare-d1'))
+        ?'Cloudflare D1 (DB)'
+        :(st.supabaseEnabled?'Supabase + Local':'Local Atomic');
     }
     document.getElementById('totalSent').textContent=d.pinSummary?.sent||0;
     document.getElementById('used').textContent=d.pinSummary?.used||0;
@@ -788,12 +868,13 @@ window.approvePwReset=async function(id){
 };
 
 document.getElementById('rq')?.addEventListener('input',drawReview);
-window.addEventListener('load',()=>{
+window.addEventListener('load',async()=>{
   setTimeout(()=>{document.getElementById('b5Splash')?.classList.add('hide');},650);
-  if(localStorage.getItem('B5_ADMIN_LOGIN')==='1'){
+  const needsBoot=await checkAdminBootstrapStatus();
+  if(!needsBoot&&localStorage.getItem('B5_ADMIN_LOGIN')==='1'){
     document.getElementById('B5_ADMIN_GATE').style.display='none';
   }
-  loadAdminData();
+  if(!needsBoot)loadAdminData();
 });
 
 (function(){

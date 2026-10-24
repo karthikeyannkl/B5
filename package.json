@@ -4,6 +4,10 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
+    "dev:worker": "npx wrangler dev",
+    "d1:migrate:local": "npx wrangler d1 execute b5-level-tracking --local --file=migrations/0001_b5_level_tracking_schema.sql",
+    "d1:migrate:remote": "npx wrangler d1 execute b5-level-tracking --remote --file=migrations/0001_b5_level_tracking_schema.sql",
+    "deploy:dry-run": "npx wrangler deploy --dry-run",
     "test": "node tests/phase4-qa-suite.js",
     "test:reset": "node tests/reset-staging-data.js"
   },

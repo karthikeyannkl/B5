@@ -31,19 +31,21 @@ body{
   font-size:13.5px;
 }
 .top,header{
-  height:70px!important;
+  min-height:66px!important;
+  height:auto!important;
   background:linear-gradient(135deg,#042619 0%,#083D28 100%)!important;
   color:#fff!important;
   border-bottom:1px solid rgba(197,155,56,.32)!important;
   display:flex!important;
   align-items:center;
-  padding:0 14px 0 72px!important;
-  gap:12px;
+  padding:10px 14px!important;
+  gap:10px;
   position:sticky!important;
   top:0!important;
   z-index:20!important;
   box-shadow:0 8px 24px rgba(4,38,25,.18)!important;
 }
+.brand{min-width:0;flex:1 1 auto;overflow:hidden}
 .top .logo{
   width:44px!important;
   height:44px!important;
@@ -264,13 +266,25 @@ label{font-size:11px;font-weight:800;color:var(--b5-muted);text-transform:upperc
 #ltMembership,#ltReferralLink,#ltReferrals,#ltUpgrade,#ltEarnings,#ltHistory,#ltPayment{scroll-margin-top:86px}
 html,body{overflow-x:hidden;max-width:100vw}
 @media(max-width:520px){
-  .wrap{padding:10px 8px 34px}
-  .top{padding-left:64px!important;padding-right:8px!important}
+  .wrap{padding:10px 8px 34px;max-width:100vw;overflow-x:hidden}
+  .top,header{padding:8px 10px!important;gap:8px!important}
+  .brand b{font-size:13.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand small{font-size:10.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top-actions{gap:6px;flex-shrink:0}
+  .top-actions button{min-height:34px!important;padding:6px 9px!important;font-size:11px!important}
   .topnav{grid-template-columns:1fr;gap:8px}
   .b5-rec-toolbar,.b5-action-grid{grid-template-columns:1fr}
   .copyRow{flex-wrap:wrap}
   .copyRow>b{text-align:left;width:100%;flex:1 1 100%}
   .copyMini{min-height:36px!important;padding:6px 12px!important;font-size:11px!important}
+}
+@media(max-width:390px){
+  .top,header{padding:8px 8px!important;gap:6px!important}
+  .top .logo{width:36px!important;height:36px!important}
+  .brand b{font-size:12.5px!important}
+  .brand small{font-size:9.5px!important}
+  .top-actions button{padding:5px 7px!important;font-size:10.5px!important}
+  .card{padding:14px 11px!important}
 }
 </style>
 </head>

@@ -13,6 +13,7 @@ const { verifyNonProductionSafety, resetStagingDatabase } = require('./reset-sta
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PROD_DB_FILE = path.join(ROOT_DIR, 'db.json');
 const TMP_DB_FILE = path.join(__dirname, 'tmp-test-db.json');
+const TMP_D1_DIR = path.join(__dirname, '.d1-test-state');
 const PORT = 3955;
 const BASE = `http://127.0.0.1:${PORT}`;
 
@@ -49,17 +50,18 @@ async function api(urlPath, opt = {}) {
   return { status: res.status, ok: res.ok, headers: res.headers, body };
 }
 
-function startServer() {
+function startServer(extraEnv = {}) {
   return new Promise((resolve, reject) => {
     const proc = spawn(process.execPath, [path.join(ROOT_DIR, 'server.js')], {
       cwd: ROOT_DIR,
       env: {
         ...process.env,
         PORT: String(PORT),
-        DB_FILE: TMP_DB_FILE,
+        B5_D1_PERSIST_DIR: TMP_D1_DIR,
         B5_LOCAL_TEST_ONLY: '1',
         B5_SENIORITY_TEST_MODE: '0',
-        B5_FRESH_START: '0'
+        B5_FRESH_START: '0',
+        ...extraEnv
       },
       stdio: ['ignore', 'pipe', 'pipe']
     });
@@ -177,30 +179,65 @@ async function runSuite() {
   const prodDbHashBefore = sha256File(PROD_DB_FILE);
   if (fs.existsSync(TMP_DB_FILE)) fs.unlinkSync(TMP_DB_FILE);
   if (fs.existsSync(TMP_DB_FILE + '.tmp')) fs.unlinkSync(TMP_DB_FILE + '.tmp');
+  if (fs.existsSync(TMP_D1_DIR)) fs.rmSync(TMP_D1_DIR, { recursive: true, force: true });
 
   let serverProc = null;
   try {
-    console.log('=== Starting BORNTOWIN5 Complete 28-Scenario Automated QA Suite ===');
-    serverProc = await startServer();
+    console.log('=== Starting BORNTOWIN5 Complete 28-Scenario Automated QA Suite (Cloudflare D1) ===');
+    // Start in un-bootstrapped mode first to verify First-Admin Bootstrap procedure
+    serverProc = await startServer({ B5_LOCAL_TEST_ONLY: '0', B5_ADMIN_PASSWORD: '' });
 
     // =========================================================================
     // 1. DATABASE & ENVIRONMENT TESTS (QA-01 to QA-03)
     // =========================================================================
     const dbStatus = await api('/api/db-status');
+    const bootStatusBefore = await api('/api/admin/bootstrap-status', { skipAuth: true });
+    const bootSetup = await api('/api/admin/bootstrap', {
+      method: 'POST',
+      body: JSON.stringify({ newPassword: 'ADMIN', confirmPassword: 'ADMIN' }),
+      skipAuth: true
+    });
+    const bootStatusAfter = await api('/api/admin/bootstrap-status', { skipAuth: true });
+    const bootDuplicateAttempt = await api('/api/admin/bootstrap', {
+      method: 'POST',
+      body: JSON.stringify({ newPassword: 'HACK', confirmPassword: 'HACK' }),
+      skipAuth: true
+    });
+
+    // Restart with B5_LOCAL_TEST_ONLY=1 for remaining QA tests (keeping the bootstrapped D1 state)
+    await stopServer(serverProc);
+    serverProc = await startServer({ B5_LOCAL_TEST_ONLY: '1' });
+
     record(
       'QA-01',
-      'Database & Environment Configuration Loaded Properly in Isolated Local Mode',
-      dbStatus.ok && dbStatus.body.ok === true && dbStatus.body.persistence === 'local-test' && dbStatus.body.members === 0,
-      `persistence=${dbStatus.body.persistence}, members=${dbStatus.body.members}`
+      'Cloudflare D1 Database (b5-level-tracking / DB) & First-Admin Bootstrap Verified on Empty Schema',
+      dbStatus.ok &&
+        dbStatus.body.ok === true &&
+        dbStatus.body.persistence === 'cloudflare-d1' &&
+        dbStatus.body.database === 'b5-level-tracking' &&
+        dbStatus.body.d1Binding === 'DB' &&
+        dbStatus.body.members === 0 &&
+        bootStatusBefore.body.bootstrapRequired === true &&
+        bootSetup.ok &&
+        Boolean(bootSetup.body.adminToken) &&
+        bootStatusAfter.body.bootstrapRequired === false &&
+        bootDuplicateAttempt.status === 409,
+      `persistence=${dbStatus.body.persistence}, database=${dbStatus.body.database}, binding=${dbStatus.body.d1Binding}, members=${dbStatus.body.members}, bootstrapBefore=${bootStatusBefore.body.bootstrapRequired}, bootstrapAfter=${bootStatusAfter.body.bootstrapRequired}`
     );
 
-    // Test staging reset non-production guardrails
+    // Test staging reset non-production guardrails & Safe Test Mode tagging
     let blockedProdRoot = false;
+    let blockedProdD1 = false;
     let blockedProdEnv = false;
     try {
       verifyNonProductionSafety(PROD_DB_FILE);
     } catch (e) {
       blockedProdRoot = e.message.includes('ABORTED');
+    }
+    try {
+      verifyNonProductionSafety(path.join(ROOT_DIR, '.wrangler', 'state', 'v3', 'd1', 'prod.sqlite'));
+    } catch (e) {
+      blockedProdD1 = e.message.includes('ABORTED');
     }
     const prevNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
@@ -212,12 +249,23 @@ async function runSuite() {
       if (prevNodeEnv === undefined) delete process.env.NODE_ENV;
       else process.env.NODE_ENV = prevNodeEnv;
     }
-    const seededStagingCheck = resetStagingDatabase(path.join(__dirname, 'local-review-db.json'));
+    const stagingJsonPath = path.join(__dirname, 'local-review-db.json');
+    const seededStagingCheck = resetStagingDatabase(stagingJsonPath);
+    const stagingDataRaw = JSON.parse(fs.readFileSync(stagingJsonPath, 'utf8'));
+    const allTaggedAsTest =
+      stagingDataRaw.members.every(m => m.isTestAccount === true && m.testTag === 'SAFE_TEST_MODE') &&
+      stagingDataRaw.leveltrackPayments.every(p => p.isTestPayment === true);
     record(
       'QA-03',
-      'Staging Test Reset Blocked in Production Mode & Repeatable in Isolated Staging',
-      blockedProdRoot && blockedProdEnv && seededStagingCheck.ok && seededStagingCheck.membersCount >= 39 && seededStagingCheck.paymentsCount === 5,
-      `Prod path blocked=${blockedProdRoot}, NODE_ENV=production blocked=${blockedProdEnv}, staging seeded ${seededStagingCheck.membersCount} members & ${seededStagingCheck.paymentsCount} payments`
+      'Staging Test Reset Blocked in Production Mode & Safe Test Mode Tags All Test Accounts/Payments',
+      blockedProdRoot &&
+        blockedProdD1 &&
+        blockedProdEnv &&
+        seededStagingCheck.ok &&
+        seededStagingCheck.membersCount >= 39 &&
+        seededStagingCheck.paymentsCount === 5 &&
+        allTaggedAsTest,
+      `Prod path blocked=${blockedProdRoot}, D1 state blocked=${blockedProdD1}, NODE_ENV=production blocked=${blockedProdEnv}, isTestAccount/isTestPayment=${allTaggedAsTest}`
     );
 
     // =========================================================================
@@ -284,11 +332,28 @@ async function runSuite() {
     const memberCallingMainAdminApi = await fetch(`${BASE}/api/admin/dashboard`, {
       headers: { Authorization: `Bearer ${m1Token}` }
     });
+    // Also verify server-side input validation prevents a member from tampering with level/status/seniority
+    await api(`/api/member/profile/${encodeURIComponent(m1)}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Arun Sovereign',
+        place: 'Chennai',
+        level: 7,
+        status: 'HACKED',
+        levelReachedAt: { 7: '2020-01-01T00:00:00.000Z' },
+        reservedReceiverId: m1
+      })
+    });
+    const m1CheckAfterTamper = await api(`/api/member/dashboard/${encodeURIComponent(m1)}`);
+    const tamperBlocked =
+      Number(m1CheckAfterTamper.body.member?.level) === 1 &&
+      m1CheckAfterTamper.body.member?.rawStatus === 'Verified' &&
+      m1CheckAfterTamper.body.member?.status !== 'HACKED';
     record(
       'QA-06',
-      'Normal Logged-In Member Cannot Call Administrative APIs (Blocked with HTTP 403 Forbidden)',
-      memberCallingAdminApi.status === 403 && memberCallingMainAdminApi.status === 403,
-      `Member token on /api/leveltrack/admin/dashboard=${memberCallingAdminApi.status}, /api/admin/dashboard=${memberCallingMainAdminApi.status}`
+      'Normal Logged-In Member Blocked from Admin APIs (HTTP 403) & Prevented from Tampering with Level/Seniority/Status',
+      memberCallingAdminApi.status === 403 && memberCallingMainAdminApi.status === 403 && tamperBlocked,
+      `Member token on Admin APIs=${memberCallingAdminApi.status}/${memberCallingMainAdminApi.status}; level tamper blocked=${tamperBlocked} (level=${m1CheckAfterTamper.body.member?.level})`
     );
 
     // =========================================================================
@@ -836,6 +901,9 @@ async function runSuite() {
     await stopServer(serverProc);
     if (fs.existsSync(TMP_DB_FILE)) fs.unlinkSync(TMP_DB_FILE);
     if (fs.existsSync(TMP_DB_FILE + '.tmp')) fs.unlinkSync(TMP_DB_FILE + '.tmp');
+    if (fs.existsSync(TMP_D1_DIR)) {
+      try { fs.rmSync(TMP_D1_DIR, { recursive: true, force: true }); } catch (_) {}
+    }
   }
 }
 
