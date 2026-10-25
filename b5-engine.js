@@ -494,24 +494,36 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     const eligible = [];
     for (const m of validMembers) {
       if (seenIds.has(m.memberId)) continue;
+      if (m.excludeFromSeniorityQueue) continue;
       const reached = m.levelReachedAt && m.levelReachedAt[target];
       if (!!reached || Number(m.level || 1) >= target) {
         seenIds.add(m.memberId);
         eligible.push(m);
       }
     }
-    if (firstMember && target >= 2 && !seenIds.has(firstMember.memberId)) {
+    if (firstMember && target >= 2 && !seenIds.has(firstMember.memberId) && !firstMember.excludeFromSeniorityQueue) {
       seenIds.add(firstMember.memberId);
       eligible.push(firstMember);
     }
     eligible.sort((a, b) => {
+      const aLvl = a._seniorityTestOrderByLevel && a._seniorityTestOrderByLevel[target] !== undefined
+        ? Number(a._seniorityTestOrderByLevel[target])
+        : null;
+      const bLvl = b._seniorityTestOrderByLevel && b._seniorityTestOrderByLevel[target] !== undefined
+        ? Number(b._seniorityTestOrderByLevel[target])
+        : null;
+      if (aLvl !== null || bLvl !== null) {
+        const ao = aLvl !== null ? aLvl : 999999;
+        const bo = bLvl !== null ? bLvl : 999999;
+        if (ao !== bo) return ao - bo;
+      }
       if (seniorityTestMode || a._seniorityTestOrder || b._seniorityTestOrder) {
         const ao = Number(a._seniorityTestOrder || 999999);
         const bo = Number(b._seniorityTestOrder || 999999);
         if (ao !== bo) return ao - bo;
       }
-      if (firstMember && a.memberId === firstMember.memberId && b.memberId !== firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder) return -1;
-      if (firstMember && b.memberId === firstMember.memberId && a.memberId !== firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder) return 1;
+      if (firstMember && a.memberId === firstMember.memberId && b.memberId !== firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder && aLvl === null && bLvl === null) return -1;
+      if (firstMember && b.memberId === firstMember.memberId && a.memberId !== firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder && aLvl === null && bLvl === null) return 1;
       const at = (m) => String((m.levelReachedAt && m.levelReachedAt[target]) || m.upgradeDate || m.joinedAt || m.registeredAt || m.createdAt || '');
       const cmp = at(a).localeCompare(at(b));
       return cmp !== 0 ? cmp : String(a.memberId || '').localeCompare(String(b.memberId || ''));
@@ -1009,6 +1021,238 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     });
   }
 
+  function seedB5TestDataset43() {
+    // Configure dummy Admin A/B/C & Trust payment accounts if empty
+    db.paymentSettings = db.paymentSettings || {
+      admins: [],
+      adminRotationIndex: 0,
+      adminRotationByLevel: { 4: 0, 5: 0, 6: 0, 7: 0 },
+      trust: {}
+    };
+    db.paymentSettings.admins = [
+      { id: 'A', name: 'Admin A (Test)', accountHolder: 'B5 TEST ADMIN A', bank: 'B5 TEST BANK (DUMMY)', account: 'TEST-ADMIN-ACCT-001', ifsc: 'TEST0000001', upi: 'b5test.admina@testupi', active: true },
+      { id: 'B', name: 'Admin B (Test)', accountHolder: 'B5 TEST ADMIN B', bank: 'B5 TEST BANK (DUMMY)', account: 'TEST-ADMIN-ACCT-002', ifsc: 'TEST0000002', upi: 'b5test.adminb@testupi', active: true },
+      { id: 'C', name: 'Admin C (Test)', accountHolder: 'B5 TEST ADMIN C', bank: 'B5 TEST BANK (DUMMY)', account: 'TEST-ADMIN-ACCT-003', ifsc: 'TEST0000003', upi: 'b5test.adminc@testupi', active: true }
+    ];
+    db.paymentSettings.adminRotationByLevel = db.paymentSettings.adminRotationByLevel || { 4: 0, 5: 0, 6: 0, 7: 0 };
+    db.paymentSettings.trust = {
+      name: 'B5 Registered Trust (Test)',
+      accountHolder: 'B5 TEST TRUST',
+      bank: 'B5 TEST BANK (DUMMY)',
+      account: 'TEST-TRUST-ACCT-001',
+      ifsc: 'TEST0000009',
+      upi: 'b5test.trust@testupi',
+      active: true
+    };
+
+    const pwHash = hashPassword('B5@123456');
+
+    function upsertTestPin(pinCode, assignedTo, usedBy, usedAt) {
+      let p = db.pins.find(x => x.pin === pinCode);
+      if (!p) {
+        p = {
+          pin: pinCode,
+          assignedTo: assignedTo || null,
+          status: usedBy ? 'USED' : 'AVAILABLE',
+          usedBy: usedBy || null,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          usedAt: usedAt || null,
+          system: true
+        };
+        db.pins.push(p);
+      } else {
+        p.assignedTo = assignedTo || null;
+        p.status = usedBy ? 'USED' : 'AVAILABLE';
+        p.usedBy = usedBy || null;
+        p.usedAt = usedAt || null;
+      }
+      return p;
+    }
+
+    function upsertTestMember(spec) {
+      let m = db.members.find(x => x.memberId === spec.memberId);
+      if (!m) {
+        m = { ...spec };
+        db.members.push(m);
+      } else {
+        Object.assign(m, spec);
+      }
+      return m;
+    }
+
+    // 1. Root Member: B5-TEST-ROOT-001 — BORN TO WIN TEST ROOT
+    const rootStamp = '2026-01-01T00:00:00.000Z';
+    upsertTestPin('PIN-TEST-ROOT-001', null, 'B5-TEST-ROOT-001', rootStamp);
+    upsertTestMember({
+      memberId: 'B5-TEST-ROOT-001',
+      referralId: 'REF-TEST-ROOT-001',
+      name: 'BORN TO WIN TEST ROOT',
+      mobile: '7000990001',
+      email: 'root.test@borntowin5.test',
+      place: 'TEST CITY',
+      referral: 'FIRST MEMBER',
+      level: 1,
+      levelMemberId: 'L1-TEST-ROOT-001',
+      status: 'Verified',
+      joinedAt: rootStamp,
+      registeredAt: rootStamp,
+      levelReachedAt: {},
+      accountHolder: 'BORN TO WIN TEST ROOT',
+      bank: 'B5 TEST BANK (DUMMY)',
+      account: 'TEST-ACCT-ROOT-001',
+      ifsc: 'TEST0000005',
+      branch: 'TEST BRANCH',
+      upi: 'b5test.root001@testupi',
+      profileLocked: true,
+      passwordHash: pwHash,
+      excludeFromSeniorityQueue: true,
+      isTestAccount: true,
+      testTag: 'B5_TEST_DATASET_43'
+    });
+
+    // Agreed Level 2-7 Seniority Order:
+    // L2: Karthi (1), Siva (2), Sathya (3)
+    // L3: Siva (1), Karthi (2), Sathya (3)
+    // L4: Sathya (1), Siva (2), Karthi (3)
+    // L5: Karthi (1), Sathya (2), Siva (3)
+    // L6: Sathya (1), Karthi (2), Siva (3)
+    // L7: Siva (1), Sathya (2), Karthi (3)
+    const leaders = [
+      {
+        memberId: 'B5-TEST-A-001',
+        referralId: 'REF-TEST-A-001',
+        name: 'Karthi Test',
+        mobile: '7000990100',
+        pin: 'PIN-TEST-A-001',
+        childPrefix: 'B5-TEST-A-C',
+        pinPrefix: 'PIN-TEST-A-C',
+        childNamePrefix: 'Karthi Test Child',
+        mobileBase: 7000990100,
+        orderByLevel: { 2: 1, 3: 2, 4: 3, 5: 1, 6: 2, 7: 3 }
+      },
+      {
+        memberId: 'B5-TEST-B-001',
+        referralId: 'REF-TEST-B-001',
+        name: 'Siva Test',
+        mobile: '7000990200',
+        pin: 'PIN-TEST-B-001',
+        childPrefix: 'B5-TEST-B-C',
+        pinPrefix: 'PIN-TEST-B-C',
+        childNamePrefix: 'Siva Test Child',
+        mobileBase: 7000990200,
+        orderByLevel: { 2: 2, 3: 1, 4: 2, 5: 3, 6: 3, 7: 1 }
+      },
+      {
+        memberId: 'B5-TEST-C-001',
+        referralId: 'REF-TEST-C-001',
+        name: 'Sathya Test',
+        mobile: '7000990300',
+        pin: 'PIN-TEST-C-001',
+        childPrefix: 'B5-TEST-C-C',
+        pinPrefix: 'PIN-TEST-C-C',
+        childNamePrefix: 'Sathya Test Child',
+        mobileBase: 7000990300,
+        orderByLevel: { 2: 3, 3: 3, 4: 1, 5: 2, 6: 1, 7: 2 }
+      }
+    ];
+
+    leaders.forEach((ldr, li) => {
+      const joinedStamp = `2026-01-01T00:01:0${li + 1}.000Z`;
+      const reachedAt = {};
+      for (let lvl = 2; lvl <= 7; lvl++) {
+        const rank = ldr.orderByLevel[lvl];
+        reachedAt[lvl] = `2026-01-0${lvl}T00:00:0${rank}.000Z`;
+      }
+      upsertTestPin(ldr.pin, 'B5-TEST-ROOT-001', ldr.memberId, joinedStamp);
+      upsertTestMember({
+        memberId: ldr.memberId,
+        referralId: ldr.referralId,
+        name: ldr.name,
+        mobile: ldr.mobile,
+        email: `${ldr.memberId.toLowerCase()}@borntowin5.test`,
+        place: 'TEST CITY',
+        referral: 'B5-TEST-ROOT-001',
+        level: 1,
+        levelMemberId: `L1-TEST-LDR-00${li + 1}`,
+        status: 'Verified',
+        joinedAt: joinedStamp,
+        registeredAt: joinedStamp,
+        levelReachedAt: reachedAt,
+        accountHolder: ldr.name,
+        bank: 'B5 TEST BANK (DUMMY)',
+        account: `TEST-ACCT-LDR-00${li + 1}`,
+        ifsc: 'TEST0000005',
+        branch: 'TEST BRANCH',
+        upi: `${ldr.memberId.toLowerCase()}@testupi`,
+        profileLocked: true,
+        passwordHash: pwHash,
+        _seniorityTestOrderByLevel: ldr.orderByLevel,
+        isTestAccount: true,
+        testTag: 'B5_TEST_DATASET_43'
+      });
+
+      // 13 Direct Referral Children under each Leader
+      for (let ci = 1; ci <= 13; ci++) {
+        const pad = String(ci).padStart(2, '0');
+        const childId = `${ldr.childPrefix}${pad}`;
+        const childPin = `${ldr.pinPrefix}${pad}`;
+        const childMobile = String(ldr.mobileBase + ci);
+        const childStamp = `2026-01-01T01:${String(li * 15 + ci).padStart(2, '0')}:00.000Z`;
+        upsertTestPin(childPin, ldr.memberId, childId, childStamp);
+        upsertTestMember({
+          memberId: childId,
+          referralId: `REF-${childId.replace(/^B5-/, '')}`,
+          name: `${ldr.childNamePrefix} ${pad}`,
+          mobile: childMobile,
+          email: `${childId.toLowerCase()}@borntowin5.test`,
+          place: 'TEST CITY',
+          referral: ldr.memberId,
+          level: 1,
+          levelMemberId: `L1-${childId.replace(/^B5-TEST-/, '')}`,
+          status: 'Verified',
+          joinedAt: childStamp,
+          registeredAt: childStamp,
+          levelReachedAt: {},
+          accountHolder: `${ldr.childNamePrefix} ${pad}`,
+          bank: 'B5 TEST BANK (DUMMY)',
+          account: `TEST-ACCT-${childId.replace(/^B5-TEST-/, '')}`,
+          ifsc: 'TEST0000005',
+          branch: 'TEST BRANCH',
+          upi: `${childId.toLowerCase()}@testupi`,
+          profileLocked: true,
+          passwordHash: pwHash,
+          isTestAccount: true,
+          testTag: 'B5_TEST_DATASET_43'
+        });
+      }
+    });
+
+    // Also provide 6 available test PINs for live PIN validation & registration checks
+    for (let k = 1; k <= 6; k++) {
+      const availPin = `PIN-TEST-AVAIL-00${k}`;
+      if (!db.pins.some(x => x.pin === availPin)) {
+        db.pins.push({
+          pin: availPin,
+          assignedTo: 'B5-TEST-ROOT-001',
+          status: 'AVAILABLE',
+          usedBy: null,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          usedAt: null,
+          system: true
+        });
+      }
+    }
+  }
+
+  function cleanupB5TestDataset43() {
+    const isTestId = (id) => String(id || '').startsWith('B5-TEST-');
+    db.members = (db.members || []).filter(m => !isTestId(m.memberId) && m.testTag !== 'B5_TEST_DATASET_43');
+    db.pins = (db.pins || []).filter(p => !String(p.pin || '').startsWith('PIN-TEST-') && !isTestId(p.usedBy));
+    db.leveltrackRequests = (db.leveltrackRequests || []).filter(r => !isTestId(r.memberId) && !isTestId(r.reservedReceiverId));
+    db.leveltrackUpgrades = (db.leveltrackUpgrades || []).filter(u => !isTestId(u.memberId) && !isTestId(u.payeeId));
+    db.leveltrackPayments = (db.leveltrackPayments || []).filter(p => !isTestId(p.fromMemberId) && !isTestId(p.receiverMemberId));
+  }
+
   return {
     db,
     smtpConfigured,
@@ -1043,7 +1287,9 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     ltHistory,
     ltDashboard,
     buildAdminDashboardPayload,
-    seedSeniorityTestDataIntoState
+    seedSeniorityTestDataIntoState,
+    seedB5TestDataset43,
+    cleanupB5TestDataset43
   };
 }
 
@@ -1619,7 +1865,12 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       parentId = parent.memberId;
     }
 
-    const memberId = makeMemberId();
+    const reqTestId = String(b.testMemberId || '').trim().toUpperCase();
+    const canUseTestId =
+      /^B5-TEST-[A-Z0-9-]+$/.test(reqTestId) &&
+      (String(env.B5_LOCAL_TEST_ONLY || '') === '1' || String(env.B5_SENIORITY_TEST_MODE || '') === '1') &&
+      !state.members.some(x => x.memberId === reqTestId);
+    const memberId = canUseTestId ? reqTestId : makeMemberId();
     const nowIso = nextMonotonicIso();
     // Strictly sanitize user input so callers can never inject level, status, seniority, or payment fields
     const m = {
@@ -1648,7 +1899,8 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       paymentAccessLocked: false,
       paymentReviewStatus: '',
       passwordHash: hashPassword(suppliedPwd),
-      mustChangePassword: false
+      mustChangePassword: false,
+      ...(canUseTestId ? { isTestAccount: true, testTag: 'B5_TEST_DATASET_43' } : {})
     };
     state.members.push(m);
     pr.status = 'USED';
@@ -2842,6 +3094,7 @@ module.exports = {
   LEVEL_RULES,
   LEVEL_SLOT_CAPACITY,
   PAYMENT_DEADLINE_MS,
+  createSessionContext,
   isBlockedInternalPath,
   handleApiRequest
 };
