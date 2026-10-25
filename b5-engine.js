@@ -4,6 +4,13 @@
  */
 
 const crypto = require('crypto');
+let _d1RepoModule;
+try {
+  _d1RepoModule = require('./d1-repository');
+} catch (_) {
+  const dynReq = typeof module !== 'undefined' && module.require ? module.require.bind(module) : require;
+  _d1RepoModule = dynReq(['.', 'src', 'd1-repository'].join('/'));
+}
 const {
   ensureD1SchemaAndBootstrap,
   loadStateFromD1,
@@ -11,7 +18,7 @@ const {
   commitStateToD1,
   resetD1ToFreshSchema,
   getProofFromD1
-} = require('./d1-repository');
+} = _d1RepoModule;
 
 const LEVEL_RULES = {
   1: { upgrade: 1000, member: 1000, trust: 0, admin: 0, required: 3 },
