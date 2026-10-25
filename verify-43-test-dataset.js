@@ -120,10 +120,35 @@ async function runSuite() {
       assert.strictEqual(uniqueMobiles.size, 43, 'All 43 mobile numbers must be unique');
       assert.ok(testMembers.every(m => m.isTestAccount === true && m.testTag === 'B5_TEST_DATASET_43'), 'All 43 records must be tagged as TEST data');
 
+      // Verify login for Karthi, Siva, and Sathya via both Mobile Number and Member ID
+      for (const [ldrId, ldrMobile] of [
+        ['B5-TEST-A-001', '7000990100'],
+        ['B5-TEST-B-001', '7000990200'],
+        ['B5-TEST-C-001', '7000990300']
+      ]) {
+        const loginByMobile = await api('POST', '/api/member/login', {
+          body: { mobile: ldrMobile, password: 'B5@123456' }
+        });
+        assert.strictEqual(loginByMobile.status, 200, `Login by mobile failed for ${ldrId}`);
+        assert.strictEqual(loginByMobile.body.member.memberId, ldrId);
+        assert.ok(loginByMobile.body.memberToken, `Missing memberToken for ${ldrId}`);
+
+        const loginById = await api('POST', '/api/member/login', {
+          body: { mobile: ldrId, password: 'B5@123456' }
+        });
+        assert.strictEqual(loginById.status, 200, `Login by Member ID failed for ${ldrId}`);
+        assert.strictEqual(loginById.body.member.memberId, ldrId);
+
+        const loginAltPwd = await api('POST', '/api/member/login', {
+          body: { mobile: ldrId, password: 'Test@12345' }
+        });
+        assert.strictEqual(loginAltPwd.status, 200, `Login by alt test password failed for ${ldrId}`);
+      }
+
       pass(
         'T43-01',
-        '43-Member Test Dataset Seeded & Verified Repeatable (Idempotent)',
-        `totalMembers=${testMembers.length}, uniqueIds=${uniqueIds.size}, uniqueMobiles=${uniqueMobiles.size}, allTaggedTest=true`
+        '43-Member Test Dataset Seeded, Login Verified & Repeatable (Idempotent)',
+        `totalMembers=${testMembers.length}, uniqueIds=${uniqueIds.size}, uniqueMobiles=${uniqueMobiles.size}, leaderLogins=OK`
       );
     }
 
