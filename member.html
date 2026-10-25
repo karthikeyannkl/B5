@@ -372,8 +372,8 @@ button,.b5-primary{
     </div>
 
     <section id="b5LoginStep" class="b5-step on">
-      <label>Mobile Number or Member ID</label>
-      <input id="b5LoginMobile" type="text" maxlength="24" placeholder="10-digit Mobile or Member ID (e.g. B5-TEST-A-001)">
+      <label>Mobile Number</label>
+      <input id="b5LoginMobile" type="tel" maxlength="10" placeholder="10 digit Mobile Number">
       <label>Password</label>
       <input id="b5LoginPassword" type="password" maxlength="64" placeholder="Enter Password">
       <button class="b5-primary" onclick="b5Login()">LOGIN TO MEMBER PORTAL</button>
@@ -577,7 +577,7 @@ function b5Tab(x){
 
 async function b5Login(){
   const m=document.getElementById('b5LoginMobile').value.trim(),pw=document.getElementById('b5LoginPassword').value;
-  if(!(/^\d{10}$/.test(m)||/^B5-[A-Z0-9-]+$/i.test(m)))return document.getElementById('b5LoginMsg').textContent='Enter a valid 10-digit Mobile Number or Member ID (e.g. B5-TEST-A-001)';
+  if(!/^\d{10}$/.test(m))return document.getElementById('b5LoginMsg').textContent='Mobile Number must be exactly 10 digits';
   if(!pw)return document.getElementById('b5LoginMsg').textContent='Password is required';
   try{
     const d=await b5api('/api/member/login',{method:'POST',body:JSON.stringify({mobile:m,password:pw})});
@@ -595,7 +595,7 @@ async function b5Login(){
 
 async function b5ForgotPassword(){
   const m=document.getElementById('b5LoginMobile').value.trim();
-  if(!(/^\d{10}$/.test(m)||/^B5-[A-Z0-9-]+$/i.test(m)))return document.getElementById('b5LoginMsg').textContent='Enter your registered 10-digit Mobile Number or Member ID first';
+  if(!/^\d{10}$/.test(m))return document.getElementById('b5LoginMsg').textContent='Enter your registered 10 digit Mobile Number first';
   try{
     const d=await b5api('/api/member/forgot-password',{method:'POST',body:JSON.stringify({mobile:m})});
     document.getElementById('b5LoginMsg').textContent=d.message||'Password reset request sent to Admin.';

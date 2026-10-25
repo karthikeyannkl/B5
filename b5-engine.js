@@ -1022,32 +1022,28 @@ function createSessionContext(db, env = {}, smtpSender = null) {
   }
 
   function seedB5TestDataset43() {
-    // Configure dummy Admin A/B/C & Trust payment accounts only if empty or already test-configured
+    // Configure dummy Admin A/B/C & Trust payment accounts if empty
     db.paymentSettings = db.paymentSettings || {
       admins: [],
       adminRotationIndex: 0,
       adminRotationByLevel: { 4: 0, 5: 0, 6: 0, 7: 0 },
       trust: {}
     };
-    if (!Array.isArray(db.paymentSettings.admins) || db.paymentSettings.admins.length === 0 || db.paymentSettings.admins.every(a => !a.account || String(a.account).startsWith('TEST-'))) {
-      db.paymentSettings.admins = [
-        { id: 'A', name: 'Admin A (Test)', accountHolder: 'B5 TEST ADMIN A', bank: 'B5 TEST BANK (DUMMY)', account: 'TEST-ADMIN-ACCT-001', ifsc: 'TEST0000001', upi: 'b5test.admina@testupi', active: true },
-        { id: 'B', name: 'Admin B (Test)', accountHolder: 'B5 TEST ADMIN B', bank: 'B5 TEST BANK (DUMMY)', account: 'TEST-ADMIN-ACCT-002', ifsc: 'TEST0000002', upi: 'b5test.adminb@testupi', active: true },
-        { id: 'C', name: 'Admin C (Test)', accountHolder: 'B5 TEST ADMIN C', bank: 'B5 TEST BANK (DUMMY)', account: 'TEST-ADMIN-ACCT-003', ifsc: 'TEST0000003', upi: 'b5test.adminc@testupi', active: true }
-      ];
-    }
+    db.paymentSettings.admins = [
+      { id: 'A', name: 'Admin A (Test)', accountHolder: 'B5 TEST ADMIN A', bank: 'B5 TEST BANK (DUMMY)', account: 'TEST-ADMIN-ACCT-001', ifsc: 'TEST0000001', upi: 'b5test.admina@testupi', active: true },
+      { id: 'B', name: 'Admin B (Test)', accountHolder: 'B5 TEST ADMIN B', bank: 'B5 TEST BANK (DUMMY)', account: 'TEST-ADMIN-ACCT-002', ifsc: 'TEST0000002', upi: 'b5test.adminb@testupi', active: true },
+      { id: 'C', name: 'Admin C (Test)', accountHolder: 'B5 TEST ADMIN C', bank: 'B5 TEST BANK (DUMMY)', account: 'TEST-ADMIN-ACCT-003', ifsc: 'TEST0000003', upi: 'b5test.adminc@testupi', active: true }
+    ];
     db.paymentSettings.adminRotationByLevel = db.paymentSettings.adminRotationByLevel || { 4: 0, 5: 0, 6: 0, 7: 0 };
-    if (!db.paymentSettings.trust || !db.paymentSettings.trust.account || String(db.paymentSettings.trust.account).startsWith('TEST-')) {
-      db.paymentSettings.trust = {
-        name: 'B5 Registered Trust (Test)',
-        accountHolder: 'B5 TEST TRUST',
-        bank: 'B5 TEST BANK (DUMMY)',
-        account: 'TEST-TRUST-ACCT-001',
-        ifsc: 'TEST0000009',
-        upi: 'b5test.trust@testupi',
-        active: true
-      };
-    }
+    db.paymentSettings.trust = {
+      name: 'B5 Registered Trust (Test)',
+      accountHolder: 'B5 TEST TRUST',
+      bank: 'B5 TEST BANK (DUMMY)',
+      account: 'TEST-TRUST-ACCT-001',
+      ifsc: 'TEST0000009',
+      upi: 'b5test.trust@testupi',
+      active: true
+    };
 
     const pwHash = hashPassword('B5@123456');
 
@@ -1776,30 +1772,11 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
   }
 
   if (method === 'POST' && pathname === '/api/member/login') {
-    const rawLogin = String(body.mobile || body.memberId || body.loginId || '').trim();
-    const isTestDatasetLogin =
-      /^B5-TEST-(ROOT-001|[ABC]-001|[ABC]-C(0[1-9]|1[0-3]))$/i.test(rawLogin) ||
-      /^7000990(001|100|10[1-9]|11[0-3]|200|20[1-9]|21[0-3]|300|30[1-9]|31[0-3])$/.test(rawLogin);
-    let m = state.members.find(
-      x => x.mobile === rawLogin || String(x.memberId || '').toUpperCase() === rawLogin.toUpperCase()
-    );
-    if (!m && isTestDatasetLogin) {
-      ctx.seedB5TestDataset43();
-      m = state.members.find(
-        x => x.mobile === rawLogin || String(x.memberId || '').toUpperCase() === rawLogin.toUpperCase()
-      );
-    }
+    const m = state.members.find(x => x.mobile === String(body.mobile || '').trim());
     if (!m) return json(404, { error: 'Member not found. Please register first.' });
     const supplied = String(body.password || '');
     if (!m.passwordHash) return json(401, { error: 'Password not set. Please use Forgot Password and contact Admin.' });
-    const isDefaultTestAccount =
-      Boolean(m.isTestAccount) &&
-      String(m.memberId || '').startsWith('B5-TEST-') &&
-      m.passwordHash === hashPassword('B5@123456');
-    const pwdMatches =
-      hashPassword(supplied) === m.passwordHash ||
-      (isDefaultTestAccount && supplied === 'Test@12345');
-    if (!pwdMatches) return json(401, { error: 'Incorrect password' });
+    if (hashPassword(supplied) !== m.passwordHash) return json(401, { error: 'Incorrect password' });
     const memberToken = ctx.createAuthToken({ role: 'member', memberId: m.memberId });
     ctx.notifyMemberEmail(
       m,
@@ -1820,11 +1797,9 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
   }
 
   if (method === 'POST' && pathname === '/api/member/forgot-password') {
-    const rawLogin = String(body.mobile || body.memberId || '').trim();
-    const m = state.members.find(
-      x => x.mobile === rawLogin || String(x.memberId || '').toUpperCase() === rawLogin.toUpperCase()
-    );
-    if (!m) return json(404, { error: 'Mobile number or Member ID not found' });
+    const mobile = String(body.mobile || '').trim();
+    const m = state.members.find(x => x.mobile === mobile);
+    if (!m) return json(404, { error: 'Mobile number not found' });
     const pending = state.passwordResetRequests.find(x => x.memberId === m.memberId && x.status === 'Pending');
     if (pending) return json(200, { ok: true, message: 'Password reset request already sent to Admin.' });
     const prId = 'PR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
@@ -2020,28 +1995,6 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
   }
 
   // 5. LevelTrack Admin APIs
-  if (method === 'POST' && pathname === '/api/leveltrack/admin/seed-test-dataset-43') {
-    ctx.seedB5TestDataset43();
-    await saveChanges();
-    const testMembers = state.members.filter(m => String(m.memberId || '').startsWith('B5-TEST-'));
-    return json(200, {
-      ok: true,
-      message: '43-member isolated B5 test dataset seeded.',
-      testMemberCount: testMembers.length,
-      totalMembers: state.members.length
-    });
-  }
-
-  if (method === 'POST' && pathname === '/api/leveltrack/admin/cleanup-test-dataset-43') {
-    ctx.cleanupB5TestDataset43();
-    await saveChanges();
-    return json(200, {
-      ok: true,
-      message: '43-member isolated B5 test dataset cleaned up.',
-      remainingMembers: state.members.length
-    });
-  }
-
   if (method === 'POST' && pathname === '/api/leveltrack/admin/staging-reset') {
     const isLocalTest = String(env.B5_LOCAL_TEST_ONLY || '') === '1';
     const isProdEnv = String(env.NODE_ENV || '').toLowerCase() === 'production';
