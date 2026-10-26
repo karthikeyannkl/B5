@@ -16,7 +16,124 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+const DEFAULT_CLOUDFLARE_ACCOUNT_ID = '104cb4ae619367e91c5e05d5a712627e';
 const DEFAULT_D1_DATABASE_ID = '66c93b0f-274f-44df-82f0-b310c7c2acdf';
+
+function loadDotEnvIfPresent() {
+  const candidates = [
+    path.join(process.cwd(), '.env'),
+    path.join(__dirname, '.env'),
+    path.join(__dirname, '..', '.env'),
+    '/app/.env'
+  ];
+  for (const envFile of candidates) {
+    try {
+      if (!fs.existsSync(envFile)) continue;
+      const content = fs.readFileSync(envFile, 'utf8');
+      for (const rawLine of content.split(/\r?\n/)) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith('#')) continue;
+        const cleaned = line.replace(/^export\s+/i, '');
+        const eqIdx = cleaned.indexOf('=');
+        if (eqIdx <= 0) continue;
+        const key = cleaned.slice(0, eqIdx).trim();
+        const val = sanitizeEnvValue(cleaned.slice(eqIdx + 1));
+        if (key && (!process.env[key] || !String(process.env[key]).trim())) {
+          process.env[key] = val;
+        }
+      }
+    } catch (_) {}
+  }
+}
+
+function sanitizeEnvValue(val) {
+  let s = String(val || '').replace(/[\r\n\t]+/g, '').trim();
+  while (
+    (s.startsWith('"') && s.endsWith('"') && s.length >= 2) ||
+    (s.startsWith("'") && s.endsWith("'") && s.length >= 2)
+  ) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
+function sanitizeApiToken(rawToken) {
+  let s = sanitizeEnvValue(rawToken);
+  if (/^Authorization\s*:\s*/i.test(s)) {
+    s = s.replace(/^Authorization\s*:\s*/i, '').trim();
+  }
+  if (/^Bearer\s+/i.test(s)) {
+    s = s.replace(/^Bearer\s+/i, '').trim();
+  }
+  if (/^(CLOUDFLARE_API_TOKEN|CF_API_TOKEN|CLOUDFLARE_D1_API_TOKEN)\s*=\s*/i.test(s)) {
+    s = s.replace(/^(CLOUDFLARE_API_TOKEN|CF_API_TOKEN|CLOUDFLARE_D1_API_TOKEN)\s*=\s*/i, '').trim();
+  }
+  return sanitizeEnvValue(s).replace(/\s+/g, '');
+}
+
+async function diagnoseCloudflareTokenStatus(apiToken, accountId) {
+  if (!apiToken) return 'token_missing';
+  try {
+    const userVerifyRes = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const userData = await userVerifyRes.json().catch(() => ({}));
+    if (userVerifyRes.ok && userData && userData.success && userData.result) {
+      return `user_token_${userData.result.status || 'active'}_missing_D1_Edit_permission_or_wrong_account_scope`;
+    }
+    if (accountId && isValidCloudflareAccountId(accountId)) {
+      const acctVerifyRes = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/tokens/verify`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      const acctData = await acctVerifyRes.json().catch(() => ({}));
+      if (acctVerifyRes.ok && acctData && acctData.success && acctData.result) {
+        return `account_token_${acctData.result.status || 'active'}_missing_D1_Edit_permission`;
+      }
+    }
+    const code = userData && userData.errors && userData.errors[0] && userData.errors[0].code;
+    return `token_invalid_or_revoked(verify_code=${code || userVerifyRes.status})`;
+  } catch (_) {
+    return 'token_verify_unreachable';
+  }
+}
+
+function isValidCloudflareAccountId(id) {
+  return /^[0-9a-f]{32}$/i.test(String(id || '').trim());
+}
+
+function isValidD1DatabaseId(id) {
+  const s = String(id || '').trim();
+  return (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s) &&
+    s !== '00000000-0000-0000-0000-000000000000'
+  );
+}
+
+function buildCloudflareAuthHeaders(apiToken, authEmail = '', preferGlobalKeyHeader = false) {
+  const isHex37 = /^[0-9a-f]{37}$/i.test(apiToken);
+  if ((preferGlobalKeyHeader || isHex37) && authEmail) {
+    return {
+      'X-Auth-Email': authEmail,
+      'X-Auth-Key': apiToken,
+      'Content-Type': 'application/json'
+    };
+  }
+  return {
+    'Authorization': `Bearer ${apiToken}`,
+    'Content-Type': 'application/json'
+  };
+}
 
 function resolveWritablePersistDir(preferredDir) {
   const candidates = [
@@ -59,41 +176,108 @@ function findMiniflareModule() {
   return null;
 }
 
-async function resolveCloudflareAccountId(apiToken, explicitAccountId) {
-  if (explicitAccountId) return explicitAccountId;
+async function discoverAccountIdFromApi(apiToken, authEmail = '') {
   if (!apiToken) return '';
   try {
     const res = await fetch('https://api.cloudflare.com/client/v4/accounts?page=1&per_page=5', {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/json'
-      }
+      headers: buildCloudflareAuthHeaders(apiToken, authEmail, false)
     });
     const data = await res.json();
     if (res.ok && data && data.success && Array.isArray(data.result) && data.result.length > 0) {
+      const matchDefault = data.result.find(a => String(a.id || '').toLowerCase() === DEFAULT_CLOUDFLARE_ACCOUNT_ID);
+      if (matchDefault) return String(matchDefault.id);
       return String(data.result[0].id || '');
     }
   } catch (_) {}
   return '';
 }
 
-function createRemoteCloudflareD1Binding({ accountId, apiToken, databaseId }) {
-  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
+async function resolveCloudflareAccountId(apiToken, explicitAccountId, authEmail = '') {
+  const cleanedExplicit = sanitizeEnvValue(explicitAccountId);
+  if (cleanedExplicit && isValidCloudflareAccountId(cleanedExplicit)) {
+    return cleanedExplicit;
+  }
+  if (cleanedExplicit && !isValidCloudflareAccountId(cleanedExplicit)) {
+    console.warn(
+      `[D1 Config Warning] CLOUDFLARE_ACCOUNT_ID format is invalid (expected 32-char hex, length=${cleanedExplicit.length}). Attempting account auto-discovery / verified default.`
+    );
+  }
+  const discovered = await discoverAccountIdFromApi(apiToken, authEmail);
+  if (discovered && isValidCloudflareAccountId(discovered)) {
+    return discovered;
+  }
+  return DEFAULT_CLOUDFLARE_ACCOUNT_ID;
+}
 
-  async function executeRawRequest(sql, params = []) {
+function createRemoteCloudflareD1Binding({ accountId, apiToken, databaseId, authEmail = '' }) {
+  let activeAccountId = isValidCloudflareAccountId(accountId) ? accountId : DEFAULT_CLOUDFLARE_ACCOUNT_ID;
+  const validDatabaseId = isValidD1DatabaseId(databaseId) ? databaseId : DEFAULT_D1_DATABASE_ID;
+  let useGlobalKeyHeaders = false;
+
+  async function postD1Query(targetAccountId, sql, params, preferGlobalKey) {
+    const endpoint = `https://api.cloudflare.com/client/v4/accounts/${targetAccountId}/d1/database/${validDatabaseId}/query`;
     const res = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/json'
-      },
+      headers: buildCloudflareAuthHeaders(apiToken, authEmail, preferGlobalKey),
       body: JSON.stringify({ sql, params })
     });
-    const data = await res.json();
+    let data = {};
+    try {
+      data = await res.json();
+    } catch (_) {}
+    return { res, data };
+  }
+
+  async function executeRawRequest(sql, params = []) {
+    let { res, data } = await postD1Query(activeAccountId, sql, params, useGlobalKeyHeaders);
+
     if (!res.ok || !data.success) {
-      const msg = (data.errors && data.errors[0] && data.errors[0].message) || `D1 HTTP error ${res.status}`;
-      throw new Error(msg);
+      const errCode = data.errors && data.errors[0] && data.errors[0].code;
+      const errMsg = (data.errors && data.errors[0] && data.errors[0].message) || `D1 HTTP error ${res.status}`;
+      const isAuthErr = errCode === 10000 || errCode === 9103 || /authentication error/i.test(errMsg);
+
+      // Retry 1: If explicit accountId was a Zone ID or mismatched account, retry with DEFAULT_CLOUDFLARE_ACCOUNT_ID
+      if (isAuthErr && activeAccountId.toLowerCase() !== DEFAULT_CLOUDFLARE_ACCOUNT_ID) {
+        const retryDefault = await postD1Query(DEFAULT_CLOUDFLARE_ACCOUNT_ID, sql, params, useGlobalKeyHeaders);
+        if (retryDefault.res.ok && retryDefault.data && retryDefault.data.success) {
+          activeAccountId = DEFAULT_CLOUDFLARE_ACCOUNT_ID;
+          res = retryDefault.res;
+          data = retryDefault.data;
+        }
+      }
+
+      // Retry 2: If still failing with auth error and Global API Key headers can be tried
+      if ((!res.ok || !data.success) && isAuthErr && !useGlobalKeyHeaders) {
+        const candidateEmail = authEmail || 'Dorakarthi51@gmail.com';
+        const retryWithOwnerEmail = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${activeAccountId}/d1/database/${validDatabaseId}/query`,
+          {
+            method: 'POST',
+            headers: buildCloudflareAuthHeaders(apiToken, candidateEmail, true),
+            body: JSON.stringify({ sql, params })
+          }
+        );
+        let retryOwnerData = {};
+        try { retryOwnerData = await retryWithOwnerEmail.json(); } catch (_) {}
+        if (retryWithOwnerEmail.ok && retryOwnerData && retryOwnerData.success) {
+          authEmail = candidateEmail;
+          useGlobalKeyHeaders = true;
+          res = retryWithOwnerEmail;
+          data = retryOwnerData;
+        }
+      }
+    }
+
+    if (!res.ok || !data.success) {
+      const errCode = (data.errors && data.errors[0] && data.errors[0].code) || res.status;
+      const rawMsg = (data.errors && data.errors[0] && data.errors[0].message) || `D1 HTTP error ${res.status}`;
+      let diag = `${rawMsg} (code=${errCode}, accountId=${activeAccountId}, databaseId=${validDatabaseId})`;
+      if (/authentication error/i.test(rawMsg) || errCode === 10000 || errCode === 9103) {
+        const tokenDiag = await diagnoseCloudflareTokenStatus(apiToken, activeAccountId);
+        diag = `${rawMsg} (code=${errCode}, accountId=${activeAccountId}, databaseId=${validDatabaseId}, tokenLength=${apiToken.length}, tokenCheck=${tokenDiag} — ensure CLOUDFLARE_API_TOKEN has 'Account -> D1 -> Edit' permission in Cloudflare Dashboard)`;
+      }
+      throw new Error(diag);
     }
     return Array.isArray(data.result) ? data.result : [data.result];
   }
@@ -136,23 +320,34 @@ function createRemoteCloudflareD1Binding({ accountId, apiToken, databaseId }) {
     },
     async batch(statements) {
       if (!Array.isArray(statements) || statements.length === 0) return [];
-      // Combine consecutive parameterless statements into a single multi-statement D1 HTTP call
-      const allParameterless = statements.every(s => !s._params || s._params.length === 0);
-      if (allParameterless) {
-        const combinedSql = statements.map(s => String(s._sql || '').trim().replace(/;$/, '')).join(';\n') + ';';
-        const batchRes = await executeRawRequest(combinedSql, []);
-        return statements.map((_, idx) => {
-          const item = batchRes[idx] || {};
-          return {
-            results: item.results || [],
-            success: true,
-            meta: item.meta || {}
-          };
-        });
-      }
       const results = [];
-      for (const stmt of statements) {
-        results.push(await stmt.all());
+      let idx = 0;
+      while (idx < statements.length) {
+        const stmt = statements[idx];
+        const hasParams = Array.isArray(stmt._params) && stmt._params.length > 0;
+        if (!hasParams) {
+          const group = [];
+          while (
+            idx < statements.length &&
+            (!Array.isArray(statements[idx]._params) || statements[idx]._params.length === 0)
+          ) {
+            group.push(statements[idx]);
+            idx++;
+          }
+          const combinedSql = group.map(s => String(s._sql || '').trim().replace(/;$/, '')).join(';\n') + ';';
+          const batchRes = await executeRawRequest(combinedSql, []);
+          for (let g = 0; g < group.length; g++) {
+            const item = batchRes[g] || {};
+            results.push({
+              results: item.results || [],
+              success: true,
+              meta: item.meta || {}
+            });
+          }
+        } else {
+          results.push(await stmt.all());
+          idx++;
+        }
       }
       return results;
     },
@@ -291,6 +486,22 @@ function createPortableNodeD1Binding(persistDir) {
   function execStatementSync(rawSql, params = [], deferFlush = false) {
     const sql = String(rawSql || '').trim().replace(/\s+/g, ' ');
     if (!sql || /^CREATE\s+(TABLE|INDEX)/i.test(sql) || /^PRAGMA/i.test(sql)) {
+      return { results: [], success: true, meta: { changes: 0 } };
+    }
+
+    // DELETE FROM <table> WHERE <col> = ?
+    const delWhereMatch = sql.match(/^DELETE\s+FROM\s+([a-zA-Z0-9_]+)\s+WHERE\s+([a-zA-Z0-9_]+)\s*=\s*\?$/i);
+    if (delWhereMatch) {
+      const tbl = delWhereMatch[1];
+      const col = delWhereMatch[2];
+      const targetVal = String(params[0] ?? '');
+      if (store.tables[tbl]) {
+        const before = store.tables[tbl].length;
+        store.tables[tbl] = store.tables[tbl].filter(r => String(r[col] ?? '') !== targetVal);
+        const removed = before - store.tables[tbl].length;
+        if (!deferFlush && removed > 0) flushToDisk();
+        return { results: [], success: true, meta: { changes: removed } };
+      }
       return { results: [], success: true, meta: { changes: 0 } };
     }
 
@@ -446,19 +657,71 @@ let _activeMiniflare = null;
 let _activeD1 = null;
 
 async function getD1Binding(options = {}) {
-  const apiToken = options.apiToken || process.env.CLOUDFLARE_API_TOKEN || '';
-  const explicitAccountId = options.accountId || process.env.CLOUDFLARE_ACCOUNT_ID || '';
-  const databaseId = options.databaseId || process.env.CLOUDFLARE_D1_DATABASE_ID || DEFAULT_D1_DATABASE_ID;
+  loadDotEnvIfPresent();
+  const apiToken = sanitizeApiToken(
+    options.apiToken ||
+    process.env.CLOUDFLARE_API_TOKEN ||
+    process.env.CF_API_TOKEN ||
+    process.env.CLOUDFLARE_D1_API_TOKEN ||
+    process.env.CLOUDFLARE_TOKEN ||
+    process.env.CF_TOKEN ||
+    process.env.D1_API_TOKEN ||
+    process.env.CLOUDFLARE_API_KEY ||
+    process.env.CF_API_KEY ||
+    ''
+  );
+  const authEmail = sanitizeEnvValue(
+    options.authEmail ||
+    process.env.CLOUDFLARE_EMAIL ||
+    process.env.CF_API_EMAIL ||
+    process.env.CLOUDFLARE_API_EMAIL ||
+    ''
+  );
+  let explicitAccountId = sanitizeEnvValue(
+    options.accountId ||
+    process.env.CLOUDFLARE_ACCOUNT_ID ||
+    process.env.CF_ACCOUNT_ID ||
+    process.env.D1_ACCOUNT_ID ||
+    ''
+  );
+  let rawDatabaseId = sanitizeEnvValue(
+    options.databaseId ||
+    process.env.CLOUDFLARE_D1_DATABASE_ID ||
+    process.env.D1_DATABASE_ID ||
+    process.env.CF_D1_DATABASE_ID ||
+    DEFAULT_D1_DATABASE_ID
+  );
+
+  // Detect if CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_D1_DATABASE_ID were accidentally swapped
+  if (isValidD1DatabaseId(explicitAccountId) && isValidCloudflareAccountId(rawDatabaseId)) {
+    console.warn('[D1 Config Notice] CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_D1_DATABASE_ID appear swapped; auto-correcting IDs.');
+    const tmp = explicitAccountId;
+    explicitAccountId = rawDatabaseId;
+    rawDatabaseId = tmp;
+  }
+
+  if (!isValidD1DatabaseId(rawDatabaseId)) {
+    if (rawDatabaseId && rawDatabaseId !== '00000000-0000-0000-0000-000000000000') {
+      console.warn(
+        `[D1 Config Warning] CLOUDFLARE_D1_DATABASE_ID format is invalid (expected UUID, length=${rawDatabaseId.length}). Using default b5-level-tracking database ID (${DEFAULT_D1_DATABASE_ID}).`
+      );
+    }
+    rawDatabaseId = DEFAULT_D1_DATABASE_ID;
+  }
+  const databaseId = rawDatabaseId;
   const forceLocal = options.forceLocal ?? (String(process.env.B5_LOCAL_TEST_ONLY || '') === '1');
 
-  if (!forceLocal && apiToken && databaseId && databaseId !== '00000000-0000-0000-0000-000000000000') {
-    const accountId = await resolveCloudflareAccountId(apiToken, explicitAccountId);
-    if (accountId) {
+  if (!forceLocal && apiToken && isValidD1DatabaseId(databaseId)) {
+    const accountId = await resolveCloudflareAccountId(apiToken, explicitAccountId, authEmail);
+    if (accountId && isValidCloudflareAccountId(accountId)) {
+      const remoteDb = createRemoteCloudflareD1Binding({ accountId, apiToken, databaseId, authEmail });
+      remoteDb._mode = 'cloudflare-d1-remote';
       return {
-        DB: createRemoteCloudflareD1Binding({ accountId, apiToken, databaseId }),
+        DB: remoteDb,
         mode: 'cloudflare-d1-remote',
         databaseName: 'b5-level-tracking',
         databaseId,
+        accountId,
         dispose: async () => {}
       };
     }
@@ -490,7 +753,13 @@ async function getD1Binding(options = {}) {
         d1Persist: persistDir
       });
 
-      const db = await mf.getD1Database('DB');
+      const rawDb = await mf.getD1Database('DB');
+      const db = {
+        _mode: 'cloudflare-d1-local',
+        prepare: rawDb.prepare.bind(rawDb),
+        batch: rawDb.batch.bind(rawDb),
+        exec: rawDb.exec.bind(rawDb)
+      };
       const handle = {
         DB: db,
         mode: 'cloudflare-d1-local',
@@ -517,6 +786,7 @@ async function getD1Binding(options = {}) {
   }
 
   const portableDb = createPortableNodeD1Binding(persistDir);
+  portableDb._mode = 'cloudflare-d1-portable-node';
   const portableHandle = {
     DB: portableDb,
     mode: 'cloudflare-d1-portable-node',
@@ -535,5 +805,11 @@ async function getD1Binding(options = {}) {
 module.exports = {
   getD1Binding,
   createRemoteCloudflareD1Binding,
-  createPortableNodeD1Binding
+  createPortableNodeD1Binding,
+  sanitizeEnvValue,
+  sanitizeApiToken,
+  isValidCloudflareAccountId,
+  isValidD1DatabaseId,
+  DEFAULT_CLOUDFLARE_ACCOUNT_ID,
+  DEFAULT_D1_DATABASE_ID
 };

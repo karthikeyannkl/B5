@@ -965,6 +965,84 @@ async function commitStateToD1(d1, prevMap, nextState, extraProofs = []) {
     );
   }
 
+  // Surgical deletion of removed TEST records only (B5-TEST-* / PIN-TEST-* and related test requests/upgrades/payments).
+  // Never deletes non-test / genuine production records.
+  if (prevMap) {
+    const isTestMemberId = id => String(id || '').startsWith('B5-TEST-');
+
+    const nextPayIds = new Set((nextState.leveltrackPayments || []).map(p => p.id));
+    for (const [payId, prevJson] of prevMap.leveltrackPayments.entries()) {
+      if (!nextPayIds.has(payId)) {
+        const parsed = safeJsonParse(prevJson, {});
+        const isTestPay =
+          isTestMemberId(parsed?.fromMemberId) ||
+          isTestMemberId(parsed?.receiverMemberId) ||
+          parsed?.isTestPayment === true ||
+          String(payId || '').startsWith('LTP-TEST-');
+        if (isTestPay) {
+          stmts.push(d1.prepare(`DELETE FROM payment_proofs WHERE payment_id = ?`).bind(String(payId)));
+          stmts.push(d1.prepare(`DELETE FROM leveltrack_payments WHERE id = ?`).bind(String(payId)));
+        }
+      }
+    }
+
+    const nextUpgIds = new Set((nextState.leveltrackUpgrades || []).map(u => u.id));
+    for (const [upgId, prevJson] of prevMap.leveltrackUpgrades.entries()) {
+      if (!nextUpgIds.has(upgId)) {
+        const parsed = safeJsonParse(prevJson, {});
+        const isTestUpg =
+          isTestMemberId(parsed?.memberId) ||
+          isTestMemberId(parsed?.payeeId) ||
+          String(upgId || '').startsWith('LTU-TEST-');
+        if (isTestUpg) {
+          stmts.push(d1.prepare(`DELETE FROM leveltrack_upgrades WHERE id = ?`).bind(String(upgId)));
+        }
+      }
+    }
+
+    const nextReqIds = new Set((nextState.leveltrackRequests || []).map(r => r.id));
+    for (const [reqId, prevJson] of prevMap.leveltrackRequests.entries()) {
+      if (!nextReqIds.has(reqId)) {
+        const parsed = safeJsonParse(prevJson, {});
+        const isTestReq =
+          isTestMemberId(parsed?.memberId) ||
+          isTestMemberId(parsed?.reservedReceiverId) ||
+          String(reqId || '').startsWith('LTR-TEST-');
+        if (isTestReq) {
+          stmts.push(d1.prepare(`DELETE FROM leveltrack_requests WHERE id = ?`).bind(String(reqId)));
+        }
+      }
+    }
+
+    const nextPinCodes = new Set((nextState.pins || []).map(p => p.pin));
+    for (const [pinCode, prevJson] of prevMap.pins.entries()) {
+      if (!nextPinCodes.has(pinCode)) {
+        const parsed = safeJsonParse(prevJson, {});
+        const isTestPin =
+          String(pinCode || '').startsWith('PIN-TEST-') ||
+          isTestMemberId(parsed?.usedBy) ||
+          isTestMemberId(parsed?.assignedTo);
+        if (isTestPin) {
+          stmts.push(d1.prepare(`DELETE FROM pins WHERE pin = ?`).bind(String(pinCode)));
+        }
+      }
+    }
+
+    const nextMemberIds = new Set((nextState.members || []).map(m => m.memberId));
+    for (const [memberId, prevJson] of prevMap.members.entries()) {
+      if (!nextMemberIds.has(memberId)) {
+        const parsed = safeJsonParse(prevJson, {});
+        const isTestMember =
+          isTestMemberId(memberId) ||
+          parsed?.isTestAccount === true ||
+          String(parsed?.testTag || '').startsWith('B5_TEST');
+        if (isTestMember) {
+          stmts.push(d1.prepare(`DELETE FROM members WHERE member_id = ?`).bind(String(memberId)));
+        }
+      }
+    }
+  }
+
   for (const m of (nextState.members || [])) {
     const ser = JSON.stringify(m);
     if (!prevMap || prevMap.members.get(m.memberId) !== ser) {

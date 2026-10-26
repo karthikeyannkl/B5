@@ -1612,13 +1612,25 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
   }
 
   // 1. Health & D1 Persistence Status
+  const actualConnectionMode = String(env.D1_CONNECTION_MODE || (d1 && d1._mode) || 'cloudflare-d1-worker');
+  const isRemoteD1Mode =
+    actualConnectionMode === 'cloudflare-d1-remote' || actualConnectionMode === 'cloudflare-d1-worker';
+  const isPortableFallbackMode = actualConnectionMode === 'cloudflare-d1-portable-node';
+  const d1InitError = String(env.D1_INIT_ERROR || (d1 && d1._initError) || '').trim();
   if (method === 'GET' && pathname === '/api/db-status') {
     return json(200, {
       ok: true,
-      persistence: 'cloudflare-d1',
+      persistence: isPortableFallbackMode ? 'portable-node-fallback' : 'cloudflare-d1',
+      mode: actualConnectionMode,
+      connectionMode: actualConnectionMode,
+      isRemoteD1: isRemoteD1Mode,
+      isPortableFallback: isPortableFallbackMode,
+      productionPersistent: isRemoteD1Mode,
+      initError: d1InitError || null,
       database: 'b5-level-tracking',
       d1Binding: 'DB',
       bootstrapRequired: !state.adminPassword,
+      adminConfigured: !!state.adminPassword,
       members: state.members.length,
       pins: state.pins.length,
       requests: state.leveltrackRequests.length,

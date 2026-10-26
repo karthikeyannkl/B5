@@ -680,14 +680,29 @@ async function runSuite() {
     }
 
     // -------------------------------------------------------------------------
-    // TEST 9: Verify Surgical Test Data Cleanup Preserves Non-Test Members
+    // TEST 9: Verify Surgical Test Data Cleanup in D1 Preserves Non-Test Members
+    //         AND /api/db-status Reports Actual Connection Mode
     // -------------------------------------------------------------------------
     {
-      const st = await loadStateFromD1(d1, 'ADMIN');
-      const snap = buildSnapshotMap(st);
-      const ctx = createSessionContext(st, env);
+      const d1BindingMod = require('../src/d1-node-binding');
+      assert.strictEqual(d1BindingMod.sanitizeApiToken(' "Bearer abc_123-XYZ" \n'), 'abc_123-XYZ');
+      assert.strictEqual(d1BindingMod.isValidCloudflareAccountId('104cb4ae619367e91c5e05d5a712627e'), true);
+      assert.strictEqual(d1BindingMod.isValidCloudflareAccountId('66c93b0f-274f-44df-82f0-b310c7c2acdf'), false);
+      assert.strictEqual(d1BindingMod.isValidD1DatabaseId('66c93b0f-274f-44df-82f0-b310c7c2acdf'), true);
+      assert.strictEqual(d1BindingMod.isValidD1DatabaseId('104cb4ae619367e91c5e05d5a712627e'), false);
 
-      // Add 1 simulated genuine member to prove surgical cleanup preserves non-test records
+      const dbStatusRes = await api('GET', '/api/db-status');
+      assert.strictEqual(dbStatusRes.status, 200);
+      assert.ok(
+        ['cloudflare-d1-local', 'cloudflare-d1-portable-node', 'cloudflare-d1-remote'].includes(dbStatusRes.body.mode),
+        `/api/db-status must report actual connection mode, got ${dbStatusRes.body.mode}`
+      );
+      assert.strictEqual(dbStatusRes.body.connectionMode, dbStatusRes.body.mode);
+
+      const st = await loadStateFromD1(d1, 'ADMIN');
+      const snapBeforeReal = buildSnapshotMap(st);
+
+      // Add 1 simulated genuine member to D1 first to prove surgical cleanup preserves non-test records in D1
       st.members.push({
         memberId: 'B5-REAL01',
         referralId: 'REF-REAL01',
@@ -700,23 +715,38 @@ async function runSuite() {
         registeredAt: new Date().toISOString(),
         passwordHash: 'realhash'
       });
+      await commitStateToD1(d1, snapBeforeReal, st, []);
 
+      // Now run surgical cleanup via API / commitStateToD1 and verify D1 persistence
+      const stWithReal = await loadStateFromD1(d1, 'ADMIN');
+      assert.strictEqual(stWithReal.members.length, 44, '43 test members + 1 genuine member in D1 before cleanup');
+      const snapWithReal = buildSnapshotMap(stWithReal);
+      const ctx = createSessionContext(stWithReal, env);
       ctx.cleanupB5TestDataset43();
-      assert.strictEqual(st.members.length, 1, 'Only non-test member should remain after cleanupB5TestDataset43');
-      assert.strictEqual(st.members[0].memberId, 'B5-REAL01');
+      await commitStateToD1(d1, snapWithReal, stWithReal, []);
 
-      // Re-seed the 43 test dataset cleanly
-      st.members = [];
-      ctx.seedB5TestDataset43();
-      await commitStateToD1(d1, snap, st, []);
+      const afterCleanupD1 = await loadStateFromD1(d1, 'ADMIN');
+      assert.strictEqual(afterCleanupD1.members.length, 1, 'D1 must retain ONLY the 1 genuine member after cleanupB5TestDataset43');
+      assert.strictEqual(afterCleanupD1.members[0].memberId, 'B5-REAL01');
+      assert.strictEqual(afterCleanupD1.leveltrackRequests.length, 0, 'All B5-TEST-* requests must be deleted from D1');
+      assert.strictEqual(afterCleanupD1.leveltrackUpgrades.length, 0, 'All B5-TEST-* upgrades must be deleted from D1');
+      assert.strictEqual(afterCleanupD1.leveltrackPayments.length, 0, 'All B5-TEST-* payments must be deleted from D1');
+
+      // Remove temporary B5-REAL01 test fixture and re-seed the clean 43 test dataset
+      await d1.prepare(`DELETE FROM members WHERE member_id = ?`).bind('B5-REAL01').run();
+      const emptySt = await loadStateFromD1(d1, 'ADMIN');
+      const emptySnap = buildSnapshotMap(emptySt);
+      const cleanCtx = createSessionContext(emptySt, env);
+      cleanCtx.seedB5TestDataset43();
+      await commitStateToD1(d1, emptySnap, emptySt, []);
 
       const finalState = await loadStateFromD1(d1, 'ADMIN');
-      assert.strictEqual(finalState.members.length, 43, 'Clean 43-member test dataset restored');
+      assert.strictEqual(finalState.members.length, 43, 'Clean 43-member test dataset restored in D1');
 
       pass(
         'T43-09',
-        'Isolated Test Cleanup & Clean 43-Member Re-Seed Verified',
-        'Non-test member preserved during cleanup; clean 43-member dataset restored'
+        'Surgical D1 Test Cleanup, Non-Test Member Preservation & /api/db-status Mode Verified',
+        `mode=${dbStatusRes.body.mode}; D1 retained B5-REAL01 (1) & deleted 43 B5-TEST-* members + test payments; clean 43-member dataset restored`
       );
     }
 
