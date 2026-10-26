@@ -282,15 +282,57 @@ async function runSuite() {
       assert.strictEqual(reqSiva.body.request.reservedReceiverId, 'B5-TEST-A-001', 'Siva must be assigned to Karthi (#1 at L2)');
       assert.strictEqual(reqSathya.body.request.reservedReceiverId, 'B5-TEST-A-001', 'Sathya must be assigned to Karthi (#1 at L2)');
 
-      // Complete all 3 upgrades (Admin Assign -> Dummy Proof Submit -> Receiver Confirm -> Admin Final Approve)
+      // Complete all 3 upgrades (Admin Assign -> Verify Payer & Receiver Dashboards Before Proof -> Dummy Proof Submit -> Receiver Confirm -> Admin Final Approve)
       for (const reqRes of [reqKarthi, reqSiva, reqSathya]) {
         const reqObj = reqRes.body.request;
+
+        // Verify duplicate upgrade-request call is rejected with HTTP 400 without creating duplicates
+        const dupReq = await api('POST', '/api/leveltrack/member/upgrade-request', {
+          body: { memberId: reqObj.memberId }
+        });
+        assert.strictEqual(dupReq.status, 400, 'Duplicate upgrade-request must be blocked with HTTP 400');
+        assert.ok(String(dupReq.body.error || '').includes('already pending'));
+
         const assignRes = await api('POST', `/api/leveltrack/admin/requests/${reqObj.id}/assign`, {
           headers: adminHeaders
         });
         assert.strictEqual(assignRes.status, 200);
         const upg = assignRes.body.upgrade;
         const pay = assignRes.body.payment;
+
+        // Verify duplicate assign call is idempotent and creates NO second payment record
+        const dupAssignRes = await api('POST', `/api/leveltrack/admin/requests/${reqObj.id}/assign`, {
+          headers: adminHeaders
+        });
+        assert.strictEqual(dupAssignRes.status, 200);
+        assert.strictEqual(dupAssignRes.body.alreadyAssigned, true, 'Duplicate assign must return alreadyAssigned=true');
+        assert.strictEqual(dupAssignRes.body.payment.id, pay.id, 'Duplicate assign must return the exact same payment ID');
+
+        // 1. Verify PAYER dashboard immediately shows upgrade.payment + bank details BEFORE UTR submission
+        const payerDash = await api('GET', `/api/leveltrack/member/dashboard/${reqObj.memberId}`);
+        assert.strictEqual(payerDash.status, 200);
+        assert.ok(payerDash.body.upgrade, `Payer ${reqObj.memberId} dashboard must have active upgrade`);
+        assert.strictEqual(payerDash.body.upgrade.status, 'Assigned', 'Payer upgrade.status must be Assigned');
+        assert.ok(payerDash.body.upgrade.payment, `Payer ${reqObj.memberId} upgrade.payment must be present immediately after assign`);
+        assert.strictEqual(payerDash.body.upgrade.payment.id, pay.id);
+        assert.ok(payerDash.body.upgrade.payment.bank, 'Payer upgrade.payment must include receiver bank name');
+        assert.ok(payerDash.body.upgrade.payment.account, 'Payer upgrade.payment must include receiver account number');
+        assert.ok(payerDash.body.upgrade.payment.ifsc, 'Payer upgrade.payment must include receiver IFSC');
+        assert.ok(payerDash.body.upgrade.payment.upi, 'Payer upgrade.payment must include receiver UPI');
+
+        // 2. Verify RECEIVER dashboard immediately shows the assigned payment in receiverPayments & incomingPayments BEFORE UTR submission
+        const receiverDashBeforePay = await api('GET', `/api/leveltrack/member/dashboard/${pay.receiverMemberId}`);
+        assert.strictEqual(receiverDashBeforePay.status, 200);
+        const recIncomingMatch = (receiverDashBeforePay.body.incomingPayments || []).filter(p => p.id === pay.id);
+        const recHistoryMatch = (receiverDashBeforePay.body.receiverPayments || []).filter(p => p.id === pay.id);
+        assert.strictEqual(recIncomingMatch.length, 1, `Receiver ${pay.receiverMemberId} incomingPayments must have exactly 1 record for ${pay.id} immediately after assign`);
+        assert.strictEqual(recHistoryMatch.length, 1, `Receiver ${pay.receiverMemberId} receiverPayments must have exactly 1 record for ${pay.id} immediately after assign`);
+        assert.ok(recHistoryMatch[0].bank, 'Receiver payment record must include bank name');
+        assert.ok(recHistoryMatch[0].account, 'Receiver payment record must include account number');
+        assert.ok(recHistoryMatch[0].ifsc, 'Receiver payment record must include IFSC');
+        assert.ok(recHistoryMatch[0].upi, 'Receiver payment record must include UPI ID');
+        assert.strictEqual(recHistoryMatch[0].fromMemberId, reqObj.memberId);
+        assert.strictEqual(recHistoryMatch[0].receiverMemberId, pay.receiverMemberId);
 
         const payRes = await api('POST', `/api/leveltrack/member/upgrade/${upg.id}/pay`, {
           body: {
@@ -678,8 +720,41 @@ async function runSuite() {
       );
     }
 
+    // -------------------------------------------------------------------------
+    // TEST 10: Cross-Member Privacy Guard (Logged-in Member Cannot View Another Member's Dashboard/Profile)
+    // -------------------------------------------------------------------------
+    {
+      const loginKarthi = await api('POST', '/api/member/login', {
+        body: { mobile: 'B5-TEST-A-001', password: 'B5@123456' }
+      });
+      assert.strictEqual(loginKarthi.status, 200);
+      const karthiToken = loginKarthi.body.memberToken;
+      assert.ok(karthiToken, 'Karthi login must return member session token');
+
+      const ownDash = await api('GET', '/api/leveltrack/member/dashboard/B5-TEST-A-001', {
+        headers: { 'x-member-token': karthiToken }
+      });
+      assert.strictEqual(ownDash.status, 200, 'Karthi can view own LevelTrack dashboard');
+
+      const otherDash = await api('GET', '/api/leveltrack/member/dashboard/B5-TEST-B-001', {
+        headers: { 'x-member-token': karthiToken }
+      });
+      assert.strictEqual(otherDash.status, 403, 'Karthi token must be forbidden (HTTP 403) from viewing Siva LevelTrack dashboard');
+
+      const otherProfile = await api('GET', '/api/member/profile/B5-TEST-C-001', {
+        headers: { 'x-member-token': karthiToken }
+      });
+      assert.strictEqual(otherProfile.status, 403, 'Karthi token must be forbidden (HTTP 403) from viewing Sathya profile/bank details');
+
+      pass(
+        'T43-10',
+        'Cross-Member Privacy Guard Verified (HTTP 403 on Other Member Dashboard & Bank Profile)',
+        'ownDashboard=200, otherMemberDashboard=403, otherMemberProfile=403'
+      );
+    }
+
     console.log('\n================================================================');
-    console.log(`ALL ${passed}/9 43-MEMBER TEST DATASET SCENARIOS PASSED`);
+    console.log(`ALL ${passed}/10 43-MEMBER TEST DATASET SCENARIOS PASSED`);
     console.log('================================================================\n');
   } finally {
     await dispose();

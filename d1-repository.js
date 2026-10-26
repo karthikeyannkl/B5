@@ -360,12 +360,15 @@ function mapLtRequestRow(r) {
 }
 
 function mapLtUpgradeRow(r) {
+  const derivedStatus = r.status || (r.admin_approved ? 'Completed' : (r.details_sent ? 'Assigned' : 'Requested'));
   return {
     id: r.id,
     requestId: r.request_id,
     memberId: r.member_id,
     from: Number(r.from_level || 1),
     to: Number(r.to_level || 1),
+    fromLevel: Number(r.from_level || 1),
+    toLevel: Number(r.to_level || 1),
     seniorityLevel: Number(r.seniority_level || 2),
     kind: r.kind || 'LEVEL_UPGRADE',
     amount: Number(r.amount || 0),
@@ -387,7 +390,7 @@ function mapLtUpgradeRow(r) {
     receiverApproved: !!r.receiver_approved,
     adminApproved: !!r.admin_approved,
     paymentAccessLocked: !!r.payment_access_locked,
-    status: r.status || undefined,
+    status: derivedStatus,
     completedAt: r.completed_at || null,
     createdAt: r.created_at
   };
@@ -797,7 +800,7 @@ function prepareUpsertLtUpgrade(d1, u) {
     u.receiverApproved ? 1 : 0,
     u.adminApproved ? 1 : 0,
     u.paymentAccessLocked ? 1 : 0,
-    u.status ? String(u.status) : null,
+    u.status ? String(u.status) : (u.adminApproved ? 'Completed' : (u.detailsSent ? 'Assigned' : 'Requested')),
     u.completedAt ? String(u.completedAt) : null,
     String(u.createdAt || new Date().toISOString())
   );

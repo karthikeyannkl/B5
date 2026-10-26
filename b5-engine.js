@@ -436,8 +436,19 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     const u = db.leveltrackUpgrades.find(x => x.id === p.upgradeId) || null;
     const req = db.leveltrackRequests.find(x => x.id === (p.requestId || u?.requestId)) || null;
     const sender = ltMember(p.fromMemberId) || null;
-    const receiver = ltMember(p.receiverMemberId) || null;
-    const memberPart = (p.parts || []).find(x => x.type === 'member') || null;
+    const receiver = ltMember(p.receiverMemberId || p.payeeId || u?.payeeId || req?.payeeId) || null;
+    const rawParts = Array.isArray(p.parts) ? p.parts : [];
+    const memberPart = rawParts.find(x => x.type === 'member') || null;
+    const acct = memberPart?.accountDetails || {};
+    const payeeId = p.receiverMemberId || p.payeeId || acct.memberId || u?.payeeId || req?.payeeId || receiver?.memberId || '';
+    const payeeName = acct.name || receiver?.name || p.to || u?.payee || req?.payee || payeeId;
+    const payeePhone = acct.mobile || receiver?.mobile || p.payeePhone || u?.payeePhone || req?.payeePhone || '';
+    const accountHolder = acct.accountHolder || receiver?.accountHolder || u?.accountHolder || req?.accountHolder || payeeName || '';
+    const bank = acct.bank || receiver?.bank || u?.bank || req?.bank || '';
+    const account = acct.account || receiver?.account || u?.account || req?.account || '';
+    const ifsc = acct.ifsc || receiver?.ifsc || u?.ifsc || req?.ifsc || '';
+    const branch = acct.branch || receiver?.branch || u?.branch || req?.branch || '';
+    const upi = acct.upi || receiver?.upi || u?.upi || req?.upi || '';
     const expiresAt = paymentDeadlineAt(p);
     const expired = paymentIsExpired(p);
     const isRejected = !!(p.rejected || p.status === 'REJECTED');
@@ -449,8 +460,27 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     const proofRef = memberPart?.proofRef || p.proofRef || (screenshot ? `/api/leveltrack/proofs/${encodeURIComponent(p.id)}/member` : null);
     const verificationStatus = isRejected ? 'REJECTED' : (p.adminApproved ? 'APPROVED' : (p.memberAccepted ? 'RECEIVER_CONFIRMED' : (p.memberPaid ? 'PROOF_SUBMITTED' : 'ASSIGNED')));
     const approvalStatus = isRejected ? 'REJECTED' : (p.adminApproved ? 'APPROVED' : 'PENDING');
+    const enrichedParts = rawParts.map(part => {
+      if (part.type !== 'member') return part;
+      return {
+        ...part,
+        accountDetails: {
+          name: payeeName,
+          memberId: payeeId,
+          mobile: payeePhone,
+          accountHolder,
+          bank,
+          account,
+          ifsc,
+          branch,
+          upi,
+          ...(part.accountDetails || {})
+        }
+      };
+    });
     return {
       ...p,
+      parts: enrichedParts,
       paymentId: p.id,
       requestId: p.requestId || u?.requestId || req?.id || '',
       upgradeId: p.upgradeId || u?.id || '',
@@ -458,9 +488,17 @@ function createSessionContext(db, env = {}, smtpSender = null) {
       fromMemberId: p.fromMemberId,
       senderName: sender?.name || p.from || p.fromMemberId,
       senderMobile: sender?.mobile || '',
-      receiverMemberId: p.receiverMemberId,
-      payeeId: p.payeeId || p.receiverMemberId,
-      receiverName: receiver?.name || p.to || p.receiverMemberId,
+      receiverMemberId: payeeId,
+      payeeId,
+      receiverName: payeeName,
+      payee: payeeName,
+      payeePhone,
+      accountHolder,
+      bank,
+      account,
+      ifsc,
+      branch,
+      upi,
       kind,
       from: fromLevel,
       to: toLevel,
@@ -678,13 +716,14 @@ function createSessionContext(db, env = {}, smtpSender = null) {
   }
 
   function ltHistory(memberId) {
-    return db.leveltrackUpgrades
+    const upgradeItems = db.leveltrackUpgrades
       .filter(u => u.memberId === memberId)
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
       .map(u => {
-        const p = latestPaymentForUpgrade(u.id);
+        const rawP = latestPaymentForUpgrade(u.id);
+        const p = rawP ? paymentPublic(rawP) : null;
         const req = db.leveltrackRequests.find(r => r.id === u.requestId);
-        const expired = p ? paymentIsExpired(p) : false;
+        const expired = rawP ? paymentIsExpired(rawP) : false;
         let statusLabel = 'Pending';
         if (u.adminApproved || p?.adminApproved) statusLabel = 'Approved';
         else if (p?.rejected || p?.status === 'REJECTED' || req?.status === 'Rejected') statusLabel = 'Rejected';
@@ -694,27 +733,81 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         else if (expired || p?.paymentAccessLocked) statusLabel = 'Expired';
         else if (p?.memberAccepted || u.receiverApproved) statusLabel = 'Receiver Confirmed';
         else if (p?.memberPaid || u.memberPaid) statusLabel = 'Proof Submitted';
-        else if (req?.status === 'Assigned') statusLabel = 'Assigned';
+        else if (req?.status === 'Assigned' || u.status === 'Assigned' || u.detailsSent) statusLabel = 'Assigned';
+        const payeeId = p?.receiverMemberId || u.payeeId || req?.payeeId || req?.reservedReceiverId || '';
+        const receiver = payeeId ? ltMember(payeeId) : null;
         return {
           id: u.id,
+          upgradeId: u.id,
           requestId: u.requestId,
           paymentId: p?.id || '',
           kind: u.kind || 'LEVEL_UPGRADE',
           seniorityLevel: u.kind === 'REFERRAL_UPGRADE' ? 2 : (u.seniorityLevel || u.to),
           from: u.from,
           to: u.to,
-          amount: u.amount,
+          amount: Number(u.amount || p?.amount || 0),
+          receiverAmount: Number(p?.receiverAmount || u.amount || 0),
           utr: u.utr || p?.utr || '',
           memberId: u.memberId,
-          payeeId: u.payeeId || p?.receiverMemberId || '',
-          payee: u.payee || p?.to || '',
-          memberPaid: !!u.memberPaid,
-          receiverApproved: !!u.receiverApproved,
-          adminApproved: !!u.adminApproved,
+          payerMemberId: u.memberId,
+          payeeId,
+          receiverMemberId: payeeId,
+          payee: p?.payee || u.payee || req?.payee || receiver?.name || '',
+          receiverName: p?.receiverName || u.payee || req?.payee || receiver?.name || '',
+          payeePhone: p?.payeePhone || u.payeePhone || req?.payeePhone || receiver?.mobile || '',
+          accountHolder: p?.accountHolder || u.accountHolder || req?.accountHolder || receiver?.accountHolder || receiver?.name || '',
+          bank: p?.bank || u.bank || req?.bank || receiver?.bank || '',
+          account: p?.account || u.account || req?.account || receiver?.account || '',
+          ifsc: p?.ifsc || u.ifsc || req?.ifsc || receiver?.ifsc || '',
+          branch: p?.branch || u.branch || req?.branch || receiver?.branch || '',
+          upi: p?.upi || u.upi || req?.upi || receiver?.upi || '',
+          memberPaid: !!(u.memberPaid || p?.memberPaid),
+          receiverApproved: !!(u.receiverApproved || p?.memberAccepted),
+          adminApproved: !!(u.adminApproved || p?.adminApproved),
           statusLabel,
-          date: u.completedAt || u.createdAt
+          date: u.completedAt || u.detailsSentAt || u.createdAt
         };
       });
+    const coveredRequestIds = new Set(upgradeItems.map(x => x.requestId).filter(Boolean));
+    const pendingReqItems = db.leveltrackRequests
+      .filter(r => r.memberId === memberId && !coveredRequestIds.has(r.id))
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+      .map(r => {
+        const payeeId = r.payeeId || r.reservedReceiverId || '';
+        const receiver = payeeId ? ltMember(payeeId) : null;
+        return {
+          id: r.id,
+          upgradeId: r.upgradeId || '',
+          requestId: r.id,
+          paymentId: '',
+          kind: r.kind || 'LEVEL_UPGRADE',
+          seniorityLevel: r.kind === 'REFERRAL_UPGRADE' ? 2 : (r.seniorityLevel || r.to),
+          from: r.from,
+          to: r.to,
+          amount: Number(r.amount || (r.kind === 'REFERRAL_UPGRADE' ? 1000 : (LEVEL_RULES[r.from]?.upgrade || 0))),
+          receiverAmount: Number(r.amount || 0),
+          utr: '',
+          memberId: r.memberId,
+          payerMemberId: r.memberId,
+          payeeId,
+          receiverMemberId: payeeId,
+          payee: r.payee || receiver?.name || '',
+          receiverName: r.payee || receiver?.name || '',
+          payeePhone: r.payeePhone || receiver?.mobile || '',
+          accountHolder: r.accountHolder || receiver?.accountHolder || receiver?.name || '',
+          bank: r.bank || receiver?.bank || '',
+          account: r.account || receiver?.account || '',
+          ifsc: r.ifsc || receiver?.ifsc || '',
+          branch: r.branch || receiver?.branch || '',
+          upi: r.upi || receiver?.upi || '',
+          memberPaid: false,
+          receiverApproved: false,
+          adminApproved: false,
+          statusLabel: r.status || 'Requested',
+          date: r.assignedAt || r.createdAt
+        };
+      });
+    return [...pendingReqItems, ...upgradeItems];
   }
 
   function ltDashboard(memberId) {
@@ -725,18 +818,50 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     const requests = db.leveltrackRequests.filter(r => r.memberId === memberId).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     const pendingRequest = pendingLeveltrackRequest(memberId);
     let upgrade = (pendingRequest && db.leveltrackUpgrades.find(u => u.requestId === pendingRequest.id)) || null;
-    if (upgrade && pendingRequest) upgrade = { ...pendingRequest, ...upgrade };
-    if (!upgrade && pendingRequest && pendingRequest.status === 'Assigned') upgrade = { ...pendingRequest };
-    if (upgrade && String(upgrade.status || '').toLowerCase() === 'assigned') {
-      const saved = latestPaymentForUpgrade(upgrade.id);
+    if (upgrade && pendingRequest) {
+      const resolvedStatus = pendingRequest.status === 'Assigned'
+        ? 'Assigned'
+        : (upgrade.status || pendingRequest.status || (upgrade.detailsSent ? 'Assigned' : 'Requested'));
       upgrade = {
         ...pendingRequest,
         ...upgrade,
+        id: upgrade.id,
+        requestId: pendingRequest.id,
+        status: resolvedStatus
+      };
+    }
+    if (!upgrade && pendingRequest && pendingRequest.status === 'Assigned') {
+      upgrade = { ...pendingRequest, status: 'Assigned' };
+    }
+    const isAssignedUpgrade =
+      upgrade &&
+      (String(upgrade.status || '').toLowerCase() === 'assigned' ||
+        Boolean(upgrade.detailsSent) ||
+        pendingRequest?.status === 'Assigned');
+    if (isAssignedUpgrade) {
+      const saved =
+        latestPaymentForUpgrade(upgrade.id) ||
+        db.leveltrackPayments
+          .filter(p => p.requestId === (upgrade.requestId || pendingRequest?.id) && !p._superseded)
+          .slice(-1)[0] ||
+        null;
+      upgrade = {
+        ...pendingRequest,
+        ...upgrade,
+        id: upgrade.id,
+        requestId: pendingRequest?.id || upgrade.requestId,
+        status: 'Assigned',
         payment: saved
           ? paymentPublic(saved)
           : {
+              id: '',
+              paymentId: '',
+              requestId: pendingRequest?.id || upgrade.requestId || '',
+              upgradeId: upgrade.id || '',
               payee: upgrade.payee || '',
               payeeId: upgrade.payeeId || '',
+              receiverMemberId: upgrade.payeeId || '',
+              receiverName: upgrade.payee || '',
               payeePhone: upgrade.payeePhone || '',
               accountHolder: upgrade.accountHolder || '',
               bank: upgrade.bank || '',
@@ -745,17 +870,24 @@ function createSessionContext(db, env = {}, smtpSender = null) {
               branch: upgrade.branch || '',
               upi: upgrade.upi || '',
               amount: upgrade.amount || 0,
+              receiverAmount: upgrade.amount || 0,
               parts: upgrade.paymentParts || []
             }
       };
     }
     const action = nextMemberAction(m);
-    const payments = db.leveltrackPayments.filter(p => p.receiverMemberId === memberId).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    const payments = db.leveltrackPayments
+      .filter(p => p.receiverMemberId === memberId || p.payeeId === memberId)
+      .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
     const incomingPayments = payments
-      .filter(p => p.memberPaid === true && !p.adminApproved && !p.rejected && p.status !== 'REJECTED' && !p.slotReleased && p.status !== 'RELEASED' && p.status !== 'REASSIGNED' && !p._superseded)
+      .filter(p => !p.adminApproved && !p.rejected && p.status !== 'REJECTED' && !p.slotReleased && p.status !== 'RELEASED' && p.status !== 'REASSIGNED' && !p._superseded)
       .map(paymentPublic);
     const receiverPayments = payments
-      .filter(p => p.memberPaid === true || p.memberAccepted === true || p.adminApproved === true || p.rejected === true || p.status === 'REJECTED')
+      .filter(p => {
+        if (p.rejected || p.status === 'REJECTED' || p.adminApproved || p.memberAccepted || p.memberPaid) return true;
+        if (p._superseded || p.status === 'REASSIGNED' || p.status === 'RELEASED' || p.slotReleased) return false;
+        return true;
+      })
       .map(paymentPublic);
     const earnings = Object.keys(LEVEL_SLOT_CAPACITY).map(l => {
       const level = Number(l);
@@ -1947,6 +2079,9 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   const getProfileParams = method === 'GET' && matchRoute('/api/member/profile/:id', pathname);
   if (getProfileParams) {
+    if (auth.memberId && !auth.isAdmin && auth.memberId !== getProfileParams.id) {
+      return json(403, { error: 'Forbidden: You may only access your own member profile.' });
+    }
     const m = state.members.find(x => x.memberId === getProfileParams.id);
     if (!m) return json(404, { error: 'Member not found' });
     return json(200, { profile: memberProfile(m) });
@@ -1954,6 +2089,9 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   const postProfileParams = method === 'POST' && matchRoute('/api/member/profile/:id', pathname);
   if (postProfileParams) {
+    if (auth.memberId && !auth.isAdmin && auth.memberId !== postProfileParams.id) {
+      return json(403, { error: 'Forbidden: You may only update your own member profile.' });
+    }
     const m = state.members.find(x => x.memberId === postProfileParams.id);
     if (!m) return json(404, { error: 'Member not found' });
     if (m.profileLocked) return json(403, { error: 'Profile is locked. Please contact Admin for changes.' });
@@ -1977,6 +2115,9 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   const memberDashParams = method === 'GET' && matchRoute('/api/member/dashboard/:id', pathname);
   if (memberDashParams) {
+    if (auth.memberId && !auth.isAdmin && auth.memberId !== memberDashParams.id) {
+      return json(403, { error: 'Forbidden: You may only view your own member dashboard.' });
+    }
     const m = state.members.find(x => x.memberId === memberDashParams.id);
     if (!m) return json(404, { error: 'Member not found' });
     const lv = ctx.descendants(m.memberId);
@@ -2129,159 +2270,186 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   const assignReqParams = method === 'POST' && matchRoute('/api/leveltrack/admin/requests/:id/assign', pathname);
   if (assignReqParams) {
-    return withAllocationLock(async () => {
-      const freshState = await loadStateFromD1(d1, configuredAdminPwd);
-      const freshMap = buildSnapshotMap(freshState);
-      const freshCtx = createSessionContext(freshState, env, smtpSender);
+    const assignLockKey = `ASSIGN:${assignReqParams.id}`;
+    if (activeMutationLocks.has(assignLockKey)) {
+      return json(409, { error: 'Payment details assignment is already in progress for this request.' });
+    }
+    activeMutationLocks.add(assignLockKey);
+    try {
+      return await withAllocationLock(async () => {
+        const freshState = await loadStateFromD1(d1, configuredAdminPwd);
+        const freshMap = buildSnapshotMap(freshState);
+        const freshCtx = createSessionContext(freshState, env, smtpSender);
 
-      const r = freshState.leveltrackRequests.find(x => x.id === assignReqParams.id);
-      if (!r) return json(404, { error: 'Upgrade request not found' });
-      if (r.status === 'Assigned') {
-        const u = freshState.leveltrackUpgrades.find(x => x.requestId === r.id);
-        const payment = u ? freshCtx.latestPaymentForUpgrade(u.id) : null;
-        if (u && payment) return json(200, { ok: true, alreadyAssigned: true, request: r, upgrade: u, payment: freshCtx.paymentPublic(payment) });
-        return json(409, { error: 'Request is marked Assigned but its payment record is missing. Please refresh Admin and retry.' });
-      }
-      if (r.status !== 'Requested') return json(400, { error: 'Request is not pending' });
-      const m = freshCtx.ltMember(r.memberId);
-      if (!m) return json(404, { error: 'Member not found' });
-      if (m.paymentAccessLocked) return json(423, { error: 'Member payment access is locked pending Admin review.' });
-      const isReferral = r.kind === 'REFERRAL_UPGRADE';
-      const targetLevel = isReferral ? 2 : Number(r.to);
-      const amount = isReferral ? 1000 : Number(LEVEL_RULES[r.from]?.upgrade || 0);
-      if (!amount) return json(400, { error: 'Upgrade amount not configured' });
-      const autoReceiver = freshCtx.nextSeniorReceiver(targetLevel, m.memberId, { requestId: r.id });
-      const receiver = autoReceiver ? freshCtx.ltMember(autoReceiver.memberId) : null;
-      if (!receiver) return json(400, { error: 'No eligible seniority receiver with available slot capacity is available for this level.' });
-      const sr = isReferral ? { upgrade: amount, parts: [{ type: 'member', label: 'MEMBER / RECEIVER', amount }] } : splitRule(r.from);
-      const parts = sr.parts.map(x => ({ ...x }));
-      const rec = parts.find(x => x.type === 'member');
-      if (rec) {
-        rec.accountDetails = {
-          name: receiver.name,
-          memberId: receiver.memberId,
-          mobile: receiver.mobile,
+        const r = freshState.leveltrackRequests.find(x => x.id === assignReqParams.id);
+        if (!r) return json(404, { error: 'Upgrade request not found' });
+        if (r.status === 'Assigned') {
+          const u = freshState.leveltrackUpgrades.find(x => x.requestId === r.id);
+          const payment = u ? freshCtx.latestPaymentForUpgrade(u.id) : null;
+          if (u && payment) {
+            u.status = 'Assigned';
+            return json(200, { ok: true, alreadyAssigned: true, request: r, upgrade: u, payment: freshCtx.paymentPublic(payment) });
+          }
+          return json(409, { error: 'Request is marked Assigned but its payment record is missing. Please refresh Admin and retry.' });
+        }
+        if (r.status !== 'Requested') return json(400, { error: 'Request is not pending' });
+        const m = freshCtx.ltMember(r.memberId);
+        if (!m) return json(404, { error: 'Member not found' });
+        if (m.paymentAccessLocked) return json(423, { error: 'Member payment access is locked pending Admin review.' });
+        const isReferral = r.kind === 'REFERRAL_UPGRADE';
+        const targetLevel = isReferral ? 2 : Number(r.to);
+        const amount = isReferral ? 1000 : Number(LEVEL_RULES[r.from]?.upgrade || 0);
+        if (!amount) return json(400, { error: 'Upgrade amount not configured' });
+        const autoReceiver = freshCtx.nextSeniorReceiver(targetLevel, m.memberId, { requestId: r.id });
+        const receiver = autoReceiver ? freshCtx.ltMember(autoReceiver.memberId) : null;
+        if (!receiver) return json(400, { error: 'No eligible seniority receiver with available slot capacity is available for this level.' });
+        const sr = isReferral ? { upgrade: amount, parts: [{ type: 'member', label: 'MEMBER / RECEIVER', amount }] } : splitRule(r.from);
+        const parts = sr.parts.map(x => ({ ...x }));
+        const rec = parts.find(x => x.type === 'member');
+        if (rec) {
+          rec.accountDetails = {
+            name: receiver.name || receiver.memberId,
+            memberId: receiver.memberId,
+            mobile: receiver.mobile || '',
+            accountHolder: receiver.accountHolder || receiver.name || receiver.memberId,
+            bank: receiver.bank || '',
+            account: receiver.account || '',
+            ifsc: receiver.ifsc || '',
+            branch: receiver.branch || '',
+            upi: receiver.upi || ''
+          };
+        }
+        const tr = parts.find(x => x.type === 'trust');
+        if (tr) tr.accountDetails = { ...freshState.paymentSettings.trust };
+        const ap = parts.findIndex(x => x.type === 'admin');
+        if (ap >= 0) {
+          const aa = freshCtx.allocateAdminAccountForRequest(r);
+          if (!aa) return json(400, { error: 'No active Admin account configured' });
+          parts[ap].accountDetails = aa;
+          parts[ap].adminAccountId = aa.id;
+        }
+        const now = nextMonotonicIso();
+        let u = freshState.leveltrackUpgrades.find(x => x.requestId === r.id);
+        if (!u) {
+          u = {
+            id: 'LTU-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
+            requestId: r.id,
+            memberId: m.memberId,
+            from: r.from,
+            to: r.to,
+            kind: r.kind || 'LEVEL_UPGRADE',
+            seniorityLevel: targetLevel,
+            status: 'Assigned',
+            createdAt: now
+          };
+          freshState.leveltrackUpgrades.push(u);
+        }
+        Object.assign(r, {
+          status: 'Assigned',
+          upgradeId: u.id,
+          reservedReceiverId: receiver.memberId,
+          reservedPosition: autoReceiver.position,
+          assignedAt: now,
+          seniorityLevel: targetLevel,
+          payee: receiver.name || '',
           accountHolder: receiver.accountHolder || receiver.name || '',
-          bank: receiver.bank || '',
+          payeeId: receiver.memberId,
+          payeePhone: receiver.mobile || '',
+          amount,
           account: receiver.account || '',
+          bank: receiver.bank || '',
           ifsc: receiver.ifsc || '',
           branch: receiver.branch || '',
-          upi: receiver.upi || ''
-        };
-      }
-      const tr = parts.find(x => x.type === 'trust');
-      if (tr) tr.accountDetails = { ...freshState.paymentSettings.trust };
-      const ap = parts.findIndex(x => x.type === 'admin');
-      if (ap >= 0) {
-        const aa = freshCtx.allocateAdminAccountForRequest(r);
-        if (!aa) return json(400, { error: 'No active Admin account configured' });
-        parts[ap].accountDetails = aa;
-        parts[ap].adminAccountId = aa.id;
-      }
-      const now = nextMonotonicIso();
-      let u = freshState.leveltrackUpgrades.find(x => x.requestId === r.id);
-      if (!u) {
-        u = {
-          id: 'LTU-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
-          requestId: r.id,
-          memberId: m.memberId,
-          from: r.from,
-          to: r.to,
+          upi: receiver.upi || '',
+          paymentParts: parts
+        });
+        Object.assign(u, {
+          status: 'Assigned',
+          amount,
           kind: r.kind || 'LEVEL_UPGRADE',
           seniorityLevel: targetLevel,
-          createdAt: now
-        };
-        freshState.leveltrackUpgrades.push(u);
-      }
-      Object.assign(r, {
-        status: 'Assigned',
-        upgradeId: u.id,
-        reservedReceiverId: receiver.memberId,
-        reservedPosition: autoReceiver.position,
-        assignedAt: now,
-        seniorityLevel: targetLevel,
-        payee: receiver.name || '',
-        accountHolder: receiver.accountHolder || receiver.name || '',
-        payeeId: receiver.memberId,
-        payeePhone: receiver.mobile || '',
-        amount,
-        account: receiver.account || '',
-        bank: receiver.bank || '',
-        ifsc: receiver.ifsc || '',
-        branch: receiver.branch || '',
-        upi: receiver.upi || '',
-        paymentParts: parts
-      });
-      Object.assign(u, {
-        amount,
-        kind: r.kind || 'LEVEL_UPGRADE',
-        seniorityLevel: targetLevel,
-        payee: r.payee,
-        accountHolder: r.accountHolder,
-        payeeId: r.payeeId,
-        payeePhone: r.payeePhone,
-        account: r.account,
-        bank: r.bank,
-        ifsc: r.ifsc,
-        branch: r.branch,
-        upi: r.upi,
-        paymentParts: parts,
-        detailsSent: true,
-        detailsSentAt: now
-      });
-      for (const prev of freshState.leveltrackPayments) {
-        if (prev.upgradeId === u.id && !prev.adminApproved) {
-          prev._superseded = true;
-          if (prev.status === 'PENDING') prev.status = 'REASSIGNED';
+          payee: r.payee,
+          accountHolder: r.accountHolder,
+          payeeId: r.payeeId,
+          payeePhone: r.payeePhone,
+          account: r.account,
+          bank: r.bank,
+          ifsc: r.ifsc,
+          branch: r.branch,
+          upi: r.upi,
+          paymentParts: parts,
+          detailsSent: true,
+          detailsSentAt: now
+        });
+        for (const prev of freshState.leveltrackPayments) {
+          if (prev.upgradeId === u.id && !prev.adminApproved) {
+            prev._superseded = true;
+            if (prev.status === 'PENDING') prev.status = 'REASSIGNED';
+          }
         }
-      }
-      const payment = {
-        id: 'LTP-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
-        requestId: r.id,
-        upgradeId: u.id,
-        kind: r.kind || 'LEVEL_UPGRADE',
-        fromLevel: r.from,
-        toLevel: r.to,
-        seniorityLevel: targetLevel,
-        fromMemberId: m.memberId,
-        receiverMemberId: receiver.memberId,
-        payeeId: receiver.memberId,
-        from: m.name,
-        to: receiver.name,
-        amount,
-        parts: parts.map(x => ({ ...x, status: 'PENDING', utr: '', screenshot: null, proofRef: null })),
-        memberPaid: false,
-        memberAccepted: false,
-        adminApproved: false,
-        createdAt: now,
-        detailsSentAt: now,
-        expiresAt: new Date(Date.now() + PAYMENT_DEADLINE_MS).toISOString(),
-        status: 'PENDING'
-      };
-      freshState.leveltrackPayments.push(payment);
-      freshState.leveltrackMessages.push({
-        to: m.memberId,
-        message: r.kind === 'REFERRAL_UPGRADE'
-          ? `Upgrade payment details sent. Seniority Level L2. Total ₹${amount.toLocaleString()}.`
-          : `Payment details sent for L${r.from} → L${r.to}. Total ₹${amount.toLocaleString()}.`,
-        at: now
+        const payment = {
+          id: 'LTP-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
+          requestId: r.id,
+          upgradeId: u.id,
+          kind: r.kind || 'LEVEL_UPGRADE',
+          fromLevel: r.from,
+          toLevel: r.to,
+          seniorityLevel: targetLevel,
+          fromMemberId: m.memberId,
+          receiverMemberId: receiver.memberId,
+          payeeId: receiver.memberId,
+          from: m.name,
+          to: receiver.name,
+          payee: r.payee,
+          payeePhone: r.payeePhone,
+          accountHolder: r.accountHolder,
+          bank: r.bank,
+          account: r.account,
+          ifsc: r.ifsc,
+          branch: r.branch,
+          upi: r.upi,
+          amount,
+          parts: parts.map(x => ({ ...x, status: 'PENDING', utr: '', screenshot: null, proofRef: null })),
+          memberPaid: false,
+          memberAccepted: false,
+          adminApproved: false,
+          createdAt: now,
+          detailsSentAt: now,
+          expiresAt: new Date(Date.now() + PAYMENT_DEADLINE_MS).toISOString(),
+          status: 'PENDING'
+        };
+        freshState.leveltrackPayments.push(payment);
+        freshState.leveltrackMessages.push({
+          to: m.memberId,
+          message: r.kind === 'REFERRAL_UPGRADE'
+            ? `Upgrade payment details sent. Seniority Level L2. Total ₹${amount.toLocaleString()} (Payment ID: ${payment.id}, Receiver: ${receiver.name} • ${receiver.memberId}).`
+            : `Payment details sent for L${r.from} → L${r.to}. Total ₹${amount.toLocaleString()} (Payment ID: ${payment.id}, Receiver: ${receiver.name} • ${receiver.memberId}).`,
+          at: now
+        });
+        freshState.leveltrackMessages.push({
+          to: receiver.memberId,
+          message: `Incoming payment assigned to you (${payment.id}, Req: ${r.id}) from ${m.name} (${m.memberId}) for ${r.kind === 'REFERRAL_UPGRADE' ? 'Additional Upgrade (L2)' : `L${r.from} → L${r.to}`}. Check Receiver Confirmation.`,
+          at: now
+        });
+        freshCtx.notifyMemberEmail(
+          m,
+          'BORNTOWIN5 - Upgrade Payment Details Assigned',
+          `Hello ${m.name},\n\nAdmin has assigned payment details for your ${r.kind === 'REFERRAL_UPGRADE' ? 'Advanced Referral Upgrade (Seniority L2)' : 'Level ' + r.from + ' to Level ' + r.to + ' upgrade'}.\nRequest ID: ${r.id}\nPayment ID: ${payment.id}\nTotal amount: ₹${amount.toLocaleString()}\nPlease sign in to view the verified payment instructions.`,
+          { eventType: 'PAYMENT_DETAILS_ASSIGNED_PAYER', eventKey: `ASSIGN_PAYER:${r.id}:${payment.id}`, metadata: { requestId: r.id, paymentId: payment.id, memberId: m.memberId } }
+        );
+        freshCtx.notifyMemberEmail(
+          receiver,
+          'BORNTOWIN5 - Incoming Payment Assigned',
+          `Hello ${receiver.name},\n\nA payment request has been assigned to you from member ${m.memberId} (${m.name}).\nRequest ID: ${r.id}\nPayment ID: ${payment.id}\nPlease sign in to the Receiver page to review payment proof when submitted.`,
+          { eventType: 'PAYMENT_ASSIGNED_RECEIVER', eventKey: `ASSIGN_RECEIVER:${r.id}:${payment.id}`, metadata: { requestId: r.id, paymentId: payment.id, receiverMemberId: receiver.memberId } }
+        );
+        await commitStateToD1(d1, freshMap, freshState, []);
+        lastD1SaveAt = new Date().toISOString();
+        return json(200, { ok: true, request: r, upgrade: u, payment: freshCtx.paymentPublic(payment) });
       });
-      freshCtx.notifyMemberEmail(
-        m,
-        'BORNTOWIN5 - Upgrade Payment Details Assigned',
-        `Hello ${m.name},\n\nAdmin has assigned payment details for your ${r.kind === 'REFERRAL_UPGRADE' ? 'Advanced Referral Upgrade (Seniority L2)' : 'Level ' + r.from + ' to Level ' + r.to + ' upgrade'}.\nRequest ID: ${r.id}\nPayment ID: ${payment.id}\nTotal amount: ₹${amount.toLocaleString()}\nPlease sign in to view the verified payment instructions.`,
-        { eventType: 'PAYMENT_DETAILS_ASSIGNED_PAYER', eventKey: `ASSIGN_PAYER:${r.id}:${payment.id}`, metadata: { requestId: r.id, paymentId: payment.id, memberId: m.memberId } }
-      );
-      freshCtx.notifyMemberEmail(
-        receiver,
-        'BORNTOWIN5 - Incoming Payment Assigned',
-        `Hello ${receiver.name},\n\nA payment request has been assigned to you from member ${m.memberId} (${m.name}).\nRequest ID: ${r.id}\nPayment ID: ${payment.id}\nPlease sign in to the Receiver page to review payment proof when submitted.`,
-        { eventType: 'PAYMENT_ASSIGNED_RECEIVER', eventKey: `ASSIGN_RECEIVER:${r.id}:${payment.id}`, metadata: { requestId: r.id, paymentId: payment.id, receiverMemberId: receiver.memberId } }
-      );
-      await commitStateToD1(d1, freshMap, freshState, []);
-      lastD1SaveAt = new Date().toISOString();
-      return json(200, { ok: true, request: r, upgrade: u, payment: freshCtx.paymentPublic(payment) });
-    });
+    } finally {
+      activeMutationLocks.delete(assignLockKey);
+    }
   }
 
   const resendReqParams = method === 'POST' && matchRoute('/api/leveltrack/admin/requests/:id/resend-details', pathname);
@@ -2868,185 +3036,215 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
   // 6. LevelTrack Member APIs
   const ltMemberDashParams = method === 'GET' && matchRoute('/api/leveltrack/member/dashboard/:id', pathname);
   if (ltMemberDashParams) {
+    if (auth.memberId && !auth.isAdmin && auth.memberId !== ltMemberDashParams.id) {
+      return json(403, { error: 'Forbidden: You may only view your own LevelTrack dashboard and payment details.' });
+    }
     const d = ctx.ltDashboard(ltMemberDashParams.id);
     if (!d) return json(404, { error: 'Member not found' });
     return json(200, d);
   }
 
   if (method === 'POST' && pathname === '/api/leveltrack/member/upgrade-request') {
-    return withAllocationLock(async () => {
-      const freshState = await loadStateFromD1(d1, configuredAdminPwd);
-      const freshMap = buildSnapshotMap(freshState);
-      const freshCtx = createSessionContext(freshState, env, smtpSender);
+    const reqLockKey = `UPG_REQ:${String(body?.memberId || '')}`;
+    if (activeMutationLocks.has(reqLockKey)) {
+      return json(409, { error: 'Upgrade request submission already in progress.' });
+    }
+    activeMutationLocks.add(reqLockKey);
+    try {
+      return await withAllocationLock(async () => {
+        const freshState = await loadStateFromD1(d1, configuredAdminPwd);
+        const freshMap = buildSnapshotMap(freshState);
+        const freshCtx = createSessionContext(freshState, env, smtpSender);
 
-      const m = freshCtx.ltMember(body.memberId);
-      if (!m) return json(404, { error: 'Member not found' });
-      if (m.paymentAccessLocked) return json(423, { error: 'Your payment access is locked pending Admin review.' });
-      const pending = freshCtx.pendingLeveltrackRequest(m.memberId);
-      if (pending) return json(400, { error: 'Upgrade request already pending' });
-      const action = freshCtx.nextMemberAction(m);
-      if (action.type !== 'LEVEL_UPGRADE') {
-        return json(400, { error: action.type === 'REFERRAL_UPGRADE' ? 'Complete the current Upgrade first.' : 'The next level upgrade is not unlocked yet.' });
-      }
-      const from = Number(m.level || 1);
-      const to = from + 1;
-      if (from >= 7) return json(400, { error: 'Level 7 is the final level' });
-      const need = { 1: 3, 2: 5, 3: 7, 4: 9, 5: 11, 6: 13 }[from] || 0;
-      if (freshCtx.direct(m.memberId).length < need) {
-        return json(400, { error: `Need ${need} direct referrals for Level ${from} → Level ${to}.` });
-      }
-      const reserved = freshCtx.nextSeniorReceiver(to, m.memberId);
-      const now = nextMonotonicIso();
-      const r = {
-        id: 'LTR-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
-        memberId: m.memberId,
-        from,
-        to,
-        seniorityLevel: to,
-        kind: 'LEVEL_UPGRADE',
-        status: 'Requested',
-        reservedReceiverId: reserved?.memberId || null,
-        reservedPosition: reserved?.position || null,
-        reservedAt: reserved ? now : null,
-        date: now.slice(0, 10),
-        createdAt: now
-      };
-      freshState.leveltrackRequests.push(r);
-      freshState.leveltrackMessages.push({ to: 'ADMIN', message: `New LevelTrack upgrade request: ${m.name} — L${from} → L${to}.`, at: now });
-      freshCtx.notifyMemberEmail(
-        m,
-        'BORNTOWIN5 - Upgrade Request Received',
-        `Hello ${m.name},\n\nYour upgrade request (${r.from} → ${r.to}) has been received and is waiting for Admin processing.\nRequest ID: ${r.id}`,
-        { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId, from, to } }
-      );
-      freshCtx.notifyAdminEmail(
-        'BORNTOWIN5 - New Upgrade Request Submitted',
-        `Member ${m.name} (${m.memberId}) submitted Level ${from} → Level ${to} upgrade request (${r.id}).`,
-        { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT_ADMIN:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId } }
-      );
-      await commitStateToD1(d1, freshMap, freshState, []);
-      lastD1SaveAt = new Date().toISOString();
-      return json(200, { ok: true, request: r });
-    });
+        const m = freshCtx.ltMember(body.memberId);
+        if (!m) return json(404, { error: 'Member not found' });
+        if (m.paymentAccessLocked) return json(423, { error: 'Your payment access is locked pending Admin review.' });
+        const pending = freshCtx.pendingLeveltrackRequest(m.memberId);
+        if (pending) return json(400, { error: 'Upgrade request already pending' });
+        const action = freshCtx.nextMemberAction(m);
+        if (action.type !== 'LEVEL_UPGRADE') {
+          return json(400, { error: action.type === 'REFERRAL_UPGRADE' ? 'Complete the current Upgrade first.' : 'The next level upgrade is not unlocked yet.' });
+        }
+        const from = Number(m.level || 1);
+        const to = from + 1;
+        if (from >= 7) return json(400, { error: 'Level 7 is the final level' });
+        const need = { 1: 3, 2: 5, 3: 7, 4: 9, 5: 11, 6: 13 }[from] || 0;
+        if (freshCtx.direct(m.memberId).length < need) {
+          return json(400, { error: `Need ${need} direct referrals for Level ${from} → Level ${to}.` });
+        }
+        const reserved = freshCtx.nextSeniorReceiver(to, m.memberId);
+        const now = nextMonotonicIso();
+        const r = {
+          id: 'LTR-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
+          memberId: m.memberId,
+          from,
+          to,
+          seniorityLevel: to,
+          kind: 'LEVEL_UPGRADE',
+          status: 'Requested',
+          reservedReceiverId: reserved?.memberId || null,
+          reservedPosition: reserved?.position || null,
+          reservedAt: reserved ? now : null,
+          date: now.slice(0, 10),
+          createdAt: now
+        };
+        freshState.leveltrackRequests.push(r);
+        freshState.leveltrackMessages.push({ to: 'ADMIN', message: `New LevelTrack upgrade request: ${m.name} — L${from} → L${to}.`, at: now });
+        freshCtx.notifyMemberEmail(
+          m,
+          'BORNTOWIN5 - Upgrade Request Received',
+          `Hello ${m.name},\n\nYour upgrade request (${r.from} → ${r.to}) has been received and is waiting for Admin processing.\nRequest ID: ${r.id}`,
+          { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId, from, to } }
+        );
+        freshCtx.notifyAdminEmail(
+          'BORNTOWIN5 - New Upgrade Request Submitted',
+          `Member ${m.name} (${m.memberId}) submitted Level ${from} → Level ${to} upgrade request (${r.id}).`,
+          { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT_ADMIN:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId } }
+        );
+        await commitStateToD1(d1, freshMap, freshState, []);
+        lastD1SaveAt = new Date().toISOString();
+        return json(200, { ok: true, request: r });
+      });
+    } finally {
+      activeMutationLocks.delete(reqLockKey);
+    }
   }
 
   if (method === 'POST' && pathname === '/api/leveltrack/member/referral-upgrade-request') {
-    return withAllocationLock(async () => {
-      const freshState = await loadStateFromD1(d1, configuredAdminPwd);
-      const freshMap = buildSnapshotMap(freshState);
-      const freshCtx = createSessionContext(freshState, env, smtpSender);
+    const refLockKey = `REF_UPG_REQ:${String(body?.memberId || '')}`;
+    if (activeMutationLocks.has(refLockKey)) {
+      return json(409, { error: 'Additional upgrade request submission already in progress.' });
+    }
+    activeMutationLocks.add(refLockKey);
+    try {
+      return await withAllocationLock(async () => {
+        const freshState = await loadStateFromD1(d1, configuredAdminPwd);
+        const freshMap = buildSnapshotMap(freshState);
+        const freshCtx = createSessionContext(freshState, env, smtpSender);
 
-      const m = freshCtx.ltMember(body.memberId);
-      if (!m) return json(404, { error: 'Member not found' });
-      if (m.paymentAccessLocked) return json(423, { error: 'Your payment access is locked pending Admin review.' });
-      const pending = freshCtx.pendingLeveltrackRequest(m.memberId);
-      if (pending) return json(400, { error: 'Upgrade request already pending' });
-      const action = freshCtx.nextMemberAction(m);
-      if (action.type !== 'REFERRAL_UPGRADE') return json(400, { error: 'The additional Upgrade is not unlocked yet.' });
-      const reserved = freshCtx.nextSeniorReceiver(2, m.memberId);
-      const now = nextMonotonicIso();
-      const r = {
-        id: 'LTR-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
-        memberId: m.memberId,
-        from: Number(m.level || 1),
-        to: Number(m.level || 1),
-        kind: 'REFERRAL_UPGRADE',
-        cycle: Number(action.cycle || 1),
-        seniorityLevel: 2,
-        status: 'Requested',
-        reservedReceiverId: reserved?.memberId || null,
-        reservedPosition: reserved?.position || null,
-        reservedAt: reserved ? now : null,
-        date: now.slice(0, 10),
-        createdAt: now
-      };
-      freshState.leveltrackRequests.push(r);
-      freshState.leveltrackMessages.push({ to: 'ADMIN', message: `New Advanced Referral Upgrade: ${m.name} — cycle ${r.cycle}, Seniority L2.`, at: now });
-      freshCtx.notifyMemberEmail(
-        m,
-        'BORNTOWIN5 - Upgrade Request Received',
-        `Hello ${m.name},\n\nYour Advanced Referral Upgrade request (cycle ${r.cycle}, Seniority L2) has been received and is waiting for Admin processing.\nRequest ID: ${r.id}`,
-        { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId, kind: 'REFERRAL_UPGRADE' } }
-      );
-      freshCtx.notifyAdminEmail(
-        'BORNTOWIN5 - New Additional Referral Upgrade Request',
-        `Member ${m.name} (${m.memberId}) submitted Additional Referral Upgrade request (${r.id}, Seniority L2).`,
-        { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT_ADMIN:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId } }
-      );
-      await commitStateToD1(d1, freshMap, freshState, []);
-      lastD1SaveAt = new Date().toISOString();
-      return json(200, { ok: true, request: r });
-    });
+        const m = freshCtx.ltMember(body.memberId);
+        if (!m) return json(404, { error: 'Member not found' });
+        if (m.paymentAccessLocked) return json(423, { error: 'Your payment access is locked pending Admin review.' });
+        const pending = freshCtx.pendingLeveltrackRequest(m.memberId);
+        if (pending) return json(400, { error: 'Upgrade request already pending' });
+        const action = freshCtx.nextMemberAction(m);
+        if (action.type !== 'REFERRAL_UPGRADE') return json(400, { error: 'The additional Upgrade is not unlocked yet.' });
+        const reserved = freshCtx.nextSeniorReceiver(2, m.memberId);
+        const now = nextMonotonicIso();
+        const r = {
+          id: 'LTR-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
+          memberId: m.memberId,
+          from: Number(m.level || 1),
+          to: Number(m.level || 1),
+          kind: 'REFERRAL_UPGRADE',
+          cycle: Number(action.cycle || 1),
+          seniorityLevel: 2,
+          status: 'Requested',
+          reservedReceiverId: reserved?.memberId || null,
+          reservedPosition: reserved?.position || null,
+          reservedAt: reserved ? now : null,
+          date: now.slice(0, 10),
+          createdAt: now
+        };
+        freshState.leveltrackRequests.push(r);
+        freshState.leveltrackMessages.push({ to: 'ADMIN', message: `New Advanced Referral Upgrade: ${m.name} — cycle ${r.cycle}, Seniority L2.`, at: now });
+        freshCtx.notifyMemberEmail(
+          m,
+          'BORNTOWIN5 - Upgrade Request Received',
+          `Hello ${m.name},\n\nYour Advanced Referral Upgrade request (cycle ${r.cycle}, Seniority L2) has been received and is waiting for Admin processing.\nRequest ID: ${r.id}`,
+          { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId, kind: 'REFERRAL_UPGRADE' } }
+        );
+        freshCtx.notifyAdminEmail(
+          'BORNTOWIN5 - New Additional Referral Upgrade Request',
+          `Member ${m.name} (${m.memberId}) submitted Additional Referral Upgrade request (${r.id}, Seniority L2).`,
+          { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT_ADMIN:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId } }
+        );
+        await commitStateToD1(d1, freshMap, freshState, []);
+        lastD1SaveAt = new Date().toISOString();
+        return json(200, { ok: true, request: r });
+      });
+    } finally {
+      activeMutationLocks.delete(refLockKey);
+    }
   }
 
   const payUpgradeParams = method === 'POST' && matchRoute('/api/leveltrack/member/upgrade/:id/pay', pathname);
   if (payUpgradeParams) {
-    const u = state.leveltrackUpgrades.find(x => x.id === payUpgradeParams.id);
-    if (!u) return json(404, { error: 'Upgrade not found' });
-    if (u.memberId !== body.memberId) return json(403, { error: 'Not your upgrade' });
-    const p = ctx.latestPaymentForUpgrade(u.id);
-    if (!p) return json(404, { error: 'Payment instructions not found' });
-    if (ctx.ltMember(u.memberId)?.paymentAccessLocked || u.paymentAccessLocked || p.paymentAccessLocked || ctx.paymentIsExpired(p)) {
-      return json(410, { error: 'Payment details expired and are locked. Please contact Admin; only new Admin-issued payment details can be used.' });
+    const payLockKey = `PAY_SUBMIT:${payUpgradeParams.id}`;
+    if (activeMutationLocks.has(payLockKey)) {
+      return json(409, { error: 'Payment proof submission is already in progress.' });
     }
-    const proofs = Array.isArray(body.parts) ? body.parts : [];
-    if (!proofs.length) return json(400, { error: 'Payment proof required' });
-    const now = nextMonotonicIso();
-    for (const proof of proofs) {
-      const part = p.parts.find(x => x.type === proof.type);
-      if (!part) continue;
-      const utr = String(proof.utr || '').trim();
-      if (!utr) return json(400, { error: `UTR required for ${part.label}` });
-      if (!proof.screenshot) return json(400, { error: `Screenshot required for ${part.label}` });
-      const rawUri = String(proof.screenshot).trim();
-      const m = rawUri.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
-      const mimeType = m ? m[1] : 'image/png';
-      const proofRef = `/api/leveltrack/proofs/${encodeURIComponent(p.id)}/${encodeURIComponent(part.type)}`;
-      extraProofs.push({
-        paymentId: p.id,
-        partType: part.type,
-        mimeType,
-        dataUri: rawUri,
-        utr,
-        submittedAt: now
+    activeMutationLocks.add(payLockKey);
+    try {
+      const u = state.leveltrackUpgrades.find(x => x.id === payUpgradeParams.id);
+      if (!u) return json(404, { error: 'Upgrade not found' });
+      if (u.memberId !== body.memberId) return json(403, { error: 'Not your upgrade' });
+      const p = ctx.latestPaymentForUpgrade(u.id);
+      if (!p) return json(404, { error: 'Payment instructions not found' });
+      if (ctx.ltMember(u.memberId)?.paymentAccessLocked || u.paymentAccessLocked || p.paymentAccessLocked || ctx.paymentIsExpired(p)) {
+        return json(410, { error: 'Payment details expired and are locked. Please contact Admin; only new Admin-issued payment details can be used.' });
+      }
+      const proofs = Array.isArray(body.parts) ? body.parts : [];
+      if (!proofs.length) return json(400, { error: 'Payment proof required' });
+      const now = nextMonotonicIso();
+      for (const proof of proofs) {
+        const part = p.parts.find(x => x.type === proof.type);
+        if (!part) continue;
+        const utr = String(proof.utr || '').trim();
+        if (!utr) return json(400, { error: `UTR required for ${part.label}` });
+        if (!proof.screenshot) return json(400, { error: `Screenshot required for ${part.label}` });
+        const rawUri = String(proof.screenshot).trim();
+        const m = rawUri.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+        const mimeType = m ? m[1] : 'image/png';
+        const proofRef = `/api/leveltrack/proofs/${encodeURIComponent(p.id)}/${encodeURIComponent(part.type)}`;
+        extraProofs.push({
+          paymentId: p.id,
+          partType: part.type,
+          mimeType,
+          dataUri: rawUri,
+          utr,
+          submittedAt: now
+        });
+        part.utr = utr;
+        part.screenshot = rawUri;
+        part.proofRef = proofRef;
+        part.submittedAt = now;
+        part.status = 'SUBMITTED';
+      }
+      const all = p.parts.every(x => ['SUBMITTED', 'CONFIRMED', 'APPROVED'].includes(x.status));
+      if (!all) return json(400, { error: 'Upload payment proof for every payment section' });
+      const memberPart = p.parts.find(x => x.type === 'member') || p.parts[0];
+      u.memberPaid = true;
+      u.utr = memberPart?.utr || '';
+      u.paidAt = now;
+      p.utr = u.utr;
+      p.screenshot = memberPart?.screenshot || null;
+      p.proofRef = memberPart?.proofRef || null;
+      p.memberPaid = true;
+      p.submittedAt = now;
+      state.leveltrackMessages.push({
+        to: u.payeeId,
+        message: `Payment proofs submitted for ${u.kind === 'REFERRAL_UPGRADE' ? 'Additional Upgrade (L2)' : `L${u.from} → L${u.to}`}. Please confirm the receiver payment.`,
+        at: now
       });
-      part.utr = utr;
-      part.screenshot = rawUri;
-      part.proofRef = proofRef;
-      part.submittedAt = now;
-      part.status = 'SUBMITTED';
+      const payer = ctx.ltMember(u.memberId);
+      const receiver = ctx.ltMember(p.receiverMemberId);
+      ctx.notifyMemberEmail(
+        receiver,
+        'BORNTOWIN5 - Payment Proof Submitted',
+        `Hello ${receiver?.name || p.receiverMemberId},\n\nMember ${payer?.name || u.memberId} (${u.memberId}) has submitted payment proof (UTR: ${p.utr}, Payment ID: ${p.id}) for ${u.kind === 'REFERRAL_UPGRADE' ? 'Advanced Referral Upgrade' : 'Level ' + u.from + ' to Level ' + u.to}.\nPlease sign in to the Receiver page to verify the payment.`,
+        { eventType: 'PAYMENT_PROOF_SUBMITTED', eventKey: `PROOF_RECEIVER:${p.id}:${p.utr}`, metadata: { paymentId: p.id, requestId: u.requestId, receiverMemberId: p.receiverMemberId } }
+      );
+      ctx.notifyAdminEmail(
+        'BORNTOWIN5 - Payment Proof Submitted for Review',
+        `Member ${payer?.name || u.memberId} (${u.memberId}) submitted payment proof (UTR: ${p.utr}, Payment ID: ${p.id}, Request ID: ${u.requestId}).`,
+        { eventType: 'PAYMENT_PROOF_SUBMITTED', eventKey: `PROOF_ADMIN:${p.id}:${p.utr}`, metadata: { paymentId: p.id, requestId: u.requestId, payerMemberId: u.memberId } }
+      );
+      await saveChanges();
+      return json(200, { ok: true, upgrade: u, payment: ctx.paymentPublic(p) });
+    } finally {
+      activeMutationLocks.delete(payLockKey);
     }
-    const all = p.parts.every(x => ['SUBMITTED', 'CONFIRMED', 'APPROVED'].includes(x.status));
-    if (!all) return json(400, { error: 'Upload payment proof for every payment section' });
-    const memberPart = p.parts.find(x => x.type === 'member') || p.parts[0];
-    u.memberPaid = true;
-    u.utr = memberPart?.utr || '';
-    u.paidAt = now;
-    p.utr = u.utr;
-    p.screenshot = memberPart?.screenshot || null;
-    p.proofRef = memberPart?.proofRef || null;
-    p.memberPaid = true;
-    p.submittedAt = now;
-    state.leveltrackMessages.push({
-      to: u.payeeId,
-      message: `Payment proofs submitted for ${u.kind === 'REFERRAL_UPGRADE' ? 'Additional Upgrade (L2)' : `L${u.from} → L${u.to}`}. Please confirm the receiver payment.`,
-      at: now
-    });
-    const payer = ctx.ltMember(u.memberId);
-    const receiver = ctx.ltMember(p.receiverMemberId);
-    ctx.notifyMemberEmail(
-      receiver,
-      'BORNTOWIN5 - Payment Proof Submitted',
-      `Hello ${receiver?.name || p.receiverMemberId},\n\nMember ${payer?.name || u.memberId} (${u.memberId}) has submitted payment proof (UTR: ${p.utr}, Payment ID: ${p.id}) for ${u.kind === 'REFERRAL_UPGRADE' ? 'Advanced Referral Upgrade' : 'Level ' + u.from + ' to Level ' + u.to}.\nPlease sign in to the Receiver page to verify the payment.`,
-      { eventType: 'PAYMENT_PROOF_SUBMITTED', eventKey: `PROOF_RECEIVER:${p.id}:${p.utr}`, metadata: { paymentId: p.id, requestId: u.requestId, receiverMemberId: p.receiverMemberId } }
-    );
-    ctx.notifyAdminEmail(
-      'BORNTOWIN5 - Payment Proof Submitted for Review',
-      `Member ${payer?.name || u.memberId} (${u.memberId}) submitted payment proof (UTR: ${p.utr}, Payment ID: ${p.id}, Request ID: ${u.requestId}).`,
-      { eventType: 'PAYMENT_PROOF_SUBMITTED', eventKey: `PROOF_ADMIN:${p.id}:${p.utr}`, metadata: { paymentId: p.id, requestId: u.requestId, payerMemberId: u.memberId } }
-    );
-    await saveChanges();
-    return json(200, { ok: true, upgrade: u, payment: ctx.paymentPublic(p) });
   }
 
   const incomingAcceptParams = method === 'POST' && matchRoute('/api/leveltrack/member/incoming/:id/accept', pathname);
