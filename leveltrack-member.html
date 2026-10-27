@@ -860,9 +860,20 @@ function renderReceiverList(){
   $('receiverButtons').innerHTML='';
 }
 
-async function loadReceiver(){
+function receiverDraftActive(){
+  const box=$('receiverContent');
+  if(!box)return false;
+  const focused=document.activeElement;
+  // Never replace receiver cards while the user is interacting with a form/control.
+  if(focused&&box.contains(focused)&&(['INPUT','TEXTAREA','SELECT'].includes(focused.tagName)||focused.isContentEditable))return true;
+  // Preserve any locally selected proof file if a future receiver form adds one.
+  if(box.querySelector('input[type="file"]:not([disabled])') && Array.from(box.querySelectorAll('input[type="file"]:not([disabled])')).some(x=>x.files&&x.files.length))return true;
+  return false;
+}
+
+async function loadReceiver(force=false){
   const mid=id();
-  if(!mid||window.receiverLoading)return;
+  if(!mid||window.receiverLoading||(!force&&receiverDraftActive()))return;
   window.receiverLoading=true;
   try{
     const d=await api('/api/leveltrack/member/dashboard/'+encodeURIComponent(mid));
@@ -915,8 +926,8 @@ function copyReferral(){
   alert('Referral link copied.');
 }
 
-setInterval(()=>{if(!paymentProofDraftActive())load();},5000);
-setInterval(()=>{if(!$('receiver').classList.contains('hidden'))loadReceiver();},5000);
+setInterval(()=>{if(!paymentProofDraftActive())load();},15000);
+setInterval(()=>{if(!$('receiver').classList.contains('hidden')&&!receiverDraftActive())loadReceiver();},15000);
 load();
 </script>
 
