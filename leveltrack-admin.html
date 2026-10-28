@@ -1354,7 +1354,7 @@ async function runReport(){
 }
 
 load();
-setInterval(refreshAdminLive,6000);
+setInterval(()=>{if(document.visibilityState==='visible')refreshAdminLive();},30000);
 </script>
 
 <script id="b5-unified-accordion">
