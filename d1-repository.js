@@ -476,7 +476,38 @@ async function loadStateFromD1(d1, configuredAdminPassword = null) {
     d1.prepare(`SELECT * FROM password_reset_requests ORDER BY created_at ASC`),
     d1.prepare(`SELECT * FROM leveltrack_requests ORDER BY created_at ASC, id ASC`),
     d1.prepare(`SELECT * FROM leveltrack_upgrades ORDER BY created_at ASC, id ASC`),
-    d1.prepare(`SELECT * FROM leveltrack_payments ORDER BY created_at ASC, id ASC`),
+    // Payment screenshots are stored in payment_proofs and must not be downloaded
+    // with every API request. Older records may also contain inline data URIs in
+    // screenshot / parts_json, so strip those large payloads while retaining proof URLs.
+    d1.prepare(`
+      SELECT
+        id, request_id, upgrade_id, kind, from_level, to_level, seniority_level,
+        from_member_id, receiver_member_id, payee_id, from_name, to_name, amount, utr,
+        NULL AS screenshot,
+        CASE WHEN screenshot IS NOT NULL
+          THEN COALESCE(proof_ref, '/api/leveltrack/proofs/' || id || '/member')
+          ELSE proof_ref END AS proof_ref,
+        COALESCE((
+          SELECT json_group_array(json(
+            CASE
+              WHEN json_extract(j.value, '$.screenshot') IS NOT NULL
+                   AND json_extract(j.value, '$.proofRef') IS NULL
+              THEN json_set(
+                json_remove(j.value, '$.screenshot'), '$.proofRef',
+                '/api/leveltrack/proofs/' || leveltrack_payments.id || '/' ||
+                COALESCE(json_extract(j.value, '$.type'), 'member')
+              )
+              ELSE json_remove(j.value, '$.screenshot')
+            END
+          ))
+          FROM json_each(leveltrack_payments.parts_json) AS j
+        ), '[]') AS parts_json,
+        member_paid, member_accepted, accepted_at, admin_approved, admin_verified_at,
+        rejected, rejected_at, rejection_reason, slot_released, payment_access_locked,
+        superseded, status, submitted_at, details_sent_at, expires_at, created_at
+      FROM leveltrack_payments
+      ORDER BY created_at ASC, id ASC
+    `),
     d1.prepare(`SELECT * FROM email_logs ORDER BY created_at ASC, id ASC`)
   ]);
 
@@ -830,9 +861,21 @@ function prepareUpsertLtPayment(d1, p) {
       to_name = excluded.to_name,
       amount = excluded.amount,
       utr = excluded.utr,
-      screenshot = excluded.screenshot,
-      proof_ref = excluded.proof_ref,
-      parts_json = excluded.parts_json,
+      screenshot = COALESCE(excluded.screenshot, leveltrack_payments.screenshot),
+      proof_ref = COALESCE(excluded.proof_ref, leveltrack_payments.proof_ref),
+      parts_json = COALESCE((
+        SELECT json_group_array(json(
+          CASE
+            WHEN json_extract(old.value, '$.screenshot') IS NOT NULL
+                 AND json_extract(new.value, '$.screenshot') IS NULL
+            THEN json_set(new.value, '$.screenshot', json_extract(old.value, '$.screenshot'))
+            ELSE new.value
+          END
+        ))
+        FROM json_each(excluded.parts_json) AS new
+        LEFT JOIN json_each(leveltrack_payments.parts_json) AS old
+          ON json_extract(old.value, '$.type') = json_extract(new.value, '$.type')
+      ), excluded.parts_json),
       member_paid = excluded.member_paid,
       member_accepted = excluded.member_accepted,
       accepted_at = excluded.accepted_at,
@@ -863,9 +906,14 @@ function prepareUpsertLtPayment(d1, p) {
     String(p.to || p.receiverMemberId || ''),
     Number(p.amount || 0),
     p.utr ? String(p.utr) : null,
-    p.screenshot ? String(p.screenshot) : null,
+    // Keep image bytes only in payment_proofs; inline copies make every dashboard
+    // request download large base64 strings and cause progressive slowdown.
+    null,
     p.proofRef ? String(p.proofRef) : null,
-    JSON.stringify(p.parts || []),
+    JSON.stringify((p.parts || []).map(part => {
+      const { screenshot, ...metadata } = part || {};
+      return metadata;
+    })),
     p.memberPaid ? 1 : 0,
     p.memberAccepted ? 1 : 0,
     p.acceptedAt ? String(p.acceptedAt) : null,
@@ -1149,10 +1197,30 @@ async function resetD1ToFreshSchema(d1, configuredAdminPassword = null) {
 }
 
 async function getProofFromD1(d1, paymentId, partType) {
+  const pid = String(paymentId);
+  const type = String(partType || 'member');
   const row = await d1.prepare(`SELECT mime_type, data_uri FROM payment_proofs WHERE payment_id = ? AND part_type = ?`)
-    .bind(String(paymentId), String(partType || 'member'))
+    .bind(pid, type)
     .first();
-  return row || null;
+  if (row && row.data_uri) return row;
+
+  // Compatibility fallback for older rows that stored proof images inline.
+  // This heavier read happens only when a user actually opens a proof image.
+  const legacy = await d1.prepare(`SELECT screenshot, parts_json FROM leveltrack_payments WHERE id = ?`)
+    .bind(pid)
+    .first();
+  if (!legacy) return null;
+  let dataUri = type === 'member' ? String(legacy.screenshot || '') : '';
+  if (!dataUri && legacy.parts_json) {
+    try {
+      const parts = JSON.parse(legacy.parts_json);
+      const part = Array.isArray(parts) ? parts.find(x => String(x.type || 'member') === type) : null;
+      dataUri = String(part?.screenshot || '');
+    } catch (_) {}
+  }
+  if (!dataUri.startsWith('data:image/')) return null;
+  const mime = (dataUri.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/) || [])[1] || 'image/png';
+  return { mime_type: mime, data_uri: dataUri };
 }
 
 module.exports = {
