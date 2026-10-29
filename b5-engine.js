@@ -161,6 +161,8 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     }
   }
 
+  const pendingEmailDeliveries = [];
+
   function dispatchEmailNotification({ eventType = 'GENERAL', eventKey = '', to = '', recipientId = '', subject = '', text = '', html = '', metadata = {} }) {
     try {
       db.emailNotificationLog = Array.isArray(db.emailNotificationLog) ? db.emailNotificationLog : [];
@@ -179,47 +181,51 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         bodyPreview: String(text || '').slice(0, 240),
         eventGenerated: true,
         liveDelivered: false,
-        status: 'PENDING',
-        deliveryStatus: 'PENDING',
-        attempts: 0,
-        error: null,
-        createdAt: now,
-        updatedAt: now,
-        metadata: metadata || {}
+        status: 'PENDING', deliveryStatus: 'PENDING', attempts: 0,
+        error: null, createdAt: now, updatedAt: now, metadata: metadata || {}
       };
       db.emailNotificationLog.push(entry);
       if (!entry.to) {
-        entry.status = 'SKIPPED_NO_RECIPIENT';
-        entry.deliveryStatus = 'SKIPPED_NO_RECIPIENT';
+        entry.status = entry.deliveryStatus = 'SKIPPED_NO_RECIPIENT';
         entry.error = 'Recipient email address is empty';
-        entry.updatedAt = new Date().toISOString();
-        return entry;
-      }
-      if (String(entry.to).toLowerCase().endsWith('@simulate-smtp-fail.test')) {
-        entry.status = 'FAILED';
-        entry.deliveryStatus = 'FAILED';
-        entry.liveDelivered = false;
-        entry.attempts = 2;
-        entry.error = 'Simulated SMTP transport error (non-fatal; core D1 transaction preserved)';
-        entry.updatedAt = new Date().toISOString();
-        return entry;
-      }
-      if (!smtpConfigured || typeof smtpSender !== 'function') {
-        entry.status = 'SKIPPED_NO_SMTP';
-        entry.deliveryStatus = 'SKIPPED_NO_SMTP';
+      } else if (String(entry.to).toLowerCase().endsWith('@simulate-smtp-fail.test')) {
+        entry.status = entry.deliveryStatus = 'FAILED';
         entry.attempts = 1;
-        entry.error = 'SMTP_PASS is not configured (event generated & logged in Cloudflare D1)';
-        entry.updatedAt = new Date().toISOString();
-        return entry;
+        entry.error = 'Simulated SMTP transport error';
+      } else if (!smtpConfigured || typeof smtpSender !== 'function') {
+        entry.status = entry.deliveryStatus = 'SKIPPED_NO_SMTP';
+        entry.attempts = 0;
+        entry.error = 'SMTP is not configured; email was not sent';
+      } else {
+        // Do not mark SENT here. The actual SMTP send is awaited by flushEmailNotifications().
+        pendingEmailDeliveries.push({ entry, mail: { to: entry.to, subject: entry.subject, text: String(text || ''), html: html || undefined } });
       }
-      entry.attempts = 1;
-      entry.status = 'SENT';
-      entry.deliveryStatus = 'SENT';
-      entry.liveDelivered = true;
+      entry.updatedAt = new Date().toISOString();
       return entry;
-    } catch (e) {
-      return null;
+    } catch (_) { return null; }
+  }
+
+  async function flushEmailNotifications() {
+    const results = [];
+    while (pendingEmailDeliveries.length) {
+      const job = pendingEmailDeliveries.shift();
+      const entry = job.entry;
+      try {
+        entry.attempts = Number(entry.attempts || 0) + 1;
+        const result = await smtpSender(job.mail);
+        entry.status = entry.deliveryStatus = 'SENT';
+        entry.liveDelivered = true;
+        entry.error = null;
+        entry.messageId = result && result.messageId ? String(result.messageId) : null;
+      } catch (err) {
+        entry.status = entry.deliveryStatus = 'FAILED';
+        entry.liveDelivered = false;
+        entry.error = String(err && err.message || err || 'SMTP send failed').slice(0, 500);
+      }
+      entry.updatedAt = new Date().toISOString();
+      results.push(entry);
     }
+    return results;
   }
 
   function notifyMemberEmail(member, subject, text, opts = {}) {
@@ -1396,6 +1402,7 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     createAuthToken,
     verifyAuthToken,
     dispatchEmailNotification,
+    flushEmailNotifications,
     notifyMemberEmail,
     notifyAdminEmail,
     ltMember,
@@ -1532,6 +1539,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   async function saveChanges() {
     try {
+      await ctx.flushEmailNotifications();
       await commitStateToD1(d1, prevMap, state, extraProofs);
       lastD1SaveAt = new Date().toISOString();
       lastD1SaveError = null;
@@ -1973,22 +1981,27 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
     // Generate a one-time temporary password and email it directly to the registered address.
     const temp = 'B5@' + crypto.randomBytes(6).toString('hex');
-    m.passwordHash = hashPassword(temp);
-    m.mustChangePassword = true;
+    const oldPasswordHash = m.passwordHash;
+    const oldMustChangePassword = m.mustChangePassword;
     const resetAt = new Date().toISOString();
-    state.messages.push({
-      to: m.memberId,
-      message: 'A temporary password was sent to your registered email. Sign in and change it immediately.',
-      at: resetAt
-    });
-    ctx.notifyMemberEmail(
+    const emailEntry = ctx.notifyMemberEmail(
       m,
       'BORNTOWIN5 - Temporary Password for Account Recovery',
       `Hello ${m.name},\n\nA password reset was requested for your BORNTOWIN5 account (${m.memberId}).\n\nYour temporary password is: ${temp}\n\nPlease sign in using this temporary password and change it immediately. If you did not request this reset, contact Admin.`,
       { eventType: 'PASSWORD_RESET_TEMPORARY_PASSWORD', eventKey: `PWD_RESET_EMAIL:${m.memberId}:${resetAt}` }
     );
+    await ctx.flushEmailNotifications();
+    if (!emailEntry || emailEntry.status !== 'SENT') {
+      m.passwordHash = oldPasswordHash;
+      m.mustChangePassword = oldMustChangePassword;
+      await saveChanges();
+      return json(503, { ok: false, error: 'Password reset email could not be delivered. Your password was not changed. Please try again later or contact Admin.' });
+    }
+    m.passwordHash = hashPassword(temp);
+    m.mustChangePassword = true;
+    state.messages.push({ to: m.memberId, message: 'A temporary password was sent to your registered email. Sign in and change it immediately.', at: resetAt });
     await saveChanges();
-    return json(200, { ok: true, message: 'If your account has a registered email address, a temporary password has been sent there. Please check your inbox and spam folder.' });
+    return json(200, { ok: true, message: 'Temporary password email sent successfully. Please check your inbox and spam folder.' });
   }
 
   const memberPwdParams = method === 'POST' && matchRoute('/api/member/password/:id', pathname);
@@ -2088,6 +2101,59 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     return json(200, { member: memberPublic(m), memberToken }, {
       'Set-Cookie': `b5_member_token=${encodeURIComponent(memberToken)}; Path=/; HttpOnly; SameSite=Lax`
     });
+  }
+
+  // Email address change: send a verification code to the new address, then save only after confirmation.
+  if (method === 'POST' && pathname === '/api/member/email-change/request') {
+    if (!auth.memberId || auth.isAdmin) return json(401, { error: 'Please sign in to your member account first.' });
+    const m = state.members.find(x => x.memberId === auth.memberId);
+    if (!m) return json(404, { error: 'Member account not found.' });
+    const newEmail = String(body.email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return json(400, { error: 'Enter a valid new email address.' });
+    if (newEmail === String(m.email || m.rEmail || '').trim().toLowerCase()) return json(400, { error: 'This email address is already registered.' });
+    const code = String(crypto.randomInt(100000, 1000000));
+    const now = Date.now();
+    m.pendingEmailChange = { email: newEmail, codeHash: hashPassword(code), expiresAt: new Date(now + 10 * 60 * 1000).toISOString(), requestedAt: new Date(now).toISOString() };
+    const entry = ctx.dispatchEmailNotification({
+      eventType: 'EMAIL_CHANGE_VERIFICATION',
+      eventKey: `EMAIL_CHANGE:${m.memberId}:${newEmail}:${now}`,
+      to: newEmail,
+      recipientId: m.memberId,
+      subject: 'BORNTOWIN5 - Verify your new email address',
+      text: `Hello ${m.name || m.memberId},\n\nYour verification code to change your BORNTOWIN5 email address is: ${code}\n\nThis code expires in 10 minutes. If you did not request this, you can ignore this email.`,
+      metadata: { memberId: m.memberId, purpose: 'EMAIL_CHANGE_VERIFICATION' }
+    });
+    await ctx.flushEmailNotifications();
+    if (!entry || entry.status !== 'SENT') {
+      m.pendingEmailChange = null;
+      await saveChanges();
+      return json(503, { ok: false, error: 'Verification email could not be delivered. Your registered email has not changed. Please try again later.' });
+    }
+    await saveChanges();
+    return json(200, { ok: true, message: 'Verification code sent to your new email address. Enter the code to confirm the change.' });
+  }
+
+  if (method === 'POST' && pathname === '/api/member/email-change/confirm') {
+    if (!auth.memberId || auth.isAdmin) return json(401, { error: 'Please sign in to your member account first.' });
+    const m = state.members.find(x => x.memberId === auth.memberId);
+    if (!m) return json(404, { error: 'Member account not found.' });
+    const pending = m.pendingEmailChange;
+    const code = String(body.code || '').trim();
+    if (!pending || !pending.email || !pending.codeHash) return json(400, { error: 'Request a verification code first.' });
+    if (Date.parse(pending.expiresAt || '') < Date.now()) { m.pendingEmailChange = null; await saveChanges(); return json(400, { error: 'Verification code expired. Request a new code.' }); }
+    if (!/^\d{6}$/.test(code) || hashPassword(code) !== pending.codeHash) return json(400, { error: 'Incorrect verification code.' });
+    const oldEmail = String(m.email || m.rEmail || '').trim();
+    m.email = pending.email;
+    if (Object.prototype.hasOwnProperty.call(m, 'rEmail')) m.rEmail = pending.email;
+    m.pendingEmailChange = null;
+    ctx.notifyMemberEmail(m, 'BORNTOWIN5 - Email Address Changed', `Hello ${m.name || m.memberId},\n\nYour BORNTOWIN5 email address was changed successfully to ${m.email}. If you did not make this change, please contact Admin.`, { eventType: 'EMAIL_CHANGE_CONFIRMATION', eventKey: `EMAIL_CHANGED:${m.memberId}:${Date.now()}` });
+    await saveChanges();
+    // Send a security notice to the previous address when available; failure must not undo the verified change.
+    if (oldEmail && oldEmail.toLowerCase() !== m.email.toLowerCase()) {
+      ctx.dispatchEmailNotification({ eventType: 'EMAIL_CHANGE_OLD_ADDRESS_ALERT', eventKey: `EMAIL_CHANGE_OLD:${m.memberId}:${Date.now()}`, to: oldEmail, recipientId: m.memberId, subject: 'BORNTOWIN5 - Email address changed', text: `A change was made to the email address on your BORNTOWIN5 account. The new address is ${m.email}. If you did not make this change, contact Admin.`, metadata: { memberId: m.memberId } });
+      await saveChanges();
+    }
+    return json(200, { ok: true, message: 'Email address verified and updated successfully.', profile: memberProfile(m) });
   }
 
   const getProfileParams = method === 'GET' && matchRoute('/api/member/profile/:id', pathname);
@@ -2456,6 +2522,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
           `Hello ${receiver.name},\n\nA payment request has been assigned to you from member ${m.memberId} (${m.name}).\nRequest ID: ${r.id}\nPayment ID: ${payment.id}\nPlease sign in to the Receiver page to review payment proof when submitted.`,
           { eventType: 'PAYMENT_ASSIGNED_RECEIVER', eventKey: `ASSIGN_RECEIVER:${r.id}:${payment.id}`, metadata: { requestId: r.id, paymentId: payment.id, receiverMemberId: receiver.memberId } }
         );
+        await freshCtx.flushEmailNotifications();
         await commitStateToD1(d1, freshMap, freshState, []);
         lastD1SaveAt = new Date().toISOString();
         return json(200, { ok: true, request: r, upgrade: u, payment: freshCtx.paymentPublic(payment) });
@@ -2738,6 +2805,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
         `Hello ${receiver.name},\n\nA payment request (${r.id}, Payment ID: ${np.id}) has been assigned to you from member ${m.memberId}.`,
         { eventType: 'PAYMENT_ASSIGNED_RECEIVER', eventKey: `REASSIGN_RECEIVER:${r.id}:${np.id}`, metadata: { requestId: r.id, paymentId: np.id } }
       );
+      await freshCtx.flushEmailNotifications();
       await commitStateToD1(d1, freshMap, freshState, []);
       lastD1SaveAt = new Date().toISOString();
       return json(200, { ok: true, message: 'New receiver details assigned with a fresh 24-hour deadline.', request: r, upgrade: u, payment: freshCtx.paymentPublic(np) });
@@ -3114,6 +3182,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
           `Member ${m.name} (${m.memberId}) submitted Level ${from} → Level ${to} upgrade request (${r.id}).`,
           { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT_ADMIN:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId } }
         );
+        await freshCtx.flushEmailNotifications();
         await commitStateToD1(d1, freshMap, freshState, []);
         lastD1SaveAt = new Date().toISOString();
         return json(200, { ok: true, request: r });
@@ -3172,6 +3241,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
           `Member ${m.name} (${m.memberId}) submitted Additional Referral Upgrade request (${r.id}, Seniority L2).`,
           { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT_ADMIN:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId } }
         );
+        await freshCtx.flushEmailNotifications();
         await commitStateToD1(d1, freshMap, freshState, []);
         lastD1SaveAt = new Date().toISOString();
         return json(200, { ok: true, request: r });
