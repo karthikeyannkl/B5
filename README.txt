@@ -1,9 +1,11 @@
-BORNTOWIN5 DB CONNECTION TEST V2
+B5 EMAIL-ONLY CORRECTION
 
-Purpose: test only whether AIC Cloud can authenticate to PostgreSQL using DATABASE_URL.
+File: B5-main/b5-engine.js
+Scope: Email notification SMTP send + SENT/FAILED status based on SMTP response.
+No member.html/dashboard/notification UI changes are included.
 
-The ROOT URL (/) and /db-test both execute SELECT 1.
-No table is created. No data is inserted, updated, or deleted.
-The password is never logged.
-
-Deploy this temporary test instead of production only for diagnosis.
+IMPORTANT:
+- Keep a backup of the currently working b5-engine.js before replacing it.
+- This file passes Node.js syntax validation, but has not been deployed against your live Cloudflare D1 environment here.
+- After upload, verify member and admin login first. If either login fails, restore your backup immediately.
+- SMTP secrets must remain configured in the hosting environment; do not put passwords in this file.
