@@ -131,6 +131,7 @@ let lastD1SaveAt = new Date().toISOString();
 let lastD1SaveError = null;
 
 function createSessionContext(db, env = {}, smtpSender = null) {
+  const pendingEmailSends = [];
   const adminContactEmail = env.B5_ADMIN_CONTACT_EMAIL || env.ADMIN_EMAIL || env.SMTP_USER || 'notifications@borntowin5.com';
   const smtpConfigured = !!(env.SMTP_PASS || smtpSender);
   const authSecret = env.B5_AUTH_SECRET || crypto.createHash('sha256').update('B5-SOVEREIGN-AUTH-KEY:' + (env.D1_AUTH_SALT || 'CLOUDFLARE-D1')).digest('hex');
@@ -213,12 +214,34 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         return entry;
       }
       entry.attempts = 1;
-      entry.status = 'SENT';
-      entry.deliveryStatus = 'SENT';
-      entry.liveDelivered = true;
+      // Queue the real SMTP send; do not claim delivery until the transport succeeds.
+      pendingEmailSends.push({ entry, message: { to: entry.to, subject: entry.subject, text: String(text || ''), html: html || undefined } });
       return entry;
     } catch (e) {
       return null;
+    }
+  }
+
+  async function flushEmailNotifications() {
+    while (pendingEmailSends.length) {
+      const item = pendingEmailSends.shift();
+      const entry = item.entry;
+      try {
+        const result = await smtpSender(item.message);
+        const accepted = result && Array.isArray(result.accepted) ? result.accepted.length > 0 : true;
+        if (!accepted) throw new Error('SMTP transport did not accept the recipient');
+        entry.status = 'SENT';
+        entry.deliveryStatus = 'SENT';
+        entry.liveDelivered = true;
+        entry.error = null;
+        entry.smtpMessageId = result && result.messageId ? String(result.messageId) : null;
+      } catch (err) {
+        entry.status = 'FAILED';
+        entry.deliveryStatus = 'FAILED';
+        entry.liveDelivered = false;
+        entry.error = String(err && err.message || err || 'SMTP send failed').slice(0, 500);
+      }
+      entry.updatedAt = new Date().toISOString();
     }
   }
 
@@ -1396,6 +1419,7 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     createAuthToken,
     verifyAuthToken,
     dispatchEmailNotification,
+    flushEmailNotifications,
     notifyMemberEmail,
     notifyAdminEmail,
     ltMember,
@@ -1532,6 +1556,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   async function saveChanges() {
     try {
+      if (typeof ctx.flushEmailNotifications === 'function') await ctx.flushEmailNotifications();
       await commitStateToD1(d1, prevMap, state, extraProofs);
       lastD1SaveAt = new Date().toISOString();
       lastD1SaveError = null;

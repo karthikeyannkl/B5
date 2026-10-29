@@ -1,11 +1,11 @@
-B5 EMAIL-ONLY CORRECTION
+B5 EMAIL CORRECTION — ENGINE FILE ONLY
 
-File: B5-main/b5-engine.js
-Scope: Email notification SMTP send + SENT/FAILED status based on SMTP response.
-No member.html/dashboard/notification UI changes are included.
+Purpose:
+- Corrects the email audit behavior so the engine calls the configured SMTP sender instead of marking an email SENT without sending it.
+- Records SENT only when the SMTP transport accepts the recipient; records FAILED with an error if sending fails.
+- Leaves server.js, login/authentication code, payment/upgrade rules, and database schema unchanged.
 
-IMPORTANT:
-- Keep a backup of the currently working b5-engine.js before replacing it.
-- This file passes Node.js syntax validation, but has not been deployed against your live Cloudflare D1 environment here.
-- After upload, verify member and admin login first. If either login fails, restore your backup immediately.
-- SMTP secrets must remain configured in the hosting environment; do not put passwords in this file.
+Deployment:
+- Replace only the existing b5-engine.js with this file in the same location.
+- Do not replace server.js or other files with this ZIP.
+- This source correction does not supply SMTP credentials or prove the live SMTP server is configured correctly. After deployment, trigger one controlled test email and inspect the email audit status/error.
