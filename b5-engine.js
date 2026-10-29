@@ -2105,7 +2105,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   // Email address change: send a verification code to the new address, then save only after confirmation.
   if (method === 'POST' && pathname === '/api/member/email-change/request') {
-    if (!auth.memberId || auth.isAdmin) return json(401, { error: 'Please sign in to your member account first.' });
+    if (!auth.memberId) return json(401, { error: 'Please sign in to your member account first.' });
     const m = state.members.find(x => x.memberId === auth.memberId);
     if (!m) return json(404, { error: 'Member account not found.' });
     const newEmail = String(body.email || '').trim().toLowerCase();
@@ -2134,7 +2134,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
   }
 
   if (method === 'POST' && pathname === '/api/member/email-change/confirm') {
-    if (!auth.memberId || auth.isAdmin) return json(401, { error: 'Please sign in to your member account first.' });
+    if (!auth.memberId) return json(401, { error: 'Please sign in to your member account first.' });
     const m = state.members.find(x => x.memberId === auth.memberId);
     if (!m) return json(404, { error: 'Member account not found.' });
     const pending = m.pendingEmailChange;
