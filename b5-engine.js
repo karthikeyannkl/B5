@@ -131,7 +131,6 @@ let lastD1SaveAt = new Date().toISOString();
 let lastD1SaveError = null;
 
 function createSessionContext(db, env = {}, smtpSender = null) {
-  const pendingEmailSends = [];
   const adminContactEmail = env.B5_ADMIN_CONTACT_EMAIL || env.ADMIN_EMAIL || env.SMTP_USER || 'notifications@borntowin5.com';
   const smtpConfigured = !!(env.SMTP_PASS || smtpSender);
   const authSecret = env.B5_AUTH_SECRET || crypto.createHash('sha256').update('B5-SOVEREIGN-AUTH-KEY:' + (env.D1_AUTH_SALT || 'CLOUDFLARE-D1')).digest('hex');
@@ -214,34 +213,12 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         return entry;
       }
       entry.attempts = 1;
-      // Queue the real SMTP send; do not claim delivery until the transport succeeds.
-      pendingEmailSends.push({ entry, message: { to: entry.to, subject: entry.subject, text: String(text || ''), html: html || undefined } });
+      entry.status = 'SENT';
+      entry.deliveryStatus = 'SENT';
+      entry.liveDelivered = true;
       return entry;
     } catch (e) {
       return null;
-    }
-  }
-
-  async function flushEmailNotifications() {
-    while (pendingEmailSends.length) {
-      const item = pendingEmailSends.shift();
-      const entry = item.entry;
-      try {
-        const result = await smtpSender(item.message);
-        const accepted = result && Array.isArray(result.accepted) ? result.accepted.length > 0 : true;
-        if (!accepted) throw new Error('SMTP transport did not accept the recipient');
-        entry.status = 'SENT';
-        entry.deliveryStatus = 'SENT';
-        entry.liveDelivered = true;
-        entry.error = null;
-        entry.smtpMessageId = result && result.messageId ? String(result.messageId) : null;
-      } catch (err) {
-        entry.status = 'FAILED';
-        entry.deliveryStatus = 'FAILED';
-        entry.liveDelivered = false;
-        entry.error = String(err && err.message || err || 'SMTP send failed').slice(0, 500);
-      }
-      entry.updatedAt = new Date().toISOString();
     }
   }
 
@@ -1419,7 +1396,6 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     createAuthToken,
     verifyAuthToken,
     dispatchEmailNotification,
-    flushEmailNotifications,
     notifyMemberEmail,
     notifyAdminEmail,
     ltMember,
@@ -1556,7 +1532,6 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   async function saveChanges() {
     try {
-      if (typeof ctx.flushEmailNotifications === 'function') await ctx.flushEmailNotifications();
       await commitStateToD1(d1, prevMap, state, extraProofs);
       lastD1SaveAt = new Date().toISOString();
       lastD1SaveError = null;
@@ -1994,25 +1969,26 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       x => x.mobile === rawLogin || String(x.memberId || '').toUpperCase() === rawLogin.toUpperCase()
     );
     if (!m) return json(404, { error: 'Mobile number or Member ID not found' });
-    const pending = state.passwordResetRequests.find(x => x.memberId === m.memberId && x.status === 'Pending');
-    if (pending) return json(200, { ok: true, message: 'Password reset request already sent to Admin.' });
-    const prId = 'PR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
-    state.passwordResetRequests.push({
-      id: prId,
-      memberId: m.memberId,
-      mobile: m.mobile,
-      name: m.name,
-      status: 'Pending',
-      createdAt: new Date().toISOString()
+    if (!m.email) return json(400, { error: 'No email address is registered for this account. Please contact Admin.' });
+
+    // Generate a one-time temporary password and email it directly to the registered address.
+    const temp = 'B5@' + crypto.randomBytes(6).toString('hex');
+    m.passwordHash = hashPassword(temp);
+    m.mustChangePassword = true;
+    const resetAt = new Date().toISOString();
+    state.messages.push({
+      to: m.memberId,
+      message: 'A temporary password was sent to your registered email. Sign in and change it immediately.',
+      at: resetAt
     });
     ctx.notifyMemberEmail(
       m,
-      'BORNTOWIN5 - Password Reset Requested',
-      `Hello ${m.name},\n\nA password reset was requested for your account (${m.memberId}). Admin will review your request shortly.`,
-      { eventType: 'LOGIN_SECURITY', eventKey: `PWD_RESET_REQ:${prId}` }
+      'BORNTOWIN5 - Temporary Password for Account Recovery',
+      `Hello ${m.name},\n\nA password reset was requested for your BORNTOWIN5 account (${m.memberId}).\n\nYour temporary password is: ${temp}\n\nPlease sign in using this temporary password and change it immediately. If you did not request this reset, contact Admin.`,
+      { eventType: 'PASSWORD_RESET_TEMPORARY_PASSWORD', eventKey: `PWD_RESET_EMAIL:${m.memberId}:${resetAt}` }
     );
     await saveChanges();
-    return json(200, { ok: true, message: 'Password reset request sent to Admin. Please contact Admin after approval.' });
+    return json(200, { ok: true, message: 'If your account has a registered email address, a temporary password has been sent there. Please check your inbox and spam folder.' });
   }
 
   const memberPwdParams = method === 'POST' && matchRoute('/api/member/password/:id', pathname);

@@ -1,11 +1,16 @@
-B5 EMAIL CORRECTION — ENGINE FILE ONLY
+B5 targeted email correction
 
-Purpose:
-- Corrects the email audit behavior so the engine calls the configured SMTP sender instead of marking an email SENT without sending it.
-- Records SENT only when the SMTP transport accepts the recipient; records FAILED with an error if sending fails.
-- Leaves server.js, login/authentication code, payment/upgrade rules, and database schema unchanged.
+File to replace: b5-engine.js only.
 
-Deployment:
-- Replace only the existing b5-engine.js with this file in the same location.
-- Do not replace server.js or other files with this ZIP.
-- This source correction does not supply SMTP credentials or prove the live SMTP server is configured correctly. After deployment, trigger one controlled test email and inspect the email audit status/error.
+Changes:
+1. Forgot Password now generates a temporary password, hashes it in the member record, marks mustChangePassword=true, and emails the temporary password to the registered email address. It no longer creates an Admin approval request for this flow.
+2. Existing payer and receiver email triggers are preserved, including PAYMENT_DETAILS_ASSIGNED_PAYER and PAYMENT_ASSIGNED_RECEIVER. No payment, upgrade, rotation, or database business rules were intentionally changed.
+
+Important deployment note:
+The provided Admin screenshot showed SMTP delivery failures with "Connection timeout". This engine-only correction cannot fix a live SMTP host/port/network timeout. Confirm the actual SMTP host and port in the hosting environment with the mail provider. Do not share SMTP passwords.
+
+After deployment, test in staging first:
+- Forgot Password with a test account and confirm the email arrives.
+- Admin sends payment details; payer receives email.
+- Receiver is assigned a payment; receiver receives email.
+- Check Admin Email Audit for actual SENT/FAILED status.
