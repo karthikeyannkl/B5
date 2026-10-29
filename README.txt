@@ -1,16 +1,27 @@
-B5 targeted email correction
+BORNTOWIN5 (B5) — Email correction patch
 
-File to replace: b5-engine.js only.
+Included files:
+- b5-engine.js
+- member.html
 
-Changes:
-1. Forgot Password now generates a temporary password, hashes it in the member record, marks mustChangePassword=true, and emails the temporary password to the registered email address. It no longer creates an Admin approval request for this flow.
-2. Existing payer and receiver email triggers are preserved, including PAYMENT_DETAILS_ASSIGNED_PAYER and PAYMENT_ASSIGNED_RECEIVER. No payment, upgrade, rotation, or database business rules were intentionally changed.
+Patch scope:
+1. Forgot Password sends a temporary password to the registered email and reports success only if the SMTP sender resolves successfully. On delivery failure, it does not change the password.
+2. Payment details assigned to the payer and payment assigned to the receiver are sent through the SMTP sender. Email audit entries are marked SENT only after the sender resolves; failures are recorded as FAILED.
+3. Member can request an email change while signed in. A six-digit code is sent to the new address and expires after 10 minutes. The registered address changes only after the code is confirmed.
+4. After a verified email change, the system attempts a security notice to the previous address.
 
-Important deployment note:
-The provided Admin screenshot showed SMTP delivery failures with "Connection timeout". This engine-only correction cannot fix a live SMTP host/port/network timeout. Confirm the actual SMTP host and port in the hosting environment with the mail provider. Do not share SMTP passwords.
+Deployment:
+- Back up the currently deployed b5-engine.js and member.html first.
+- Replace only these two files in the existing project.
+- Keep the existing D1 repository, database, environment bindings, and other project files unchanged.
+- Confirm SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and EMAIL_FROM in the hosting environment. Never share SMTP_PASS in chat.
+- Deploy to staging first and test Forgot Password, payer email, receiver email, email change verification, and failed-SMTP behavior before production.
 
-After deployment, test in staging first:
-- Forgot Password with a test account and confirm the email arrives.
-- Admin sends payment details; payer receives email.
-- Receiver is assigned a payment; receiver receives email.
-- Check Admin Email Audit for actual SENT/FAILED status.
+Validation performed here:
+- `node --check b5-engine.js` passed.
+- Inline JavaScript in member.html passed `node --check`.
+- Static inspection confirms the four email-related flows are present and SENT status is assigned only after smtpSender resolves.
+
+Limitations:
+- No live production SMTP delivery or D1 integration test was possible in this environment. Successful delivery still depends on the deployed SMTP host/port/credentials and hosting network access.
+- This patch is based on the uploaded member.html and the existing b5-engine.js source; no unrelated business rules were intentionally changed.

@@ -486,6 +486,14 @@ button,.b5-primary{
       </div>
       <button class="b5-primary" style="margin-top:12px" onclick="saveMemberProfile()">SAVE &amp; LOCK PROFILE</button>
       <div id="profileMsg" class="b5-msg"></div>
+      <div class="detail-grid" style="margin-top:18px;border-top:1px solid #dbe7df;padding-top:16px">
+        <div style="grid-column:1/-1"><h4 style="margin:0 0 6px;color:#064e3b">Change Email ID</h4><small>Enter your new email address. A verification code will be sent to that address. Your current email stays unchanged until the code is confirmed.</small></div>
+        <div style="grid-column:1/-1"><small>New Email ID</small><input id="emailChangeNew" type="email" autocomplete="email" placeholder="Enter new email address"></div>
+        <div style="grid-column:1/-1"><button type="button" class="b5-secondary" onclick="b5RequestEmailChange()">SEND VERIFICATION CODE</button></div>
+        <div style="grid-column:1/-1"><small>Verification Code (valid for 10 minutes)</small><input id="emailChangeCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Enter 6-digit code"></div>
+        <div style="grid-column:1/-1"><button type="button" class="b5-primary" onclick="b5ConfirmEmailChange()">VERIFY &amp; UPDATE EMAIL</button></div>
+        <div id="emailChangeMsg" class="b5-msg" style="grid-column:1/-1"></div>
+      </div>
     </div>
   </section>
 
@@ -693,11 +701,42 @@ async function b5Register(){
   }
 }
 
+function b5EmailChangePanel(){
+  return '<div class="detail-grid" style="margin-top:18px;border-top:1px solid #dbe7df;padding-top:16px"><div style="grid-column:1/-1"><h4 style="margin:0 0 6px;color:#064e3b">Change Email ID</h4><small>Enter your new email address. A verification code will be sent to that address. Your current email stays unchanged until the code is confirmed.</small></div><div style="grid-column:1/-1"><small>New Email ID</small><input id="emailChangeNew" type="email" autocomplete="email" placeholder="Enter new email address"></div><div style="grid-column:1/-1"><button type="button" class="b5-secondary" onclick="b5RequestEmailChange()">SEND VERIFICATION CODE</button></div><div style="grid-column:1/-1"><small>Verification Code (valid for 10 minutes)</small><input id="emailChangeCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Enter 6-digit code"></div><div style="grid-column:1/-1"><button type="button" class="b5-primary" onclick="b5ConfirmEmailChange()">VERIFY &amp; UPDATE EMAIL</button></div><div id="emailChangeMsg" class="b5-msg" style="grid-column:1/-1"></div></div>';
+}
+
+async function b5RequestEmailChange(){
+  const emailEl=document.getElementById('emailChangeNew');
+  const msg=document.getElementById('emailChangeMsg');
+  const email=(emailEl?.value||'').trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(msg)msg.textContent='Enter a valid new email address.';return;}
+  if(msg)msg.textContent='Sending verification code…';
+  try{
+    const d=await b5api('/api/member/email-change/request',{method:'POST',body:JSON.stringify({email})});
+    if(msg)msg.textContent=d.message||'Verification code sent. Check the new email inbox and spam folder.';
+  }catch(e){if(msg)msg.textContent=e.message||'Could not send verification code.';}
+}
+
+async function b5ConfirmEmailChange(){
+  const codeEl=document.getElementById('emailChangeCode');
+  const msg=document.getElementById('emailChangeMsg');
+  const code=(codeEl?.value||'').trim();
+  if(!/^\d{6}$/.test(code)){if(msg)msg.textContent='Enter the 6-digit verification code.';return;}
+  if(msg)msg.textContent='Verifying code…';
+  try{
+    const d=await b5api('/api/member/email-change/confirm',{method:'POST',body:JSON.stringify({code})});
+    await b5Refresh();
+    const liveMsg=document.getElementById('emailChangeMsg');if(liveMsg)liveMsg.textContent=d.message||'Email address updated successfully.';
+    const emailEl=document.getElementById('emailChangeNew');if(emailEl)emailEl.value='';
+    const liveCode=document.getElementById('emailChangeCode');if(liveCode)liveCode.value='';
+  }catch(e){if(msg)msg.textContent=e.message||'Email verification failed.';}
+}
+
 function b5FillProfile(p){
   const box=document.getElementById('memberProfileEdit');
   if(!box)return;
   if(p.profileLocked){
-    box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><b>My Profile &amp; Bank Details</b><div class="small">✓ Profile verified and locked</div></div><button type="button" class="b5-secondary" style="width:auto;padding:8px 12px;font-size:12px" onclick="b5ChangePassword()">Change Password</button></div><div class="detail-grid"><div><small>Name</small><b>'+esc(p.name)+'</b></div><div><small>Place / City</small><b>'+esc(p.place)+'</b></div><div><small>Mobile</small><b>'+esc(p.mobile)+'</b></div><div><small>Email ID</small><b>'+esc(p.email)+'</b></div><div><small>Referral ID</small><b>'+esc(p.referralId||p.referral)+'</b></div><div><small>Account Holder</small><b>'+esc(p.accountHolder)+'</b></div><div><small>Bank Name</small><b>'+esc(p.bank)+'</b></div><div><small>Account Number</small><b>'+esc(p.account)+'</b></div><div><small>IFSC</small><b>'+esc(p.ifsc)+'</b></div><div><small>Branch</small><b>'+esc(p.branch)+'</b></div><div><small>UPI ID</small><b>'+esc(p.upi)+'</b></div></div><div class="b5-msg" style="margin-top:12px">For profile or bank changes, please contact Admin.</div>';
+    box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><b>My Profile &amp; Bank Details</b><div class="small">✓ Profile verified and locked</div></div><button type="button" class="b5-secondary" style="width:auto;padding:8px 12px;font-size:12px" onclick="b5ChangePassword()">Change Password</button></div><div class="detail-grid"><div><small>Name</small><b>'+esc(p.name)+'</b></div><div><small>Place / City</small><b>'+esc(p.place)+'</b></div><div><small>Mobile</small><b>'+esc(p.mobile)+'</b></div><div><small>Email ID</small><b>'+esc(p.email)+'</b></div><div><small>Referral ID</small><b>'+esc(p.referralId||p.referral)+'</b></div><div><small>Account Holder</small><b>'+esc(p.accountHolder)+'</b></div><div><small>Bank Name</small><b>'+esc(p.bank)+'</b></div><div><small>Account Number</small><b>'+esc(p.account)+'</b></div><div><small>IFSC</small><b>'+esc(p.ifsc)+'</b></div><div><small>Branch</small><b>'+esc(p.branch)+'</b></div><div><small>UPI ID</small><b>'+esc(p.upi)+'</b></div></div><div class="b5-msg" style="margin-top:12px">For profile or bank changes, please contact Admin.</div>'+b5EmailChangePanel();
     return;
   }
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
