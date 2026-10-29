@@ -161,7 +161,7 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     }
   }
 
-  function dispatchEmailNotification({ eventType = 'GENERAL', eventKey = '', to = '', recipientId = '', subject = '', text = '', html = '', metadata = {} }) {
+  async function dispatchEmailNotification({ eventType = 'GENERAL', eventKey = '', to = '', recipientId = '', subject = '', text = '', html = '', metadata = {} }) {
     try {
       db.emailNotificationLog = Array.isArray(db.emailNotificationLog) ? db.emailNotificationLog : [];
       if (eventKey) {
@@ -195,36 +195,44 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         entry.updatedAt = new Date().toISOString();
         return entry;
       }
-      if (String(entry.to).toLowerCase().endsWith('@simulate-smtp-fail.test')) {
-        entry.status = 'FAILED';
-        entry.deliveryStatus = 'FAILED';
-        entry.liveDelivered = false;
-        entry.attempts = 2;
-        entry.error = 'Simulated SMTP transport error (non-fatal; core D1 transaction preserved)';
-        entry.updatedAt = new Date().toISOString();
-        return entry;
-      }
       if (!smtpConfigured || typeof smtpSender !== 'function') {
         entry.status = 'SKIPPED_NO_SMTP';
         entry.deliveryStatus = 'SKIPPED_NO_SMTP';
-        entry.attempts = 1;
-        entry.error = 'SMTP_PASS is not configured (event generated & logged in Cloudflare D1)';
+        entry.attempts = 0;
+        entry.error = 'SMTP is not configured; no live send was attempted';
         entry.updatedAt = new Date().toISOString();
         return entry;
       }
       entry.attempts = 1;
-      entry.status = 'SENT';
-      entry.deliveryStatus = 'SENT';
-      entry.liveDelivered = true;
+      try {
+        const info = await smtpSender({ to: entry.to, subject: entry.subject, text: String(text || ''), html: html || undefined });
+        const accepted = Array.isArray(info && info.accepted) ? info.accepted.map(x => String(x).toLowerCase()) : null;
+        const rejected = Array.isArray(info && info.rejected) ? info.rejected.map(x => String(x).toLowerCase()) : [];
+        const recipient = entry.to.toLowerCase();
+        if ((accepted && accepted.length > 0 && !accepted.includes(recipient)) || rejected.includes(recipient)) {
+          throw new Error('SMTP server did not accept the recipient address');
+        }
+        entry.status = 'SENT';
+        entry.deliveryStatus = 'SENT';
+        entry.liveDelivered = true;
+        entry.error = null;
+        entry.metadata = { ...(entry.metadata || {}), smtpMessageId: info && info.messageId ? String(info.messageId) : null, smtpResponse: info && info.response ? String(info.response).slice(0, 300) : null };
+      } catch (sendError) {
+        entry.status = 'FAILED';
+        entry.deliveryStatus = 'FAILED';
+        entry.liveDelivered = false;
+        entry.error = String(sendError && sendError.message || sendError || 'Unknown SMTP error').slice(0, 500);
+      }
+      entry.updatedAt = new Date().toISOString();
       return entry;
     } catch (e) {
       return null;
     }
   }
 
-  function notifyMemberEmail(member, subject, text, opts = {}) {
+  async function notifyMemberEmail(member, subject, text, opts = {}) {
     const to = member && (member.email || member.rEmail);
-    return dispatchEmailNotification({
+    return await dispatchEmailNotification({
       eventType: opts.eventType || 'MEMBER_NOTIFICATION',
       eventKey: opts.eventKey || '',
       to: to || '',
@@ -235,8 +243,8 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     });
   }
 
-  function notifyAdminEmail(subject, text, opts = {}) {
-    return dispatchEmailNotification({
+  async function notifyAdminEmail(subject, text, opts = {}) {
+    return await dispatchEmailNotification({
       eventType: opts.eventType || 'ADMIN_NOTIFICATION',
       eventKey: opts.eventKey || '',
       to: adminContactEmail,
@@ -1684,7 +1692,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       return json(401, { error: 'Incorrect password' });
     }
     const adminToken = ctx.createAuthToken({ role: 'admin' });
-    ctx.notifyAdminEmail(
+    await ctx.notifyAdminEmail(
       'BORNTOWIN5 - Admin Login Security Alert',
       `Admin portal login succeeded at ${new Date().toISOString()}.`,
       { eventType: 'LOGIN_SECURITY', eventKey: `ADMIN_LOGIN:${new Date().toISOString().slice(0, 16)}` }
@@ -1814,7 +1822,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       message: 'Admin approved your password reset. Temporary password: ' + temp + '. Login and change your password.',
       at: new Date().toISOString()
     });
-    ctx.notifyMemberEmail(
+    await ctx.notifyMemberEmail(
       m,
       'BORNTOWIN5 - Password Reset Approved',
       `Hello ${m.name},\n\nAdmin approved your password reset request.\nTemporary password: ${temp}\nPlease sign in and change your password immediately.`,
@@ -1848,7 +1856,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     const now = new Date().toISOString();
     if (body.to === 'all') {
       state.messages.push({ to: 'ALL', message: msgText, at: now });
-      ctx.notifyAdminEmail(
+      await ctx.notifyAdminEmail(
         'BORNTOWIN5 - Admin Broadcast Announcement',
         `Broadcast Announcement to ALL members:\n\n${msgText}`,
         { eventType: 'ADMIN_ANNOUNCEMENT', eventKey: `ADMIN_MSG_ALL:${now}`, metadata: { to: 'ALL', message: msgText } }
@@ -1857,7 +1865,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       const targetMember = state.members.find(m => m.memberId === body.memberId);
       if (!targetMember) return json(404, { error: 'Member not found' });
       state.messages.push({ to: targetMember.memberId, message: msgText, at: now });
-      ctx.notifyMemberEmail(
+      await ctx.notifyMemberEmail(
         targetMember,
         'BORNTOWIN5 - Official Admin Message',
         `Hello ${targetMember.name},\n\nMessage from BORNTOWIN5 Admin:\n${msgText}`,
@@ -1945,7 +1953,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       (isDefaultTestAccount && supplied === 'Test@12345');
     if (!pwdMatches) return json(401, { error: 'Incorrect password' });
     const memberToken = ctx.createAuthToken({ role: 'member', memberId: m.memberId });
-    ctx.notifyMemberEmail(
+    await ctx.notifyMemberEmail(
       m,
       'BORNTOWIN5 - Login Security Alert',
       `Hello ${m.name},\n\nYour BORNTOWIN5 account (${m.memberId}) was signed in at ${new Date().toISOString()}.`,
@@ -1980,7 +1988,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       status: 'Pending',
       createdAt: new Date().toISOString()
     });
-    ctx.notifyMemberEmail(
+    await ctx.notifyMemberEmail(
       m,
       'BORNTOWIN5 - Password Reset Requested',
       `Hello ${m.name},\n\nA password reset was requested for your account (${m.memberId}). Admin will review your request shortly.`,
@@ -2076,7 +2084,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     pr.usedBy = m.memberId;
     pr.usedAt = new Date().toISOString();
 
-    ctx.notifyMemberEmail(
+    await ctx.notifyMemberEmail(
       m,
       'BORNTOWIN5 - Registration Successful',
       `Hello ${m.name},\n\nYour BORNTOWIN5 registration was successful.\nMember ID: ${m.memberId}\nMobile: ${m.mobile}\n\nThank you for joining BORNTOWIN5.`,
@@ -2443,13 +2451,13 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
           message: `Incoming payment assigned to you (${payment.id}, Req: ${r.id}) from ${m.name} (${m.memberId}) for ${r.kind === 'REFERRAL_UPGRADE' ? 'Additional Upgrade (L2)' : `L${r.from} → L${r.to}`}. Check Receiver Confirmation.`,
           at: now
         });
-        freshCtx.notifyMemberEmail(
+        await freshCtx.notifyMemberEmail(
           m,
           'BORNTOWIN5 - Upgrade Payment Details Assigned',
           `Hello ${m.name},\n\nAdmin has assigned payment details for your ${r.kind === 'REFERRAL_UPGRADE' ? 'Advanced Referral Upgrade (Seniority L2)' : 'Level ' + r.from + ' to Level ' + r.to + ' upgrade'}.\nRequest ID: ${r.id}\nPayment ID: ${payment.id}\nTotal amount: ₹${amount.toLocaleString()}\nPlease sign in to view the verified payment instructions.`,
           { eventType: 'PAYMENT_DETAILS_ASSIGNED_PAYER', eventKey: `ASSIGN_PAYER:${r.id}:${payment.id}`, metadata: { requestId: r.id, paymentId: payment.id, memberId: m.memberId } }
         );
-        freshCtx.notifyMemberEmail(
+        await freshCtx.notifyMemberEmail(
           receiver,
           'BORNTOWIN5 - Incoming Payment Assigned',
           `Hello ${receiver.name},\n\nA payment request has been assigned to you from member ${m.memberId} (${m.name}).\nRequest ID: ${r.id}\nPayment ID: ${payment.id}\nPlease sign in to the Receiver page to review payment proof when submitted.`,
@@ -2482,7 +2490,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     state.leveltrackMessages.push({ to: m.memberId, message, at: new Date().toISOString() });
     p.detailsSentAt = new Date().toISOString();
     p.expiresAt = new Date(Date.now() + PAYMENT_DEADLINE_MS).toISOString();
-    ctx.notifyMemberEmail(
+    await ctx.notifyMemberEmail(
       m,
       'BORNTOWIN5 - Upgrade Payment Details Resent',
       `Hello ${m.name},\n\nAdmin has resent payment details for your request ${r.id} (Payment ID: ${p.id}).`,
@@ -2512,7 +2520,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       if (m) {
         m.paymentAccessLocked = false;
         state.leveltrackMessages.push({ to: m.memberId, message: `Your 24-hour payment deadline for request ${r.id} has been extended until ${p.expiresAt}.`, at: now });
-        ctx.notifyMemberEmail(
+        await ctx.notifyMemberEmail(
           m,
           'BORNTOWIN5 - 24-Hour Payment Deadline Reminder & Extension',
           `Hello ${m.name},\n\nYour 24-hour payment deadline for request ${r.id} (Payment ID: ${p.id}) has been extended by 24 hours until ${p.expiresAt}.\nPlease submit your payment proof before the deadline expires.`,
@@ -2535,7 +2543,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     const now = new Date().toISOString();
     const exp = p ? ctx.paymentDeadlineAt(p) : null;
     state.leveltrackMessages.push({ to: m.memberId, message: `Reminder: Please complete your upgrade payment for request ${r.id}${exp ? ' before ' + exp : ''}.`, at: now });
-    const entry = ctx.notifyMemberEmail(
+    const entry = await ctx.notifyMemberEmail(
       m,
       'BORNTOWIN5 - 24-Hour Payment Deadline Reminder',
       `Hello ${m.name},\n\nThis is a reminder to submit your upgrade payment proof for request ${r.id}${p ? ' (Payment ID: ' + p.id + ')' : ''}${exp ? ' before the 24-hour deadline at ' + exp : ''}.`,
@@ -2565,7 +2573,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       if (m) {
         m.paymentAccessLocked = true;
         m.paymentReviewStatus = 'ADMIN_REVIEW';
-        ctx.notifyMemberEmail(
+        await ctx.notifyMemberEmail(
           m,
           'BORNTOWIN5 - Upgrade Request Released for Review',
           `Hello ${m.name},\n\nYour upgrade request (${r.id}) slot was released pending Admin review.`,
@@ -2598,7 +2606,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       r.status = 'Blacklisted';
       r.reservedReceiverId = null;
       state.leveltrackMessages.push({ to: m.memberId, message: 'Your payment access is locked pending Admin review. Please contact Admin before proceeding.', at: new Date().toISOString() });
-      ctx.notifyMemberEmail(
+      await ctx.notifyMemberEmail(
         m,
         'BORNTOWIN5 - Payment Access Locked for Review',
         `Hello ${m.name},\n\nYour upgrade request (${r.id}) and payment access have been locked for Admin review.`,
@@ -2725,13 +2733,13 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       m.paymentAccessLocked = false;
       m.paymentReviewStatus = '';
       freshState.leveltrackMessages.push({ to: m.memberId, message: 'Admin restored your payment access and issued new receiver details. New 24-hour deadline starts now.', at: now });
-      freshCtx.notifyMemberEmail(
+      await freshCtx.notifyMemberEmail(
         m,
         'BORNTOWIN5 - New Payment Details Assigned',
         `Hello ${m.name},\n\nAdmin restored your payment access and assigned receiver details (Payment ID: ${np.id}).`,
         { eventType: 'PAYMENT_DETAILS_ASSIGNED_PAYER', eventKey: `REASSIGN_PAYER:${r.id}:${np.id}`, metadata: { requestId: r.id, paymentId: np.id } }
       );
-      freshCtx.notifyMemberEmail(
+      await freshCtx.notifyMemberEmail(
         receiver,
         'BORNTOWIN5 - Incoming Payment Assigned',
         `Hello ${receiver.name},\n\nA payment request (${r.id}, Payment ID: ${np.id}) has been assigned to you from member ${m.memberId}.`,
@@ -2780,20 +2788,20 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       u.seniorityLevel = 2;
       p.seniorityLevel = 2;
       state.leveltrackMessages.push({ to: m.memberId, message: 'Upgrade completed. Your next Level Upgrade is now available when unlocked.', at: approvedAt });
-      ctx.notifyMemberEmail(
+      await ctx.notifyMemberEmail(
         m,
         'BORNTOWIN5 - Upgrade Request Approved',
         `Hello ${m.name},\n\nAdmin has approved your Advanced Referral Upgrade (Request ID: ${u.requestId}, Payment ID: ${p.id}). Your next upgrade is now unlocked.`,
         { eventType: 'FINAL_PAYMENT_APPROVED', eventKey: `FINAL_APPROVE_SENDER:${p.id}`, metadata: { requestId: u.requestId, paymentId: p.id, upgradeId: u.id } }
       );
-      ctx.notifyMemberEmail(
+      await ctx.notifyMemberEmail(
         m,
         'BORNTOWIN5 - Upgrade Request Status: Approved',
         `Hello ${m.name},\n\nYour upgrade request ${u.requestId} has been approved.`,
         { eventType: 'UPGRADE_REQUEST_STATUS', eventKey: `REQ_STATUS_APPROVED:${u.requestId}`, metadata: { requestId: u.requestId, status: 'Approved' } }
       );
       if (receiver) {
-        ctx.notifyMemberEmail(
+        await ctx.notifyMemberEmail(
           receiver,
           'BORNTOWIN5 - Incoming Payment Final Approved',
           `Hello ${receiver.name},\n\nAdmin has finalized approval for incoming payment ${p.id} from ${m.memberId} (${m.name}).`,
@@ -2809,20 +2817,20 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     m.upgradeDate = approvedAt;
     m.status = 'Verified';
     state.leveltrackMessages.push({ to: m.memberId, message: `Admin approved payment. Level upgrade completed. You are now Level ${m.level}.`, at: approvedAt });
-    ctx.notifyMemberEmail(
+    await ctx.notifyMemberEmail(
       m,
       'BORNTOWIN5 - Level Upgrade Completed',
       `Hello ${m.name},\n\nAdmin has approved your payment (Payment ID: ${p.id}, Request ID: ${u.requestId}). Your level upgrade is complete.\nCurrent level: ${m.level}\nMember ID: ${m.memberId}`,
       { eventType: 'FINAL_PAYMENT_APPROVED', eventKey: `FINAL_APPROVE_SENDER:${p.id}`, metadata: { requestId: u.requestId, paymentId: p.id, newLevel: m.level } }
     );
-    ctx.notifyMemberEmail(
+    await ctx.notifyMemberEmail(
       m,
       'BORNTOWIN5 - Upgrade Request Status: Approved',
       `Hello ${m.name},\n\nYour Level ${u.from} → Level ${u.to} upgrade request (${u.requestId}) has been approved.`,
       { eventType: 'UPGRADE_REQUEST_STATUS', eventKey: `REQ_STATUS_APPROVED:${u.requestId}`, metadata: { requestId: u.requestId, status: 'Approved', newLevel: m.level } }
     );
     if (receiver) {
-      ctx.notifyMemberEmail(
+      await ctx.notifyMemberEmail(
         receiver,
         'BORNTOWIN5 - Incoming Payment Final Approved',
         `Hello ${receiver.name},\n\nAdmin has finalized approval for incoming payment ${p.id} from ${m.memberId} (${m.name}).`,
@@ -2895,7 +2903,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     const payer = ctx.ltMember(p.fromMemberId);
     if (payer) {
       state.leveltrackMessages.push({ to: payer.memberId, message: `Your payment (${p.id}) for request ${r?.id || u?.requestId || ''} was rejected: ${reason}`, at: now });
-      ctx.notifyMemberEmail(
+      await ctx.notifyMemberEmail(
         payer,
         'BORNTOWIN5 - Upgrade Payment Rejected',
         `Hello ${payer.name},\n\nYour submitted payment (${p.id}) for request ${r?.id || u?.requestId || ''} was rejected.\nReason: ${reason}`,
@@ -3102,13 +3110,13 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
         };
         freshState.leveltrackRequests.push(r);
         freshState.leveltrackMessages.push({ to: 'ADMIN', message: `New LevelTrack upgrade request: ${m.name} — L${from} → L${to}.`, at: now });
-        freshCtx.notifyMemberEmail(
+        await freshCtx.notifyMemberEmail(
           m,
           'BORNTOWIN5 - Upgrade Request Received',
           `Hello ${m.name},\n\nYour upgrade request (${r.from} → ${r.to}) has been received and is waiting for Admin processing.\nRequest ID: ${r.id}`,
           { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId, from, to } }
         );
-        freshCtx.notifyAdminEmail(
+        await freshCtx.notifyAdminEmail(
           'BORNTOWIN5 - New Upgrade Request Submitted',
           `Member ${m.name} (${m.memberId}) submitted Level ${from} → Level ${to} upgrade request (${r.id}).`,
           { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT_ADMIN:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId } }
@@ -3160,13 +3168,13 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
         };
         freshState.leveltrackRequests.push(r);
         freshState.leveltrackMessages.push({ to: 'ADMIN', message: `New Advanced Referral Upgrade: ${m.name} — cycle ${r.cycle}, Seniority L2.`, at: now });
-        freshCtx.notifyMemberEmail(
+        await freshCtx.notifyMemberEmail(
           m,
           'BORNTOWIN5 - Upgrade Request Received',
           `Hello ${m.name},\n\nYour Advanced Referral Upgrade request (cycle ${r.cycle}, Seniority L2) has been received and is waiting for Admin processing.\nRequest ID: ${r.id}`,
           { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId, kind: 'REFERRAL_UPGRADE' } }
         );
-        freshCtx.notifyAdminEmail(
+        await freshCtx.notifyAdminEmail(
           'BORNTOWIN5 - New Additional Referral Upgrade Request',
           `Member ${m.name} (${m.memberId}) submitted Additional Referral Upgrade request (${r.id}, Seniority L2).`,
           { eventType: 'UPGRADE_REQUEST_SUBMITTED', eventKey: `REQ_SUBMIT_ADMIN:${r.id}`, metadata: { requestId: r.id, memberId: m.memberId } }
@@ -3241,13 +3249,13 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       });
       const payer = ctx.ltMember(u.memberId);
       const receiver = ctx.ltMember(p.receiverMemberId);
-      ctx.notifyMemberEmail(
+      await ctx.notifyMemberEmail(
         receiver,
         'BORNTOWIN5 - Payment Proof Submitted',
         `Hello ${receiver?.name || p.receiverMemberId},\n\nMember ${payer?.name || u.memberId} (${u.memberId}) has submitted payment proof (UTR: ${p.utr}, Payment ID: ${p.id}) for ${u.kind === 'REFERRAL_UPGRADE' ? 'Advanced Referral Upgrade' : 'Level ' + u.from + ' to Level ' + u.to}.\nPlease sign in to the Receiver page to verify the payment.`,
         { eventType: 'PAYMENT_PROOF_SUBMITTED', eventKey: `PROOF_RECEIVER:${p.id}:${p.utr}`, metadata: { paymentId: p.id, requestId: u.requestId, receiverMemberId: p.receiverMemberId } }
       );
-      ctx.notifyAdminEmail(
+      await ctx.notifyAdminEmail(
         'BORNTOWIN5 - Payment Proof Submitted for Review',
         `Member ${payer?.name || u.memberId} (${u.memberId}) submitted payment proof (UTR: ${p.utr}, Payment ID: ${p.id}, Request ID: ${u.requestId}).`,
         { eventType: 'PAYMENT_PROOF_SUBMITTED', eventKey: `PROOF_ADMIN:${p.id}:${p.utr}`, metadata: { paymentId: p.id, requestId: u.requestId, payerMemberId: u.memberId } }
@@ -3281,7 +3289,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       const u = state.leveltrackUpgrades.find(x => x.id === p.upgradeId);
       if (u) u.receiverApproved = true;
       const payer = ctx.ltMember(p.fromMemberId);
-      ctx.notifyMemberEmail(
+      await ctx.notifyMemberEmail(
         payer,
         'BORNTOWIN5 - Receiver Confirmed Payment',
         `Hello ${payer?.name || p.fromMemberId},\n\nThe receiver (${p.receiverMemberId}) has confirmed receiving your payment (${p.id}). Your upgrade is now waiting for Admin final approval.`,
@@ -3324,7 +3332,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     const payer = ctx.ltMember(p.fromMemberId);
     if (payer) {
       state.leveltrackMessages.push({ to: payer.memberId, message: `Receiver (${p.receiverMemberId}) rejected payment proof (${p.id}): ${reason}`, at: now });
-      ctx.notifyMemberEmail(
+      await ctx.notifyMemberEmail(
         payer,
         'BORNTOWIN5 - Payment Proof Rejected by Receiver',
         `Hello ${payer.name},\n\nReceiver ${p.receiverMemberId} rejected payment proof ${p.id} for request ${r?.id || ''}.\nReason: ${reason}`,

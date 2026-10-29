@@ -428,6 +428,11 @@ button,.b5-primary{
       <button type="button" style="width:auto;padding:9px 13px;font-size:12px" onclick="uMemberLevelTrack('upgrade')">◆ Level Upgrade</button>
       <button type="button" class="b5-secondary" style="width:auto;padding:9px 13px;font-size:12px" onclick="uMemberLevelTrack('receiver')">▣ Receiver Confirmation</button>
     </div>
+    <div id="dashboardIncomingReceiverBanner" class="hidden" style="margin-top:14px;border:1px solid #dfc58c;border-radius:16px;background:#fff3df;padding:16px;color:#754314">
+      <b id="dashboardIncomingReceiverTitle">🔔 Incoming Member Payment Waiting for Your Confirmation!</b>
+      <div class="small" style="margin-top:6px">Verify your bank/UPI receipt and confirm so Admin can finalize the upgrade.</div>
+      <button type="button" class="primary" style="width:auto;margin-top:12px;padding:10px 16px" onclick="uMemberLevelTrack('receiver')">OPEN RECEIVER TAB →</button>
+    </div>
   </section>
 
   <section class="card" id="dashboardAdminMessages">
@@ -755,7 +760,7 @@ async function b5Refresh(){
     }
     const link=document.getElementById('myReferralLink');
     if(link)link.value=location.origin+location.pathname+'?ref='+encodeURIComponent(d.member.referralId||d.member.memberId);
-    const msgEl=document.getElementById('dashboardAdminMessageList'),msgs=d.messages||[];
+    const msgEl=document.getElementById('dashboardAdminMessageList'),msgs=(d.messages||[]).slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0)).slice(0,4);
     if(msgEl)msgEl.innerHTML=msgs.length?msgs.map(x=>`<div class="msgbox" style="margin-top:8px"><b>Admin</b><div style="margin-top:5px">${esc(x.message)}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">Admin message இல்லை.</div>';
   }catch(e){
     const msg=document.getElementById('dashboardAdminMessageList');
@@ -763,7 +768,22 @@ async function b5Refresh(){
   }
 }
 
-async function memberRefresh(){await b5Refresh();await b5LoadMessages();}
+async function b5LoadDashboardReceiverNotice(){
+  const memberId=localStorage.getItem('BORNTOWIN5_MEMBER_ID');
+  const banner=document.getElementById('dashboardIncomingReceiverBanner');
+  const title=document.getElementById('dashboardIncomingReceiverTitle');
+  if(!memberId||!banner)return;
+  try{
+    const d=await b5api('/api/leveltrack/member/dashboard/'+encodeURIComponent(memberId));
+    const incoming=(d.incomingPayments||[]).filter(p=>p.memberPaid&&!p.memberAccepted&&!p.adminApproved);
+    if(incoming.length){
+      banner.classList.remove('hidden');
+      if(title)title.textContent='🔔 '+incoming.length+' Incoming Member Payment'+(incoming.length===1?'':'s')+' Waiting for Your Confirmation!';
+    }else banner.classList.add('hidden');
+  }catch(e){ /* Keep dashboard usable if Level Tracking status is temporarily unavailable. */ }
+}
+
+async function memberRefresh(){await b5Refresh();await b5LoadMessages();await b5LoadDashboardReceiverNotice();}
 function memberLogout(){
   localStorage.removeItem('BORNTOWIN5_MEMBER_ID');
   localStorage.removeItem('B5_MEMBER_TOKEN');
@@ -819,9 +839,10 @@ async function b5LoadMessages(){
   if(!id)return;
   try{
     const d=await b5api('/api/member/messages/'+encodeURIComponent(id));
-    if(el)el.innerHTML=d.messages.length?d.messages.map(x=>`<div class="msgbox" style="margin-top:8px"><b>Admin</b><div style="margin-top:5px">${esc(x.message)}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">இன்னும் messages இல்லை.</div>';
+    const latestMessages=(d.messages||[]).slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0)).slice(0,4);
+    if(el)el.innerHTML=latestMessages.length?latestMessages.map(x=>`<div class="msgbox" style="margin-top:8px"><b>Admin</b><div style="margin-top:5px">${esc(x.message)}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">இன்னும் messages இல்லை.</div>';
     const dash=document.getElementById('dashboardAdminMessageList');
-    if(dash)dash.innerHTML=d.messages.length?d.messages.map(x=>`<div class="msgbox" style="margin-top:8px"><b>Admin</b><div style="margin-top:5px">${esc(x.message)}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">Admin message இல்லை.</div>';
+    if(dash)dash.innerHTML=latestMessages.length?latestMessages.map(x=>`<div class="msgbox" style="margin-top:8px"><b>Admin</b><div style="margin-top:5px">${esc(x.message)}</div><div class="small" style="margin-top:6px">${x.at?new Date(x.at).toLocaleString():''}</div></div>`).join(''):'<div class="small">Admin message இல்லை.</div>';
   }catch(e){}
 }
 setInterval(()=>{if(localStorage.getItem('BORNTOWIN5_MEMBER_ID'))b5LoadMessages();},8000);
@@ -834,6 +855,7 @@ function initMember(){
     gate.style.display='none';
     b5Refresh();
     b5LoadMessages();
+    b5LoadDashboardReceiverNotice();
     return;
   }
   gate.style.display='block';

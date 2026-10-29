@@ -1,16 +1,7 @@
-B5 TARGETED SPEED FIX — ONE BACKEND FILE ONLY
+B5 targeted corrections (only two files)
 
-File to replace in the existing B5-main project root:
-  d1-repository.js
+Files:
+- B5-main/b5-engine.js: actually invokes the configured SMTP sender, awaits the send result, and records SENT only after SMTP accepts the message; SMTP failures are recorded as FAILED with an error. Notification call sites now await the send attempt so the status is saved accurately.
+- B5-main/member.html: retains the latest requested dashboard changes: show only the 4 newest admin messages and show the incoming receiver-payment notification on the member dashboard.
 
-This patch reduces dashboard/API payload size by excluding inline payment screenshots from routine full-state reads and writes. Proof images remain stored in payment_proofs and are fetched only when a user opens a proof. A fallback keeps older inline proofs viewable. Existing screenshot data is preserved during updates.
-
-No HTML pages, server.js, b5-engine.js, database schema, Level 1–7 rules, rotation, approval rules, or email configuration are changed by this patch.
-
-Before deployment:
-1. Back up the existing d1-repository.js.
-2. Replace only that file in the existing project root.
-3. Redeploy the same project.
-4. Test Admin Level Tracking and Receiver payment proof opening with a test/known record.
-
-Do not run reset scripts or schema reset commands for this patch.
+Safety: make a backup of both current files first. Replace only these two files in the matching project paths, then deploy to a staging/test app first. Test a new registration and inspect Email Notification Audit & Delivery Logs. A SENT status means SMTP accepted the message, not a guarantee of Gmail inbox delivery. If the test passes, deploy to live. Do not replace database files or environment variables.
