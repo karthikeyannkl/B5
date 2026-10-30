@@ -63,7 +63,7 @@ export default {
           query,
           headers,
           body,
-          env
+          env: { ...env, __executionCtx: ctx }
         });
 
         if (result.isBinary) {

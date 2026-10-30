@@ -10,7 +10,8 @@
     "deploy:dry-run": "npx wrangler deploy --dry-run",
     "test": "node tests/phase4-qa-suite.js",
     "test:43": "node tests/verify-43-test-dataset.js",
-    "test:reset": "node tests/reset-staging-data.js"
+    "test:reset": "node tests/reset-staging-data.js",
+    "vapid:generate": "node scripts/generate-vapid-keys.js"
   },
   "dependencies": {
     "express": "^4.21.2",

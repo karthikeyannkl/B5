@@ -4,6 +4,8 @@
  */
 
 const crypto = require('crypto');
+let webPush = null;
+try { webPush = require('./web-push'); } catch (_) { /* bundled Worker-compatible sender */ }
 let _d1RepoModule;
 try {
   _d1RepoModule = require('./d1-repository');
@@ -251,6 +253,43 @@ function createSessionContext(db, env = {}, smtpSender = null) {
       text,
       metadata: opts.metadata || {}
     });
+  }
+
+  function queuePush(ownerRole, memberId, title, body, eventKey = '') {
+    const d1 = env.DB;
+    const publicKey = String(env.VAPID_PUBLIC_KEY || '').trim();
+    const privateKey = String(env.VAPID_PRIVATE_KEY || '').trim();
+    const subject = String(env.VAPID_SUBJECT || 'mailto:notifications@borntowin5.com').trim();
+    if (!d1 || !publicKey || !privateKey || !webPush || !memberId) return false;
+    const task = (async () => {
+      const res = await d1.prepare(`SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE owner_role = ? AND member_id = ?`).bind(ownerRole, String(memberId)).all();
+      const rows = res && res.results || [];
+      if (!rows.length) return;
+      const payload = JSON.stringify({ title: String(title || 'BORNTOWIN5'), body: String(body || ''), url: '/leveltrack-member.html', tag: String(eventKey || `${ownerRole}:${memberId}:${Date.now()}`) });
+      await Promise.all(rows.map(async row => {
+        try {
+          await webPush.sendNotification({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, payload, { publicKey, privateKey, subject, ttl: 86400 });
+        } catch (err) {
+          const status = Number(err && err.statusCode || 0);
+          if (status === 404 || status === 410) {
+            try { await d1.prepare('DELETE FROM push_subscriptions WHERE id = ?').bind(row.id).run(); } catch (_) {}
+          }
+          // Push delivery is deliberately isolated from payment/database workflows.
+        }
+      }));
+    })().catch(() => {});
+    const executionCtx = env.__executionCtx;
+    if (executionCtx && typeof executionCtx.waitUntil === 'function') executionCtx.waitUntil(task);
+    else task.catch(() => {});
+    return true;
+  }
+
+  function notifyMemberPush(memberId, title, body, eventKey = '') {
+    return queuePush('member', memberId, title, body, eventKey);
+  }
+
+  function notifyAdminPush(title, body, eventKey = '') {
+    return queuePush('admin', 'ADMIN', title, body, eventKey);
   }
 
   function ltMember(id) {
@@ -1405,6 +1444,8 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     flushEmailNotifications,
     notifyMemberEmail,
     notifyAdminEmail,
+    notifyMemberPush,
+    notifyAdminPush,
     ltMember,
     findMember,
     direct,
@@ -1559,6 +1600,46 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   function json(status, payload, extraH = {}) {
     return { status, headers: { ...respHeaders, ...extraH }, body: payload };
+  }
+
+  // Web Push subscription endpoints. Identity always comes from the signed session token/cookie.
+  if (method === 'GET' && pathname === '/api/push/vapid-public-key') {
+    const publicKey = String(env.VAPID_PUBLIC_KEY || '').trim();
+    if (!publicKey) return json(503, { error: 'Web Push is not configured. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY.' });
+    return json(200, { publicKey });
+  }
+  if (method === 'POST' && pathname === '/api/push/subscribe') {
+    if (!auth.isAdmin && !auth.memberId) return json(401, { error: 'Please sign in before enabling notifications.' });
+    const sub = body && body.subscription;
+    if (!sub || typeof sub.endpoint !== 'string' || !/^https:\/\//i.test(sub.endpoint) || !sub.keys || typeof sub.keys.p256dh !== 'string' || typeof sub.keys.auth !== 'string') {
+      return json(400, { error: 'Invalid browser push subscription.' });
+    }
+    const ownerRole = auth.isAdmin ? 'admin' : 'member';
+    const ownerId = auth.isAdmin ? 'ADMIN' : String(auth.memberId);
+    const now = new Date().toISOString();
+    const id = 'PUSH-' + crypto.randomBytes(8).toString('hex').toUpperCase();
+    try {
+      await d1.prepare(`INSERT INTO push_subscriptions (id, owner_role, member_id, endpoint, p256dh, auth, user_agent, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET owner_role=excluded.owner_role, member_id=excluded.member_id, p256dh=excluded.p256dh, auth=excluded.auth, user_agent=excluded.user_agent, updated_at=excluded.updated_at`)
+        .bind(id, ownerRole, ownerId, sub.endpoint, sub.keys.p256dh, sub.keys.auth, String(headers['user-agent'] || '').slice(0, 500), now, now).run();
+      return json(200, { ok: true, role: ownerRole });
+    } catch (_) { return json(500, { error: 'Could not save push subscription.' }); }
+  }
+  if (method === 'POST' && pathname === '/api/push/unsubscribe') {
+    if (!auth.isAdmin && !auth.memberId) return json(401, { error: 'Please sign in before managing notifications.' });
+    const endpoint = String(body && body.endpoint || '');
+    if (!endpoint) return json(400, { error: 'Subscription endpoint is required.' });
+    const ownerRole = auth.isAdmin ? 'admin' : 'member';
+    const ownerId = auth.isAdmin ? 'ADMIN' : String(auth.memberId);
+    await d1.prepare('DELETE FROM push_subscriptions WHERE endpoint = ? AND owner_role = ? AND member_id = ?').bind(endpoint, ownerRole, ownerId).run();
+    return json(200, { ok: true });
+  }
+  if (method === 'POST' && pathname === '/api/push/test') {
+    if (!auth.isAdmin && !auth.memberId) return json(401, { error: 'Please sign in before testing notifications.' });
+    const targetRole = auth.isAdmin ? 'admin' : 'member';
+    const targetId = auth.isAdmin ? 'ADMIN' : String(auth.memberId);
+    if (auth.isAdmin) ctx.notifyAdminPush('BORNTOWIN5 test notification', 'Web Push notifications are enabled on this device.', `PUSH_TEST:${targetRole}:${targetId}:${Date.now()}`);
+    else ctx.notifyMemberPush(targetId, 'BORNTOWIN5 test notification', 'Web Push notifications are enabled on this device.', `PUSH_TEST:${targetRole}:${targetId}:${Date.now()}`);
+    return json(200, { ok: true, message: 'Test push queued if VAPID keys and a subscription are configured.' });
   }
 
   // Admin RBAC check for /api/admin/* and /api/leveltrack/admin/*
@@ -2510,6 +2591,8 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
           message: `Incoming payment assigned to you (${payment.id}, Req: ${r.id}) from ${m.name} (${m.memberId}) for ${r.kind === 'REFERRAL_UPGRADE' ? 'Additional Upgrade (L2)' : `L${r.from} → L${r.to}`}. Check Receiver Confirmation.`,
           at: now
         });
+        freshCtx.notifyMemberPush(m.memberId, 'Payment details assigned', 'Admin has sent your B5 upgrade payment details. Sign in to review them.', `PAYMENT_ASSIGNED_PAYER:${payment.id}`);
+        freshCtx.notifyAdminPush('Payment assignment completed', `Payment details assigned for request ${r.id}.`, `PAYMENT_ASSIGNED_ADMIN:${payment.id}`);
         freshCtx.notifyMemberEmail(
           m,
           'BORNTOWIN5 - Upgrade Payment Details Assigned',
@@ -2849,6 +2932,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       u.seniorityLevel = 2;
       p.seniorityLevel = 2;
       state.leveltrackMessages.push({ to: m.memberId, message: 'Upgrade completed. Your next Level Upgrade is now available when unlocked.', at: approvedAt });
+      ctx.notifyMemberPush(m.memberId, 'B5 upgrade approved', 'Admin approved your upgrade. Your next upgrade is now unlocked.', `FINAL_APPROVE_SENDER:${p.id}`);
       ctx.notifyMemberEmail(
         m,
         'BORNTOWIN5 - Upgrade Request Approved',
@@ -2878,6 +2962,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     m.upgradeDate = approvedAt;
     m.status = 'Verified';
     state.leveltrackMessages.push({ to: m.memberId, message: `Admin approved payment. Level upgrade completed. You are now Level ${m.level}.`, at: approvedAt });
+    ctx.notifyMemberPush(m.memberId, 'Level upgrade completed', `Admin approved your payment. You are now Level ${m.level}.`, `FINAL_APPROVE_SENDER:${p.id}`);
     ctx.notifyMemberEmail(
       m,
       'BORNTOWIN5 - Level Upgrade Completed',
@@ -2964,6 +3049,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     const payer = ctx.ltMember(p.fromMemberId);
     if (payer) {
       state.leveltrackMessages.push({ to: payer.memberId, message: `Your payment (${p.id}) for request ${r?.id || u?.requestId || ''} was rejected: ${reason}`, at: now });
+      ctx.notifyMemberPush(payer.memberId, 'Upgrade payment rejected', `Your payment was rejected by Admin. Reason: ${reason}`, `ADMIN_REJECT:${p.id}`);
       ctx.notifyMemberEmail(
         payer,
         'BORNTOWIN5 - Upgrade Payment Rejected',
@@ -3312,6 +3398,8 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       });
       const payer = ctx.ltMember(u.memberId);
       const receiver = ctx.ltMember(p.receiverMemberId);
+      ctx.notifyMemberPush(receiver?.memberId, 'Payment proof submitted', `Member ${payer?.memberId || u.memberId} submitted payment proof. Please review the incoming payment.`, `PROOF_RECEIVER:${p.id}:${p.utr}`);
+      ctx.notifyAdminPush('Payment proof submitted', `Payment proof ${p.id} from ${u.memberId} needs review.`, `PROOF_ADMIN:${p.id}:${p.utr}`);
       ctx.notifyMemberEmail(
         receiver,
         'BORNTOWIN5 - Payment Proof Submitted',
@@ -3352,6 +3440,8 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       const u = state.leveltrackUpgrades.find(x => x.id === p.upgradeId);
       if (u) u.receiverApproved = true;
       const payer = ctx.ltMember(p.fromMemberId);
+      ctx.notifyMemberPush(p.fromMemberId, 'Receiver confirmed payment', 'Your receiver confirmed payment. Admin final approval is pending.', `REC_CONFIRM_PAYER:${p.id}`);
+      ctx.notifyAdminPush('Payment awaiting final approval', `Receiver ${p.receiverMemberId} confirmed payment ${p.id}; Admin final approval is pending.`, `REC_CONFIRM_ADMIN:${p.id}`);
       ctx.notifyMemberEmail(
         payer,
         'BORNTOWIN5 - Receiver Confirmed Payment',
@@ -3395,6 +3485,8 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     const payer = ctx.ltMember(p.fromMemberId);
     if (payer) {
       state.leveltrackMessages.push({ to: payer.memberId, message: `Receiver (${p.receiverMemberId}) rejected payment proof (${p.id}): ${reason}`, at: now });
+      ctx.notifyMemberPush(payer.memberId, 'Payment proof rejected', `Receiver rejected your payment proof. Reason: ${reason}`, `REC_REJECT:${p.id}`);
+      ctx.notifyAdminPush('Payment proof rejected by receiver', `Payment ${p.id} was rejected by receiver ${p.receiverMemberId}.`, `REC_REJECT_ADMIN:${p.id}`);
       ctx.notifyMemberEmail(
         payer,
         'BORNTOWIN5 - Payment Proof Rejected by Receiver',
