@@ -33,12 +33,6 @@ const LEVEL_RULES = {
 const LEVEL_SLOT_CAPACITY = { 2: 5, 3: 10, 4: 10, 5: 5, 6: 5, 7: 5 };
 const PAYMENT_DEADLINE_MS = 24 * 60 * 60 * 1000;
 
-const SENIORITY_TEST_IDS = [
-  ['KARTHI01', '7000000001'], ['SATHYA02', '7000000002'], ['KARTHI03', '7000000003'], ['SATHYA04', '7000000004'], ['KARTHI05', '7000000005'],
-  ['SATHYA06', '7000000006'], ['KARTHI07', '7000000007'], ['SATHYA08', '7000000008'], ['KARTHI09', '7000000009'], ['KARTHI10', '7000000010']
-];
-const SENIORITY_TEST_REF = 'REF-FC329E';
-
 let _lastMonotonicMs = 0;
 function nextMonotonicIso() {
   const now = Math.max(Date.now(), _lastMonotonicMs + 1);
@@ -591,8 +585,9 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     for (const m of validMembers) {
       if (seenIds.has(m.memberId)) continue;
       if (m.excludeFromSeniorityQueue) continue;
-      const reached = m.levelReachedAt && m.levelReachedAt[target];
-      if (!!reached || Number(m.level || 1) >= target) {
+      const isInitial = Boolean(m.initialSeniority && m.initialSeniority[target] !== undefined);
+      const reached = Boolean(m.levelReachedAt && m.levelReachedAt[target]);
+      if (isInitial || reached || Number(m.level || 1) >= target) {
         seenIds.add(m.memberId);
         eligible.push(m);
       }
@@ -625,13 +620,8 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         const bo = bLvl !== null ? bLvl : 999999;
         if (ao !== bo) return ao - bo;
       }
-      if (seniorityTestMode || a._seniorityTestOrder || b._seniorityTestOrder) {
-        const ao = Number(a._seniorityTestOrder || 999999);
-        const bo = Number(b._seniorityTestOrder || 999999);
-        if (ao !== bo) return ao - bo;
-      }
-      if (firstMember && a.memberId === firstMember.memberId && b.memberId !== firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder && aLvl === null && bLvl === null && aInit === null && bInit === null) return -1;
-      if (firstMember && b.memberId === firstMember.memberId && a.memberId !== firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder && aLvl === null && bLvl === null && aInit === null && bInit === null) return 1;
+      if (firstMember && a.memberId === firstMember.memberId && b.memberId !== firstMember.memberId && aLvl === null && bLvl === null && aInit === null && bInit === null) return -1;
+      if (firstMember && b.memberId === firstMember.memberId && a.memberId !== firstMember.memberId && aLvl === null && bLvl === null && aInit === null && bInit === null) return 1;
       const at = (m) => String((m.levelReachedAt && m.levelReachedAt[target]) || m.upgradeDate || m.joinedAt || m.registeredAt || m.createdAt || '');
       const cmp = at(a).localeCompare(at(b));
       return cmp !== 0 ? cmp : String(a.memberId || '').localeCompare(String(b.memberId || ''));
@@ -1066,165 +1056,10 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     };
   }
 
-  function seedSeniorityTestDataIntoState() {
-    let root = db.members.find(m => String(m.referralId || '').toUpperCase() === SENIORITY_TEST_REF);
-    if (!root) {
-      root = {
-        memberId: 'B5-FC329E',
-        referralId: SENIORITY_TEST_REF,
-        name: 'Seniority Test Root',
-        mobile: '7999999999',
-        email: '',
-        status: 'ACTIVE',
-        referral: 'FIRST MEMBER',
-        level: 1,
-        levelMemberId: 'L1-TEST-ROOT',
-        joinedAt: '2000-01-01T00:00:00.000Z',
-        registeredAt: '2000-01-01T00:00:00.000Z',
-        levelReachedAt: {
-          2: '2000-01-01T00:00:00.000Z',
-          3: '2000-01-01T00:00:00.000Z',
-          4: '2000-01-01T00:00:00.000Z',
-          5: '2000-01-01T00:00:00.000Z',
-          6: '2000-01-01T00:00:00.000Z',
-          7: '2000-01-01T00:00:00.000Z'
-        },
-        passwordHash: hashPassword('B5@123456'),
-        place: 'TEST',
-        accountHolder: 'Seniority Test Root',
-        bank: 'TEST BANK',
-        account: 'TEST-ROOT',
-        ifsc: 'TEST0000001',
-        branch: 'TEST',
-        upi: 'testroot@upi',
-        profileLocked: true,
-        isTestAccount: true,
-        testTag: 'SAFE_TEST_MODE'
-      };
-      db.members.push(root);
-    } else {
-      root.isTestAccount = true;
-      root.testTag = 'SAFE_TEST_MODE';
-    }
-    const rootId = root.memberId;
-    SENIORITY_TEST_IDS.forEach(([memberId, mobile], i) => {
-      let m = db.members.find(x => x.memberId === memberId);
-      const stamp = `2000-01-02T00:00:${String(i).padStart(2, '0')}.000Z`;
-      const reached = {};
-      for (let l = 2; l <= 7; l++) reached[l] = stamp;
-      if (!m) {
-        m = {
-          memberId,
-          mobile,
-          name: memberId,
-          referral: rootId,
-          referralId: referralCode(memberId),
-          status: 'ACTIVE',
-          level: 1,
-          levelMemberId: `L1-TEST-${String(i + 1).padStart(2, '0')}`,
-          joinedAt: stamp,
-          registeredAt: stamp,
-          levelReachedAt: reached,
-          passwordHash: hashPassword('B5@123456'),
-          place: 'TEST',
-          accountHolder: memberId,
-          bank: 'TEST BANK',
-          account: `TEST-${String(i + 1).padStart(4, '0')}`,
-          ifsc: 'TEST0000001',
-          branch: 'TEST',
-          upi: `${memberId.toLowerCase()}@upi`,
-          profileLocked: true,
-          _seniorityTestOrder: i + 1,
-          isTestAccount: true,
-          testTag: 'SAFE_TEST_MODE'
-        };
-        db.members.push(m);
-      } else {
-        m.status = 'ACTIVE';
-        m.referral = m.referral || rootId;
-        m.level = 1;
-        m.levelReachedAt = { ...(m.levelReachedAt || {}), ...reached };
-        m._seniorityTestOrder = i + 1;
-        m.isTestAccount = true;
-        m.testTag = 'SAFE_TEST_MODE';
-      }
-    });
-    const testTrees = [
-      { memberId: 'B5-MOBTEST01', referralId: 'REF-MOBTEST01', name: 'Mobile Test Parent 1', mobile: '7888888801', prefix: 'M1T' },
-      { memberId: 'B5-MOBTEST02', referralId: 'REF-MOBTEST02', name: 'Mobile Test Parent 2', mobile: '7888888802', prefix: 'M2T' }
-    ];
-    testTrees.forEach((t, ti) => {
-      let r = db.members.find(m => m.memberId === t.memberId || String(m.referralId || '').toUpperCase() === t.referralId);
-      if (!r) {
-        r = {
-          memberId: t.memberId,
-          referralId: t.referralId,
-          name: t.name,
-          mobile: t.mobile,
-          email: '',
-          status: 'ACTIVE',
-          referral: 'FIRST MEMBER',
-          level: 1,
-          levelMemberId: `L1-MOBTEST-${ti + 1}`,
-          joinedAt: `2026-01-01T00:00:0${ti}.000Z`,
-          registeredAt: `2026-01-01T00:00:0${ti}.000Z`,
-          passwordHash: hashPassword('B5@123456'),
-          place: 'TEST',
-          accountHolder: t.name,
-          bank: 'TEST BANK',
-          account: `TEST-MOBILE-${ti + 1}`,
-          ifsc: 'TEST0000001',
-          branch: 'TEST',
-          upi: `${t.prefix.toLowerCase()}@upi`,
-          profileLocked: true,
-          isTestAccount: true,
-          testTag: 'SAFE_TEST_MODE'
-        };
-        db.members.push(r);
-      } else {
-        r.isTestAccount = true;
-        r.testTag = 'SAFE_TEST_MODE';
-      }
-      for (let i = 1; i <= 13; i++) {
-        const memberId = `${t.prefix}${String(i).padStart(2, '0')}`;
-        const mobile = String(7300000000 + ti * 100 + i);
-        const stamp = `2026-01-0${ti + 1}T00:${String(i).padStart(2, '0')}:00.000Z`;
-        let child = db.members.find(m => m.memberId === memberId || m.mobile === mobile);
-        if (!child) {
-          child = {
-            memberId,
-            mobile,
-            name: `${t.prefix} Referral ${String(i).padStart(2, '0')}`,
-            email: '',
-            status: 'ACTIVE',
-            referral: r.memberId,
-            referralId: referralCode(memberId),
-            level: 1,
-            levelMemberId: `L1-${t.prefix}-${String(i).padStart(3, '0')}`,
-            joinedAt: stamp,
-            registeredAt: stamp,
-            passwordHash: hashPassword('B5@123456'),
-            place: 'TEST',
-            accountHolder: `${t.prefix} Referral ${i}`,
-            bank: 'TEST BANK',
-            account: `TEST-${t.prefix}-${String(i).padStart(2, '0')}`,
-            ifsc: 'TEST0000001',
-            branch: 'TEST',
-            upi: `${memberId.toLowerCase()}@upi`,
-            profileLocked: true,
-            isTestAccount: true,
-            testTag: 'SAFE_TEST_MODE'
-          };
-          db.members.push(child);
-        } else {
-          child.isTestAccount = true;
-          child.testTag = 'SAFE_TEST_MODE';
-        }
-      }
-    });
-  }
-
   function seedB5TestDataset43() {
+    if (String(env.NODE_ENV || '').toLowerCase() === 'production' && String(env.B5_LOCAL_TEST_ONLY || '') !== '1') {
+      return false;
+    }
     // Configure dummy Admin A/B/C & Trust payment accounts only if empty or already test-configured
     db.paymentSettings = db.paymentSettings || {
       admins: [],
@@ -1452,6 +1287,9 @@ function createSessionContext(db, env = {}, smtpSender = null) {
   }
 
   function cleanupB5TestDataset43() {
+    if (String(env.NODE_ENV || '').toLowerCase() === 'production' && String(env.B5_LOCAL_TEST_ONLY || '') !== '1') {
+      return false;
+    }
     const isTestId = (id) => String(id || '').startsWith('B5-TEST-');
     db.members = (db.members || []).filter(m => !isTestId(m.memberId) && m.testTag !== 'B5_TEST_DATASET_43');
     db.pins = (db.pins || []).filter(p => !String(p.pin || '').startsWith('PIN-TEST-') && !isTestId(p.usedBy));
@@ -1519,10 +1357,9 @@ function createSessionContext(db, env = {}, smtpSender = null) {
       const pad = String(item.b5Id).padStart(3, '0');
       const mId = `B5-${pad}`;
       const iso = `2026-01-01T00:00:${String(item.b5Id).padStart(2, '0')}.000Z`;
-      const reachMap = {};
+      const reachMap = { 1: iso };
       const senMap = {};
       for (let lvl = 1; lvl <= 7; lvl++) {
-        reachMap[lvl] = iso;
         senMap[lvl] = item.b5Id;
       }
       const explicitPwd = explicitPasswords[mId] || explicitPasswords[String(item.b5Id)];
@@ -1534,12 +1371,12 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         mobile: item.mobile,
         email: item.email,
         referral: 'B5-COMPANY',
-        level: 7,
+        level: 1,
         levelMemberId: `L1-${pad}`,
         status: 'Verified',
         joinedAt: iso,
         registeredAt: iso,
-        upgradeDate: iso,
+        upgradeDate: null,
         levelReachedAt: reachMap,
         accountHolder: '',
         bank: '',
@@ -1553,7 +1390,7 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         paymentReviewStatus: '',
         passwordHash: explicitPwd ? hashPassword(explicitPwd) : hashPassword(crypto.randomBytes(16).toString('hex')),
         mustChangePassword: !explicitPwd,
-        seniorityTestOrder: item.b5Id,
+        seniorityTestOrder: null,
         b5Id: item.b5Id,
         numericId: item.b5Id,
         initialSeniority: senMap,
@@ -1608,7 +1445,6 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     ltHistory,
     ltDashboard,
     buildAdminDashboardPayload,
-    seedSeniorityTestDataIntoState,
     seedB5TestDataset43,
     cleanupB5TestDataset43,
     seedLaunchAccounts
@@ -2113,17 +1949,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     if (!supplied) return json(400, { error: 'Password is required' });
 
     const normId = rawLogin.toUpperCase();
-    const isTestDatasetLogin =
-      /^B5-TEST-(ROOT-001|[ABC]-001|[ABC]-C(0[1-9]|1[0-3]))$/i.test(rawLogin) ||
-      /^7000990(001|100|10[1-9]|11[0-3]|200|20[1-9]|21[0-3]|300|30[1-9]|31[0-3])$/.test(rawLogin);
 
-    // Only allow auto-seeding test dataset if explicitly in local test mode (never in production)
-    if (isTestDatasetLogin && String(env.B5_LOCAL_TEST_ONLY || '') === '1') {
-      const exists = state.members.some(x => x.mobile === rawLogin || String(x.memberId || '').toUpperCase() === normId);
-      if (!exists) {
-        ctx.seedB5TestDataset43();
-      }
-    }
 
     // 1. Gather all candidate members matching mobile or member ID / aliases
     const matchingMembers = state.members.filter(x => {
@@ -2514,6 +2340,12 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   // 5. LevelTrack Admin APIs
   if (method === 'POST' && pathname === '/api/leveltrack/admin/seed-test-dataset-43') {
+    if (!auth || !auth.isAdmin) {
+      return json(401, { error: 'Admin authorization required' });
+    }
+    if (String(env.NODE_ENV || '').toLowerCase() === 'production' && String(env.B5_LOCAL_TEST_ONLY || '') !== '1') {
+      return json(403, { error: 'FORBIDDEN: Test dataset routes are permanently disabled in production.' });
+    }
     ctx.seedB5TestDataset43();
     await saveChanges();
     const testMembers = state.members.filter(m => String(m.memberId || '').startsWith('B5-TEST-'));
@@ -2526,6 +2358,9 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
   }
 
   if (method === 'POST' && pathname === '/api/leveltrack/admin/fresh-launch-reset') {
+    if (!auth || !auth.isAdmin) {
+      return json(401, { error: 'Admin authorization required' });
+    }
     ctx.seedLaunchAccounts({ passwords: body.passwords });
     if (state.paymentSettings) {
       state.paymentSettings.adminRotationIndex = 0;
@@ -2592,6 +2427,12 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
   }
 
   if (method === 'POST' && pathname === '/api/leveltrack/admin/cleanup-test-dataset-43') {
+    if (!auth || !auth.isAdmin) {
+      return json(401, { error: 'Admin authorization required' });
+    }
+    if (String(env.NODE_ENV || '').toLowerCase() === 'production' && String(env.B5_LOCAL_TEST_ONLY || '') !== '1') {
+      return json(403, { error: 'FORBIDDEN: Test dataset routes are permanently disabled in production.' });
+    }
     ctx.cleanupB5TestDataset43();
     await saveChanges();
     return json(200, {
@@ -2611,10 +2452,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     const freshState = await loadStateFromD1(d1, configuredAdminPwd);
     const freshMap = buildSnapshotMap(freshState);
     const freshCtx = createSessionContext(freshState, env, smtpSender);
-    if (String(env.B5_SENIORITY_TEST_MODE || '') === '1') {
-      freshCtx.seedSeniorityTestDataIntoState();
-      await commitStateToD1(d1, freshMap, freshState, []);
-    }
+    /* seniority test seeding removed */
     return json(200, { ok: true, message: 'Isolated local D1 staging database reset.', members: freshState.members.length, testSeeded: String(env.B5_SENIORITY_TEST_MODE || '') === '1' });
   }
 

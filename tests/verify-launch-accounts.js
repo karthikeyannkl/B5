@@ -485,6 +485,91 @@ async function runSuite() {
       fail('T-LAUNCH-12', 'Zero Operational Test Data Remaining', e);
     }
 
+    // -------------------------------------------------------------------------
+    // TEST 13: Correct Initial Level State (Level 1, upgradeDate null, No False L7)
+    // -------------------------------------------------------------------------
+    try {
+      const members = state.members.filter(m => !m.isCompanyAccount);
+      assert.strictEqual(members.length, 15);
+      members.forEach((m, idx) => {
+        const id = idx + 1;
+        const pad = String(id).padStart(3, '0');
+        assert.strictEqual(m.level, 1, `Member ${m.memberId} must start at level 1`);
+        assert.strictEqual(m.upgradeDate, null, `Member ${m.memberId} upgradeDate must be null`);
+        assert.strictEqual(m.levelMemberId, `L1-${pad}`, `Member ${m.memberId} levelMemberId must be L1-${pad}`);
+        assert.deepStrictEqual(Object.keys(m.levelReachedAt || {}), ['1'], `Member ${m.memberId} levelReachedAt must only contain level 1`);
+        // Must occupy seniority in all levels independently via initialSeniority
+        assert.ok(m.initialSeniority, `Member ${m.memberId} must have initialSeniority`);
+        for (let lvl = 1; lvl <= 7; lvl++) {
+          assert.strictEqual(m.initialSeniority[lvl], id, `Member ${m.memberId} initialSeniority for Level ${lvl} must be ${id}`);
+        }
+      });
+      // Company account check
+      const company = state.members.find(m => m.isCompanyAccount);
+      assert.strictEqual(company.level, 7, 'Company ID must remain at level 7');
+      pass('T-LAUNCH-13', 'Initial Level 1 State & Seniority Mapping Verified', 'All 15 members start at level 1 with upgradeDate=null, levelReachedAt={1:iso}, and positions 1..15 in all 7 levels');
+    } catch (e) {
+      fail('T-LAUNCH-13', 'Initial Level 1 State & Seniority Mapping Verified', e);
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST 14: Strict Admin Authorization Enforced on Admin Routes
+    // -------------------------------------------------------------------------
+    try {
+      // 1. Unauthenticated fresh-launch-reset must return 401
+      const unauthReset = await api('POST', '/api/leveltrack/admin/fresh-launch-reset');
+      assert.strictEqual(unauthReset.status, 401, 'fresh-launch-reset without token must return 401');
+
+      // 2. Member token must return 403 (Forbidden: Member accounts cannot access admin APIs)
+      const memberToken = (await api('POST', '/api/member/login', { body: { memberId: '1', password: testPasswords['B5-001'] } })).body.memberToken;
+      const memberReset = await api('POST', '/api/leveltrack/admin/fresh-launch-reset', {
+        headers: { authorization: `Bearer ${memberToken}` }
+      });
+      assert.strictEqual(memberReset.status, 403, 'fresh-launch-reset with member token must return 403 Forbidden');
+
+      // 3. Test dataset seed without admin token must return 401
+      const unauthSeed = await api('POST', '/api/leveltrack/admin/seed-test-dataset-43');
+      assert.strictEqual(unauthSeed.status, 401, 'seed-test-dataset-43 without admin token must return 401');
+
+      // 4. Test dataset seed in production mode must return 403 even with admin token
+      const prodApi = async (method, pathname, opts = {}) => handleApiRequest({
+        method,
+        pathname,
+        query: opts.query || {},
+        headers: opts.headers || {},
+        body: opts.body || {},
+        env: { ...env, NODE_ENV: 'production', B5_LOCAL_TEST_ONLY: '0' }
+      });
+      const prodAdminLogin = await prodApi('POST', '/api/admin/login', { body: { password: 'ADMIN' } });
+      const prodAdminToken = prodAdminLogin.body.adminToken || prodAdminLogin.body.token;
+      const prodSeed = await prodApi('POST', '/api/leveltrack/admin/seed-test-dataset-43', {
+        headers: { authorization: `Bearer ${prodAdminToken}` }
+      });
+      assert.strictEqual(prodSeed.status, 403, 'seed-test-dataset-43 in production must return 403 FORBIDDEN');
+
+      pass('T-LAUNCH-14', 'Strict Admin Authorization & Production Guard Verified', 'fresh-launch-reset requires admin auth (401); seed-test-dataset-43 forbidden in production (403)');
+    } catch (e) {
+      fail('T-LAUNCH-14', 'Strict Admin Authorization & Production Guard Verified', e);
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST 15: Zero Test IDs or Stale Test Accounts in Member Directory
+    // -------------------------------------------------------------------------
+    try {
+      const allMembers = state.members;
+      const staleTestMembers = allMembers.filter(m =>
+        String(m.memberId).startsWith('B5-TEST-') ||
+        m.memberId === 'B5-FC329E' ||
+        String(m.name).toLowerCase().includes('test') ||
+        m.isTestAccount === true
+      );
+      assert.strictEqual(staleTestMembers.length, 0, `Must be zero stale test accounts, found: ${staleTestMembers.length}`);
+      assert.strictEqual(allMembers.length, 16, 'Active member directory must contain exactly 16 accounts (1 Company + 15 Members)');
+      pass('T-LAUNCH-15', 'Zero Stale Test Accounts in Directory Verified', 'Active directory has exactly 1 Company ID + 15 Member IDs, zero test accounts');
+    } catch (e) {
+      fail('T-LAUNCH-15', 'Zero Stale Test Accounts in Directory Verified', e);
+    }
+
     console.log('\n================================================================');
     console.log(`ALL ${passed} / ${total} FRESH LAUNCH TESTS PASSED SUCCESSFULLY! (100%)`);
     console.log('================================================================\n');

@@ -94,10 +94,9 @@ function buildLaunchState(options = {}) {
     const pad = String(item.b5Id).padStart(3, '0');
     const mId = `B5-${pad}`;
     const iso = `2026-01-01T00:00:${String(item.b5Id).padStart(2, '0')}.000Z`;
-    const reachMap = {};
+    const reachMap = { 1: iso };
     const senMap = {};
     for (let lvl = 1; lvl <= 7; lvl++) {
-      reachMap[lvl] = iso;
       senMap[lvl] = item.b5Id;
     }
     const explicitPwd = explicitPasswords[mId] || explicitPasswords[String(item.b5Id)];
@@ -109,12 +108,12 @@ function buildLaunchState(options = {}) {
       mobile: item.mobile,
       email: item.email,
       referral: 'B5-COMPANY',
-      level: 7,
+      level: 1,
       levelMemberId: `L1-${pad}`,
       status: 'Verified',
       joinedAt: iso,
       registeredAt: iso,
-      upgradeDate: iso,
+      upgradeDate: null,
       levelReachedAt: reachMap,
       accountHolder: '',
       bank: '',
@@ -128,7 +127,7 @@ function buildLaunchState(options = {}) {
       paymentReviewStatus: '',
       passwordHash: explicitPwd ? hashPassword(explicitPwd) : hashPassword(crypto.randomBytes(16).toString('hex')),
       mustChangePassword: !explicitPwd,
-      seniorityTestOrder: item.b5Id,
+      seniorityTestOrder: null,
       b5Id: item.b5Id,
       numericId: item.b5Id,
       initialSeniority: senMap,

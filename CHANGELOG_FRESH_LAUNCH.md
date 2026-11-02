@@ -99,9 +99,19 @@ This document summarizes the comprehensive corrections applied to the **BORNTOWI
 - ✅ **PASS [T-LAUNCH-10]** Level 1–7 Seniority Sequences Verified (Positions 1–15 in all 7 levels, completed=0, status=ACTIVE)
 - ✅ **PASS [T-LAUNCH-11]** Seniority 16 Sequence Verified (Next qualifying upgrade receives position 16 independently)
 - ✅ **PASS [T-LAUNCH-12]** Zero Operational Test Data Remaining (payments=0, upgrades=0, requests=0, rotationIndex=0)
+- ✅ **PASS [T-LAUNCH-13]** Initial Level 1 State & Seniority Mapping Verified (All 15 members start at level 1 with upgradeDate=null, levelReachedAt={"1":iso}, and positions 1..15 in all 7 levels with zero fake Level 7 upgrades)
+- ✅ **PASS [T-LAUNCH-14]** Strict Admin Authorization & Production Guard Verified (POST /api/leveltrack/admin/fresh-launch-reset requires strict admin authentication; test dataset seeding permanently forbidden in production)
+- ✅ **PASS [T-LAUNCH-15]** Zero Stale Test Accounts in Directory Verified (Active directory has exactly 1 Company ID + 15 Member IDs, zero test accounts)
 
 ### B. QA & Security Test Suite (`npm test`)
 - ✅ ALL 28 / 28 QA Scenarios Passed (100%)
 
 ### C. Isolated Test Dataset Suite (`npm run test:43`)
 - ✅ ALL 10 / 10 Scenarios Passed (100%)
+
+---
+
+## 6. Migration 0003 Safety Verification
+- **Foreign Key Safety**: Enclosed in `PRAGMA foreign_keys = OFF;` and `PRAGMA foreign_keys = ON;` to ensure SQLite / Cloudflare D1 table replacement is 100% collision-free.
+- **Table Drops & Recreates**: Step 2 cleans all dependent operational tables (`payment_proofs`, `leveltrack_payments`, `leveltrack_upgrades`, `leveltrack_requests`, `password_reset_requests`, `messages`, `email_logs`, `push_subscriptions`, `pins`), preventing any dangling foreign key references.
+- **Initial Member Level Realism**: Members B5-001 through B5-015 are created with `level: 1`, `upgrade_date: NULL`, `level_reached_at_json: '{"1":"..."}'`, and `initialSeniority` mapped to positions 1–15 across all levels 1 to 7 without false Level 7 upgrade stamps.
