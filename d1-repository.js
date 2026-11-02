@@ -18,7 +18,7 @@ const SCHEMA_STATEMENTS = [
     referral_id TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     place TEXT NOT NULL DEFAULT '',
-    mobile TEXT UNIQUE NOT NULL,
+    mobile TEXT NOT NULL,
     email TEXT NOT NULL DEFAULT '',
     referral TEXT NOT NULL DEFAULT 'FIRST MEMBER',
     level INTEGER NOT NULL DEFAULT 1,
@@ -483,25 +483,9 @@ async function loadStateFromD1(d1, configuredAdminPassword = null) {
       SELECT
         id, request_id, upgrade_id, kind, from_level, to_level, seniority_level,
         from_member_id, receiver_member_id, payee_id, from_name, to_name, amount, utr,
-        NULL AS screenshot,
-        CASE WHEN screenshot IS NOT NULL
-          THEN COALESCE(proof_ref, '/api/leveltrack/proofs/' || id || '/member')
-          ELSE proof_ref END AS proof_ref,
-        COALESCE((
-          SELECT json_group_array(json(
-            CASE
-              WHEN json_extract(j.value, '$.screenshot') IS NOT NULL
-                   AND json_extract(j.value, '$.proofRef') IS NULL
-              THEN json_set(
-                json_remove(j.value, '$.screenshot'), '$.proofRef',
-                '/api/leveltrack/proofs/' || leveltrack_payments.id || '/' ||
-                COALESCE(json_extract(j.value, '$.type'), 'member')
-              )
-              ELSE json_remove(j.value, '$.screenshot')
-            END
-          ))
-          FROM json_each(leveltrack_payments.parts_json) AS j
-        ), '[]') AS parts_json,
+        screenshot,
+        COALESCE(proof_ref, '/api/leveltrack/proofs/' || id || '/member') AS proof_ref,
+        parts_json,
         member_paid, member_accepted, accepted_at, admin_approved, admin_verified_at,
         rejected, rejected_at, rejection_reason, slot_released, payment_access_locked,
         superseded, status, submitted_at, details_sent_at, expires_at, created_at
@@ -906,14 +890,9 @@ function prepareUpsertLtPayment(d1, p) {
     String(p.to || p.receiverMemberId || ''),
     Number(p.amount || 0),
     p.utr ? String(p.utr) : null,
-    // Keep image bytes only in payment_proofs; inline copies make every dashboard
-    // request download large base64 strings and cause progressive slowdown.
-    null,
+    p.screenshot ? String(p.screenshot) : null,
     p.proofRef ? String(p.proofRef) : null,
-    JSON.stringify((p.parts || []).map(part => {
-      const { screenshot, ...metadata } = part || {};
-      return metadata;
-    })),
+    JSON.stringify(p.parts || []),
     p.memberPaid ? 1 : 0,
     p.memberAccepted ? 1 : 0,
     p.acceptedAt ? String(p.acceptedAt) : null,

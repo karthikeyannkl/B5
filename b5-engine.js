@@ -55,11 +55,52 @@ function referralCode(memberId) {
 function makePin() {
   return 'PIN-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 }
-function hashPassword(v) {
+
+const PBKDF2_ITERATIONS = 100000;
+const PBKDF2_KEY_LEN = 32;
+const PBKDF2_DIGEST = 'sha256';
+
+function sha256(v) {
   return crypto.createHash('sha256').update(String(v || '')).digest('hex');
 }
+
+function hashPassword(password, saltHex = null, iterations = PBKDF2_ITERATIONS) {
+  const pwdStr = String(password || '');
+  const salt = saltHex ? Buffer.from(saltHex, 'hex') : crypto.randomBytes(16);
+  const derivedKey = crypto.pbkdf2Sync(pwdStr, salt, iterations, PBKDF2_KEY_LEN, PBKDF2_DIGEST);
+  return `pbkdf2$${PBKDF2_DIGEST}$${iterations}$${salt.toString('hex')}$${derivedKey.toString('hex')}`;
+}
+
+function verifyPassword(password, storedHash) {
+  if (!password || !storedHash) return false;
+  const pwdStr = String(password);
+  const hashStr = String(storedHash);
+
+  if (hashStr.startsWith('pbkdf2$')) {
+    const parts = hashStr.split('$');
+    // Format: pbkdf2$<digest>$<iterations>$<saltHex>$<hashHex>
+    if (parts.length === 5) {
+      const digest = parts[1] || 'sha256';
+      const iterations = parseInt(parts[2], 10) || PBKDF2_ITERATIONS;
+      const saltBuf = Buffer.from(parts[3], 'hex');
+      const expectedKey = Buffer.from(parts[4], 'hex');
+      const derivedKey = crypto.pbkdf2Sync(pwdStr, saltBuf, iterations, expectedKey.length, digest);
+      if (derivedKey.length !== expectedKey.length) return false;
+      return crypto.timingSafeEqual(derivedKey, expectedKey);
+    }
+  }
+
+  // Fallback: legacy SHA-256 with timing-safe comparison
+  const legacyHash = sha256(pwdStr);
+  const legacyBuf = Buffer.from(legacyHash);
+  const storedBuf = Buffer.from(hashStr);
+  if (legacyBuf.length !== storedBuf.length) return false;
+  return crypto.timingSafeEqual(legacyBuf, storedBuf);
+}
 function earningsRequired(level) {
-  return LEVEL_SLOT_CAPACITY[Number(level)] || 0;
+  const lvl = Number(level);
+  if (lvl === 1) return 3;
+  return LEVEL_SLOT_CAPACITY[lvl] || 0;
 }
 
 function splitRule(from) {
@@ -139,7 +180,7 @@ function createSessionContext(db, env = {}, smtpSender = null) {
   function createAuthToken(payload) {
     const data = { ...payload, iat: Date.now() };
     if (data.role === 'admin') {
-      data.pwdSig = hashPassword(db.adminPassword || 'ADMIN').slice(0, 16);
+      data.pwdSig = sha256(db.adminPassword || 'ADMIN').slice(0, 16);
     }
     const b64 = Buffer.from(JSON.stringify(data), 'utf8').toString('base64url');
     const sig = crypto.createHmac('sha256', authSecret).update(b64).digest('base64url');
@@ -154,7 +195,7 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     if (sig !== expected) return null;
     try {
       const data = JSON.parse(Buffer.from(b64, 'base64url').toString('utf8'));
-      if (data.role === 'admin' && data.pwdSig !== hashPassword(db.adminPassword || 'ADMIN').slice(0, 16)) return null;
+      if (data.role === 'admin' && data.pwdSig !== sha256(db.adminPassword || 'ADMIN').slice(0, 16)) return null;
       return data;
     } catch (_) {
       return null;
@@ -254,7 +295,18 @@ function createSessionContext(db, env = {}, smtpSender = null) {
   }
 
   function ltMember(id) {
-    return db.members.find(m => m.memberId === id) || null;
+    if (!id) return null;
+    const sId = String(id).trim();
+    const uId = sId.toUpperCase();
+    return db.members.find(m => {
+      const mid = String(m.memberId || '').toUpperCase();
+      if (mid === uId) return true;
+      if (String(m.b5Id || m.numericId || '') === sId) return true;
+      if (mid === ('B5-' + uId) || mid === ('B5-' + sId.padStart(3, '0'))) return true;
+      if (String(m.referralId || '').toUpperCase() === uId) return true;
+      if (m.aliases && Array.isArray(m.aliases) && m.aliases.map(a => String(a).toUpperCase()).includes(uId)) return true;
+      return false;
+    }) || null;
   }
 
   function findMember(q) {
@@ -550,6 +602,18 @@ function createSessionContext(db, env = {}, smtpSender = null) {
       eligible.push(firstMember);
     }
     eligible.sort((a, b) => {
+      const aInit = (a.initialSeniority && a.initialSeniority[target] !== undefined)
+        ? Number(a.initialSeniority[target])
+        : ((a.b5Id && a.b5Id >= 1 && a.b5Id <= 15) ? Number(a.b5Id) : null);
+      const bInit = (b.initialSeniority && b.initialSeniority[target] !== undefined)
+        ? Number(b.initialSeniority[target])
+        : ((b.b5Id && b.b5Id >= 1 && b.b5Id <= 15) ? Number(b.b5Id) : null);
+      if (aInit !== null || bInit !== null) {
+        const ao = aInit !== null ? aInit : 999999;
+        const bo = bInit !== null ? bInit : 999999;
+        if (ao !== bo) return ao - bo;
+      }
+
       const aLvl = a._seniorityTestOrderByLevel && a._seniorityTestOrderByLevel[target] !== undefined
         ? Number(a._seniorityTestOrderByLevel[target])
         : null;
@@ -566,8 +630,8 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         const bo = Number(b._seniorityTestOrder || 999999);
         if (ao !== bo) return ao - bo;
       }
-      if (firstMember && a.memberId === firstMember.memberId && b.memberId !== firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder && aLvl === null && bLvl === null) return -1;
-      if (firstMember && b.memberId === firstMember.memberId && a.memberId !== firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder && aLvl === null && bLvl === null) return 1;
+      if (firstMember && a.memberId === firstMember.memberId && b.memberId !== firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder && aLvl === null && bLvl === null && aInit === null && bInit === null) return -1;
+      if (firstMember && b.memberId === firstMember.memberId && a.memberId !== firstMember.memberId && !a._seniorityTestOrder && !b._seniorityTestOrder && aLvl === null && bLvl === null && aInit === null && bInit === null) return 1;
       const at = (m) => String((m.levelReachedAt && m.levelReachedAt[target]) || m.upgradeDate || m.joinedAt || m.registeredAt || m.createdAt || '');
       const cmp = at(a).localeCompare(at(b));
       return cmp !== 0 ? cmp : String(a.memberId || '').localeCompare(String(b.memberId || ''));
@@ -960,6 +1024,7 @@ function createSessionContext(db, env = {}, smtpSender = null) {
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
       .map(paymentPublic);
     const seniority = {
+      1: seniorityQueue(1),
       2: seniorityQueue(2),
       3: seniorityQueue(3),
       4: seniorityQueue(4),
@@ -969,7 +1034,7 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     };
     const seniorityCurrent = {};
     const seniorityCompleted = {};
-    [2, 3, 4, 5, 6, 7].forEach(l => {
+    [1, 2, 3, 4, 5, 6, 7].forEach(l => {
       seniorityCurrent[l] = (seniority[l] || []).filter(x => x.status !== 'COMPLETED');
       seniorityCompleted[l] = (seniority[l] || []).filter(x => x.status === 'COMPLETED');
     });
@@ -1395,6 +1460,119 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     db.leveltrackPayments = (db.leveltrackPayments || []).filter(p => !isTestId(p.fromMemberId) && !isTestId(p.receiverMemberId));
   }
 
+  function seedLaunchAccounts(options = {}) {
+    const explicitPasswords = (options && options.passwords) || {};
+    const companyPwd = explicitPasswords['B5-COMPANY'] || explicitPasswords['COMPANY'] || explicitPasswords['0'];
+    const companyAccount = {
+      memberId: 'B5-COMPANY',
+      referralId: 'REF-COMPANY',
+      name: 'BORN TO WIN',
+      place: 'Headquarters',
+      mobile: '9345151709',
+      email: 'notifications@borntowin5.com',
+      referral: 'FIRST MEMBER',
+      level: 7,
+      levelMemberId: 'L7-ROOT',
+      status: 'Verified',
+      joinedAt: '2026-01-01T00:00:00.000Z',
+      registeredAt: '2026-01-01T00:00:00.000Z',
+      upgradeDate: '2026-01-01T00:00:00.000Z',
+      levelReachedAt: { 1: '2026-01-01T00:00:00.000Z', 2: '2026-01-01T00:00:00.000Z', 3: '2026-01-01T00:00:00.000Z', 4: '2026-01-01T00:00:00.000Z', 5: '2026-01-01T00:00:00.000Z', 6: '2026-01-01T00:00:00.000Z', 7: '2026-01-01T00:00:00.000Z' },
+      accountHolder: '',
+      bank: '',
+      account: '',
+      ifsc: '',
+      branch: '',
+      upi: '',
+      photo: '',
+      profileLocked: false,
+      paymentAccessLocked: false,
+      paymentReviewStatus: '',
+      passwordHash: companyPwd ? hashPassword(companyPwd) : hashPassword(crypto.randomBytes(16).toString('hex')),
+      mustChangePassword: !companyPwd,
+      seniorityTestOrder: null,
+      isCompanyAccount: true,
+      excludeFromSeniorityQueue: true,
+      b5Id: 0,
+      aliases: ['COMPANY', 'BORN TO WIN', 'B5-000', '0']
+    };
+
+    const initial15 = [
+      { b5Id: 1,  name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
+      { b5Id: 2,  name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 3,  name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
+      { b5Id: 4,  name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 5,  name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' },
+      { b5Id: 6,  name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
+      { b5Id: 7,  name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 8,  name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
+      { b5Id: 9,  name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 10, name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' },
+      { b5Id: 11, name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
+      { b5Id: 12, name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 13, name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
+      { b5Id: 14, name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 15, name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' }
+    ];
+
+    const memberAccounts = initial15.map(item => {
+      const pad = String(item.b5Id).padStart(3, '0');
+      const mId = `B5-${pad}`;
+      const iso = `2026-01-01T00:00:${String(item.b5Id).padStart(2, '0')}.000Z`;
+      const reachMap = {};
+      const senMap = {};
+      for (let lvl = 1; lvl <= 7; lvl++) {
+        reachMap[lvl] = iso;
+        senMap[lvl] = item.b5Id;
+      }
+      const explicitPwd = explicitPasswords[mId] || explicitPasswords[String(item.b5Id)];
+      return {
+        memberId: mId,
+        referralId: `REF-${pad}`,
+        name: item.name,
+        place: '',
+        mobile: item.mobile,
+        email: item.email,
+        referral: 'B5-COMPANY',
+        level: 7,
+        levelMemberId: `L1-${pad}`,
+        status: 'Verified',
+        joinedAt: iso,
+        registeredAt: iso,
+        upgradeDate: iso,
+        levelReachedAt: reachMap,
+        accountHolder: '',
+        bank: '',
+        account: '',
+        ifsc: '',
+        branch: '',
+        upi: '',
+        photo: '',
+        profileLocked: false,
+        paymentAccessLocked: false,
+        paymentReviewStatus: '',
+        passwordHash: explicitPwd ? hashPassword(explicitPwd) : hashPassword(crypto.randomBytes(16).toString('hex')),
+        mustChangePassword: !explicitPwd,
+        seniorityTestOrder: item.b5Id,
+        b5Id: item.b5Id,
+        numericId: item.b5Id,
+        initialSeniority: senMap,
+        aliases: [String(item.b5Id), `B5-${item.b5Id}`, mId, `REF-${pad}`]
+      };
+    });
+
+    db.members = [companyAccount, ...memberAccounts];
+    db.leveltrackRequests = [];
+    db.leveltrackUpgrades = [];
+    db.leveltrackPayments = [];
+    db.paymentProofs = [];
+    db.passwordResetRequests = [];
+    db.messages = [{ to: 'ALL', message: 'Welcome to BORNTOWIN5 Emerald Sovereign Official Launch.', at: new Date().toISOString() }];
+    db.pins = [{ pin: 'PIN-START1', assignedTo: null, status: 'AVAILABLE', usedBy: null, createdAt: new Date().toISOString(), system: true }];
+    db.emailNotificationLog = [];
+    return db;
+  }
+
   return {
     db,
     smtpConfigured,
@@ -1432,7 +1610,8 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     buildAdminDashboardPayload,
     seedSeniorityTestDataIntoState,
     seedB5TestDataset43,
-    cleanupB5TestDataset43
+    cleanupB5TestDataset43,
+    seedLaunchAccounts
   };
 }
 
@@ -1929,29 +2108,63 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
 
   if (method === 'POST' && pathname === '/api/member/login') {
     const rawLogin = String(body.mobile || body.memberId || body.loginId || '').trim();
+    const supplied = String(body.password || '');
+    if (!rawLogin) return json(400, { error: 'Mobile number or Member ID is required' });
+    if (!supplied) return json(400, { error: 'Password is required' });
+
+    const normId = rawLogin.toUpperCase();
     const isTestDatasetLogin =
       /^B5-TEST-(ROOT-001|[ABC]-001|[ABC]-C(0[1-9]|1[0-3]))$/i.test(rawLogin) ||
       /^7000990(001|100|10[1-9]|11[0-3]|200|20[1-9]|21[0-3]|300|30[1-9]|31[0-3])$/.test(rawLogin);
-    let m = state.members.find(
-      x => x.mobile === rawLogin || String(x.memberId || '').toUpperCase() === rawLogin.toUpperCase()
-    );
-    if (!m && isTestDatasetLogin) {
-      ctx.seedB5TestDataset43();
-      m = state.members.find(
-        x => x.mobile === rawLogin || String(x.memberId || '').toUpperCase() === rawLogin.toUpperCase()
-      );
+
+    // Only allow auto-seeding test dataset if explicitly in local test mode (never in production)
+    if (isTestDatasetLogin && String(env.B5_LOCAL_TEST_ONLY || '') === '1') {
+      const exists = state.members.some(x => x.mobile === rawLogin || String(x.memberId || '').toUpperCase() === normId);
+      if (!exists) {
+        ctx.seedB5TestDataset43();
+      }
     }
-    if (!m) return json(404, { error: 'Member not found. Please register first.' });
-    const supplied = String(body.password || '');
-    if (!m.passwordHash) return json(401, { error: 'Password not set. Please use Forgot Password and contact Admin.' });
-    const isDefaultTestAccount =
-      Boolean(m.isTestAccount) &&
-      String(m.memberId || '').startsWith('B5-TEST-') &&
-      m.passwordHash === hashPassword('B5@123456');
-    const pwdMatches =
-      hashPassword(supplied) === m.passwordHash ||
-      (isDefaultTestAccount && supplied === 'Test@12345');
-    if (!pwdMatches) return json(401, { error: 'Incorrect password' });
+
+    // 1. Gather all candidate members matching mobile or member ID / aliases
+    const matchingMembers = state.members.filter(x => {
+      if (x.deleted === true || x.invalid === true) return false;
+      if (x.mobile === rawLogin) return true;
+      const mId = String(x.memberId || '').toUpperCase();
+      if (mId === normId) return true;
+      if (String(x.b5Id || x.numericId || '') === rawLogin) return true;
+      if (mId === ('B5-' + normId) || mId === ('B5-' + rawLogin.padStart(3, '0'))) return true;
+      if (String(x.referralId || '').toUpperCase() === normId) return true;
+      if (x.aliases && Array.isArray(x.aliases) && x.aliases.map(a => String(a).toUpperCase()).includes(normId)) return true;
+      return false;
+    });
+
+    if (matchingMembers.length === 0) {
+      return json(404, { error: 'Member not found. Please register first.' });
+    }
+
+    // 2. Identify the exact matching account whose password matches
+    let m = null;
+    for (const cand of matchingMembers) {
+      if (!cand.passwordHash) continue;
+      const isDefaultTestAccount =
+        Boolean(cand.isTestAccount) &&
+        String(cand.memberId || '').startsWith('B5-TEST-') &&
+        verifyPassword('B5@123456', cand.passwordHash);
+
+      const pwdMatches =
+        verifyPassword(supplied, cand.passwordHash) ||
+        (isDefaultTestAccount && supplied === 'Test@12345');
+
+      if (pwdMatches) {
+        m = cand;
+        break;
+      }
+    }
+
+    if (!m) {
+      return json(401, { error: 'Incorrect password' });
+    }
+
     const memberToken = ctx.createAuthToken({ role: 'member', memberId: m.memberId });
     ctx.notifyMemberEmail(
       m,
@@ -2008,7 +2221,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
   if (memberPwdParams) {
     const m = state.members.find(x => x.memberId === memberPwdParams.id);
     if (!m) return json(404, { error: 'Member not found' });
-    if (!m.passwordHash || hashPassword(body.oldPassword) !== m.passwordHash) {
+    if (!m.passwordHash || !verifyPassword(body.oldPassword, m.passwordHash)) {
       return json(401, { error: 'Current password is incorrect' });
     }
     const np = String(body.newPassword || '');
@@ -2017,6 +2230,57 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     m.mustChangePassword = false;
     await saveChanges();
     return json(200, { ok: true });
+  }
+
+  if (method === 'POST' && pathname === '/api/member/setup-password') {
+    const rawId = String(body.memberId || body.b5Id || body.id || '').trim();
+    const mobile = String(body.mobile || '').trim();
+    const email = String(body.email || '').trim().toLowerCase();
+    const newPassword = String(body.newPassword || body.password || '').trim();
+    const confirmPassword = body.confirmPassword !== undefined ? String(body.confirmPassword || '').trim() : newPassword;
+
+    if (!rawId) return json(400, { error: 'Member ID or B5 ID is required' });
+    if (!mobile) return json(400, { error: 'Mobile number is required' });
+    if (!email) return json(400, { error: 'Email ID is required' });
+    if (newPassword.length < 6) return json(400, { error: 'New password must be at least 6 characters' });
+    if (newPassword !== confirmPassword) return json(400, { error: 'Password confirmation does not match' });
+
+    const normId = rawId.toUpperCase();
+    const member = state.members.find(m => {
+      if (m.deleted === true || m.invalid === true) return false;
+      const mId = String(m.memberId || '').toUpperCase();
+      if (mId === normId || mId === `B5-${normId}` || mId === `B5-${rawId.padStart(3, '0')}`) return true;
+      if (String(m.b5Id || m.numericId || '') === rawId) return true;
+      if (m.aliases && Array.isArray(m.aliases) && m.aliases.map(a => String(a).toUpperCase()).includes(normId)) return true;
+      return false;
+    });
+
+    if (!member) {
+      return json(404, { error: 'Account not found. Please verify your Member ID.' });
+    }
+
+    if (member.mobile !== mobile) {
+      return json(403, { error: 'Mobile number does not match registered account details.' });
+    }
+
+    if (String(member.email || '').toLowerCase() !== email) {
+      return json(403, { error: 'Email ID does not match registered account details.' });
+    }
+
+    member.passwordHash = hashPassword(newPassword);
+    member.mustChangePassword = false;
+    ctx.notifyMemberEmail(
+      member,
+      'BORNTOWIN5 - Password Setup Successful',
+      `Hello ${member.name},\n\nYour individual password for account ${member.memberId} has been successfully configured. You may now sign in using your mobile number and password.\n\nTime: ${new Date().toISOString()}`,
+      { eventType: 'PASSWORD_SETUP_SUCCESS', eventKey: `PWD_SETUP:${member.memberId}:${Date.now()}` }
+    );
+    await saveChanges();
+    return json(200, {
+      ok: true,
+      message: 'Password configured successfully. You may now log in.',
+      member: memberPublic(member)
+    });
   }
 
   if (method === 'POST' && pathname === '/api/member/check-pin') {
@@ -2043,7 +2307,16 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     let parentId = 'FIRST MEMBER';
     if (String(b.referral || 'FIRST MEMBER').toUpperCase().trim() !== 'FIRST MEMBER') {
       const ref = String(b.referral || '').trim().toUpperCase();
-      const parent = state.members.find(x => String(x.memberId || '').toUpperCase() === ref || String(x.referralId || '').toUpperCase() === ref || referralCode(x.memberId) === ref);
+      const parent = state.members.find(x => {
+        const mid = String(x.memberId || '').toUpperCase();
+        if (mid === ref) return true;
+        if (String(x.b5Id || x.numericId || '') === ref) return true;
+        if (mid === ('B5-' + ref) || mid === ('B5-' + ref.padStart(3, '0'))) return true;
+        if (String(x.referralId || '').toUpperCase() === ref) return true;
+        if (referralCode(x.memberId) === ref) return true;
+        if (x.aliases && Array.isArray(x.aliases) && x.aliases.map(a => String(a).toUpperCase()).includes(ref)) return true;
+        return false;
+      });
       if (!parent || parent.status === 'Rejected') return json(400, { error: 'Invalid Referral ID' });
       parentId = parent.memberId;
     }
@@ -2113,7 +2386,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     if (newEmail === String(m.email || m.rEmail || '').trim().toLowerCase()) return json(400, { error: 'This email address is already registered.' });
     const code = String(crypto.randomInt(100000, 1000000));
     const now = Date.now();
-    m.pendingEmailChange = { email: newEmail, codeHash: hashPassword(code), expiresAt: new Date(now + 10 * 60 * 1000).toISOString(), requestedAt: new Date(now).toISOString() };
+    m.pendingEmailChange = { email: newEmail, codeHash: sha256(code), expiresAt: new Date(now + 10 * 60 * 1000).toISOString(), requestedAt: new Date(now).toISOString() };
     const entry = ctx.dispatchEmailNotification({
       eventType: 'EMAIL_CHANGE_VERIFICATION',
       eventKey: `EMAIL_CHANGE:${m.memberId}:${newEmail}:${now}`,
@@ -2141,7 +2414,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     const code = String(body.code || '').trim();
     if (!pending || !pending.email || !pending.codeHash) return json(400, { error: 'Request a verification code first.' });
     if (Date.parse(pending.expiresAt || '') < Date.now()) { m.pendingEmailChange = null; await saveChanges(); return json(400, { error: 'Verification code expired. Request a new code.' }); }
-    if (!/^\d{6}$/.test(code) || hashPassword(code) !== pending.codeHash) return json(400, { error: 'Incorrect verification code.' });
+    if (!/^\d{6}$/.test(code) || sha256(code) !== pending.codeHash) return json(400, { error: 'Incorrect verification code.' });
     const oldEmail = String(m.email || m.rEmail || '').trim();
     m.email = pending.email;
     if (Object.prototype.hasOwnProperty.call(m, 'rEmail')) m.rEmail = pending.email;
@@ -2249,6 +2522,72 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       message: '43-member isolated B5 test dataset seeded.',
       testMemberCount: testMembers.length,
       totalMembers: state.members.length
+    });
+  }
+
+  if (method === 'POST' && pathname === '/api/leveltrack/admin/fresh-launch-reset') {
+    ctx.seedLaunchAccounts({ passwords: body.passwords });
+    if (state.paymentSettings) {
+      state.paymentSettings.adminRotationIndex = 0;
+      state.paymentSettings.adminRotationByLevel = { 4: 0, 5: 0, 6: 0, 7: 0 };
+    }
+    state.pushSubscriptions = [];
+    await saveChanges();
+    return json(200, {
+      ok: true,
+      message: 'BORNTOWIN5 Fresh Launch State Initialized Successfully.',
+      totalAccounts: state.members.length,
+      companyAccount: state.members.find(m => m.isCompanyAccount)?.memberId || 'B5-COMPANY',
+      initialMembersCount: state.members.filter(m => !m.isCompanyAccount).length,
+      seniorityPositionsPerLevel: 15
+    });
+  }
+
+  if (method === 'POST' && (pathname === '/api/leveltrack/admin/member-password-setup' || pathname === '/api/admin/member-password-setup')) {
+    if (!auth.isAdmin) {
+      return json(401, { error: 'Admin authorization required' });
+    }
+
+    const updates = [];
+    if (body.passwords && typeof body.passwords === 'object') {
+      for (const [key, pwd] of Object.entries(body.passwords)) {
+        updates.push({ memberId: key, password: String(pwd) });
+      }
+    } else if (Array.isArray(body.members)) {
+      for (const item of body.members) {
+        if (item.memberId && item.password) {
+          updates.push({ memberId: String(item.memberId), password: String(item.password) });
+        }
+      }
+    } else if (body.memberId && (body.password || body.newPassword)) {
+      updates.push({ memberId: String(body.memberId), password: String(body.password || body.newPassword) });
+    } else {
+      return json(400, { error: 'Provide memberId and password, or passwords object.' });
+    }
+
+    const updated = [];
+    for (const u of updates) {
+      const norm = u.memberId.toUpperCase();
+      const m = state.members.find(x => {
+        const mId = String(x.memberId || '').toUpperCase();
+        if (mId === norm || mId === `B5-${norm}` || mId === `B5-${u.memberId.padStart(3, '0')}`) return true;
+        if (String(x.b5Id || x.numericId || '') === u.memberId) return true;
+        if (x.aliases && Array.isArray(x.aliases) && x.aliases.map(a => String(a).toUpperCase()).includes(norm)) return true;
+        return false;
+      });
+      if (m && u.password && u.password.length >= 4) {
+        m.passwordHash = hashPassword(u.password);
+        m.mustChangePassword = false;
+        updated.push(m.memberId);
+      }
+    }
+
+    await saveChanges();
+    return json(200, {
+      ok: true,
+      message: `Password configured for ${updated.length} account(s).`,
+      count: updated.length,
+      updated
     });
   }
 
@@ -3422,6 +3761,9 @@ module.exports = {
   LEVEL_RULES,
   LEVEL_SLOT_CAPACITY,
   PAYMENT_DEADLINE_MS,
+  hashPassword,
+  verifyPassword,
+  sha256,
   createSessionContext,
   isBlockedInternalPath,
   handleApiRequest
