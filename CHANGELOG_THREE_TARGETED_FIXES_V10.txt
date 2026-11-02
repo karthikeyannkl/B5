@@ -1,0 +1,19 @@
+THREE TARGETED FIXES – V10
+
+1) SENIORITY QUEUE / RECEIVER CONSISTENCY
+- Seniority completed count now resolves the payment seniority level from payment.seniorityLevel first, then upgrade.seniorityLevel, then upgrade.to.
+- In B5_SENIORITY_TEST_MODE, the fresh NEW13 test tree is placed first in the test seniority queue, ahead of the older test tree, so the new root can be tested independently without old KARTHI/SATHYA test payments taking the first receiver slots.
+- Existing production seniority rules and earning targets are unchanged.
+
+2) ADMIN APPROVAL WITHOUT LOGOUT/LOGIN
+- Admin API calls use no-store cache busting.
+- Approval remains locked during the request and live refresh is paused while busy.
+- After approval, the admin dashboard is force-refreshed from the server immediately, so the next approval becomes clickable without logout/login.
+- Existing approval eligibility and completion rules are unchanged.
+
+3) MOBILE RECEIVER VISIBILITY
+- Added a prominent RECEIVER CONFIRMATION shortcut near the top of the mobile Level Tracking view.
+- The sidebar Receiver item is also moved up next to Level Tracking instead of being buried at the bottom.
+- Receiver workflow itself is unchanged.
+
+No payment amounts, upgrade milestones, payment split, receiver allocation rules, or final approval conditions were intentionally changed.

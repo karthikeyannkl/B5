@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#042619">
+<title>BORNTOWIN5 — Admin Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="b5-design-system.css">
+<style>
+*{box-sizing:border-box}
+:root{
+  --b5-green:#042619;
+  --b5-green2:#0B4F35;
+  --b5-copper:#C85A17;
+  --b5-gold:#C59B38;
+  --b5-cream:#F6F4EE;
+  --b5-ink:#111C17;
+  --b5-muted:#4A5D53;
+  --b5-line:#DCE2DC;
+  --b5-soft:#EFECE4;
+  --b5-radius:18px;
+}
+html,body{width:100%;max-width:100%;overflow-x:hidden;margin:0}
+body{
+  background:radial-gradient(circle at 12% 0%,#EFECE4 0%,#F6F4EE 55%,#EDEAE0 100%)!important;
+  color:var(--b5-ink)!important;
+  font-family:'Plus Jakarta Sans','Noto Sans Tamil',system-ui,-apple-system,sans-serif!important;
+  font-size:13.5px;
+}
+.top,header{
+  min-height:68px!important;
+  background:linear-gradient(135deg,#042619 0%,#083D28 100%)!important;
+  color:#fff!important;
+  border-bottom:1px solid rgba(197,155,56,.32)!important;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 14px 0 72px!important;
+  position:sticky!important;
+  top:0!important;
+  z-index:20!important;
+  box-shadow:0 8px 24px rgba(4,38,25,.18)!important;
+}
+.logo{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  background:#fff!important;
+  border:1.5px solid var(--b5-gold)!important;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.logo img{width:100%;height:100%;object-fit:contain!important;background:#fff!important;border-radius:10px!important;display:block}
+.brand b{display:block;font-family:'Outfit',sans-serif;font-size:16px;color:#fff!important;font-weight:800!important}
+.brand small{display:block;color:rgba(246,244,238,.78)!important;font-size:11px}
+.top-actions{margin-left:auto!important;display:flex!important;gap:8px!important}
+.top-actions button{
+  border:1px solid rgba(197,155,56,.45)!important;
+  background:rgba(255,255,255,.12)!important;
+  border-radius:10px!important;
+  padding:8px 12px!important;
+  font-weight:700!important;
+  font-size:12px!important;
+  color:#fff!important;
+  cursor:pointer;
+}
+.wrap{max-width:860px;margin:auto;padding:16px 14px 40px}
+.card{
+  background:#FCFBF8!important;
+  border:1px solid var(--b5-line)!important;
+  border-radius:20px!important;
+  padding:18px!important;
+  margin-bottom:14px;
+  box-shadow:0 8px 24px rgba(4,38,25,.06)!important;
+}
+.hero{
+  background:linear-gradient(135deg,#042619 0%,#083D28 62%,#0B4F35 100%)!important;
+  color:#fff!important;
+  border:1px solid rgba(197,155,56,.38)!important;
+  border-radius:22px!important;
+  padding:22px 20px!important;
+  margin-bottom:14px;
+  box-shadow:0 14px 34px rgba(4,38,25,.18)!important;
+}
+.hero h1{margin:9px 0 4px;font-family:'Outfit',sans-serif!important;font-size:28px;color:#fff!important;font-weight:800!important}
+.hero p{margin:0;color:rgba(246,244,238,.86)!important;font-size:12.5px}
+.pill{
+  display:inline-block;
+  background:#FBF6E8!important;
+  color:#8A691B!important;
+  border:1px solid rgba(197,155,56,.45)!important;
+  padding:5px 10px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.5px;
+}
+.whitepill{background:rgba(255,255,255,.14)!important;color:#F6F4EE!important}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{
+  text-align:center;
+  background:#fff;
+  border:1px solid var(--b5-line)!important;
+  border-radius:14px;
+  padding:12px 10px;
+}
+.stat b{display:block;font-family:'Outfit',sans-serif;font-size:24px;color:var(--b5-green)!important;font-weight:800}
+.stat span{font-size:11px;color:var(--b5-muted);font-weight:600}
+.stat small{display:block;font-size:10px;color:#8A691B;margin-top:2px}
+.nav{display:none!important}
+.search{display:flex;gap:8px}
+.search input,.search select,input,textarea,select{
+  width:100%;
+  min-height:42px;
+  padding:10px 12px;
+  border:1.5px solid #CED7D1!important;
+  border-radius:11px!important;
+  font:inherit;
+  background:#fff;
+  color:var(--b5-ink)!important;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--b5-gold)!important;box-shadow:0 0 0 3px rgba(197,155,56,.18)!important}
+button,.btn,.primary,.send{
+  background:linear-gradient(135deg,#C85A17 0%,#A9470D 100%)!important;
+  color:#fff!important;
+  border:0;
+  border-radius:12px!important;
+  padding:11px 14px;
+  min-height:42px;
+  font-weight:800;
+  font-size:13px;
+  cursor:pointer;
+  box-shadow:0 6px 16px rgba(200,90,23,.2);
+}
+.send{width:100%;margin-top:10px}
+.secondary{
+  background:#fff!important;
+  color:var(--b5-green)!important;
+  border:1.5px solid var(--b5-green)!important;
+  box-shadow:none!important;
+}
+.member,.leader{
+  background:#fff;
+  border:1px solid var(--b5-line);
+  border-radius:14px;
+  padding:13px;
+  margin-top:10px;
+}
+.mh,.lh{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.member b{display:block;color:var(--b5-green)}
+.small{font-size:11.5px;color:var(--b5-muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.box{border:1px solid var(--b5-line);border-radius:12px;padding:11px;background:#FBF9F4}
+.box b{display:block;font-family:'JetBrains Mono',monospace;color:var(--b5-green)}
+.box small{font-size:10.5px;color:var(--b5-muted)}
+.msgbox{background:#FBF8F1;border:1px solid #E6DEC8;border-left:4px solid var(--b5-gold);padding:13px;border-radius:12px}
+.pinbox{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.pin{border:1px solid var(--b5-line);border-radius:10px;padding:10px;background:#fff}
+.pin b{display:block;font-family:'JetBrains Mono',monospace;color:var(--b5-green);font-size:13px}
+.tree{border-top:1px solid var(--b5-line);margin-top:10px;padding-top:10px}
+.node{background:#fff;border:1px solid var(--b5-line);border-radius:11px;padding:10px;margin:7px 0;font-size:12px}
+.children{margin-left:16px;border-left:2px solid var(--b5-gold);padding-left:10px}
+.hidden{display:none!important}
+.success{background:#E8F5EE!important;color:#0F6E43!important;border:1px solid rgba(15,110,67,.24);border-radius:12px;padding:11px;font-size:12px;margin-top:10px}
+.warn{background:#FEF3E2!important;color:#8C4A08!important;border:1px solid rgba(180,91,14,.28)!important;border-radius:12px;padding:11px;font-size:12px;margin-top:10px}
+.member-detail{background:#fff!important;border:1px solid var(--b5-line)!important;border-radius:16px!important;padding:14px;margin-top:12px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.detail-grid div{background:#FBF9F4;border:1px solid var(--b5-line);padding:9px;border-radius:10px}
+.detail-grid small{display:block;color:var(--b5-muted);font-size:10px;text-transform:uppercase;font-weight:700}
+.detail-grid b{font-size:12.5px;word-break:break-word}
+
+/* Admin Login Gate */
+#B5_ADMIN_GATE{
+  position:fixed;
+  inset:0;
+  background:radial-gradient(circle at 18% 12%,#0B4F35 0%,#042619 55%,#02150E 100%);
+  z-index:99999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+#B5_ADMIN_GATE .gate{
+  width:min(100%,430px);
+  background:#FCFBF8;
+  border:1.5px solid rgba(197,155,56,.45);
+  border-radius:22px;
+  padding:26px 22px;
+  box-shadow:0 24px 60px rgba(2,21,14,.55);
+}
+#B5_ADMIN_GATE .glogo{
+  width:68px;
+  height:68px;
+  border-radius:18px;
+  background:#fff;
+  border:2px solid var(--b5-gold);
+  display:grid;
+  place-items:center;
+  margin:0 auto 12px;
+  padding:5px;
+}
+#B5_ADMIN_GATE .glogo img{width:100%;height:100%;object-fit:contain;border-radius:12px;display:block}
+#B5_ADMIN_GATE h2{text-align:center;margin:4px 0;font-family:'Outfit',sans-serif;color:var(--b5-green);font-size:24px}
+.b5sub{text-align:center;color:var(--b5-muted);font-size:12.5px;margin-bottom:8px}
+#B5_ADMIN_GATE input{margin-top:10px}
+#B5_ADMIN_GATE button{width:100%;margin-top:10px}
+#B5_ADMIN_ERR{display:none;color:#B42318;text-align:center;font-size:12px;font-weight:700;margin-top:8px}
+#B5_ADMIN_HINT{display:none;color:#0F6E43;text-align:center;font-size:12px;margin-top:8px}
+
+/* Splash */
+#b5Splash{
+  position:fixed;
+  inset:0;
+  z-index:2147483647;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(circle at 20% 20%,#0B4F35,#042619 65%,#02150E);
+  color:#fff;
+  transition:opacity .35s ease,visibility .35s ease;
+}
+#b5Splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+.b5SplashLogo{
+  width:160px;
+  height:160px;
+  border-radius:50%;
+  display:block;
+  object-fit:contain;
+  background:#fff;
+  padding:6px;
+  box-shadow:0 20px 55px rgba(0,0,0,.35),0 0 0 2px rgba(197,155,56,.85);
+}
+.b5SplashName{margin-top:15px;font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;letter-spacing:1.5px}
+.b5SplashLine{width:70px;height:3px;margin-top:12px;border-radius:99px;background:#C59B38}
+
+/* Unified Sidebar & Frame */
+#unifiedAdminMenuBtn{
+  display:none;
+  position:fixed;
+  top:11px!important;
+  left:12px!important;
+  z-index:2147483000;
+  width:46px;
+  height:46px;
+  border:1.5px solid var(--b5-gold)!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  color:var(--b5-green)!important;
+  font-size:22px;
+  box-shadow:0 4px 14px rgba(0,0,0,.22);
+  cursor:pointer;
+  padding:0!important;
+}
+#unifiedAdminMenuBtn.ready{display:grid;place-items:center}
+#unifiedAdminOverlay{display:none;position:fixed;inset:0;background:rgba(2,21,14,.55);z-index:2147482998;backdrop-filter:blur(2px)}
+#unifiedAdminOverlay.show{display:block}
+#unifiedAdminSidebar{
+  display:none;
+  position:fixed;
+  top:0;
+  left:-310px;
+  width:292px;
+  max-width:88vw;
+  height:100vh;
+  background:#FCFBF8!important;
+  border-right:1px solid var(--b5-gold)!important;
+  z-index:2147482999;
+  box-shadow:8px 0 30px rgba(2,21,14,.32);
+  transition:left .24s ease;
+  padding:72px 14px 24px!important;
+  overflow:auto;
+}
+#unifiedAdminSidebar.ready{display:block}
+#unifiedAdminSidebar.open{left:0}
+#unifiedAdminSidebar .ustitle{font-size:11px;color:#8A691B;padding:4px 10px 6px;font-weight:800;text-transform:uppercase;letter-spacing:.8px}
+#unifiedAdminSidebar .uitem{
+  width:100%;
+  text-align:left;
+  background:#F3F1EA!important;
+  color:var(--b5-ink)!important;
+  border:1px solid var(--b5-line)!important;
+  padding:11px 13px!important;
+  margin:4px 0;
+  border-radius:11px!important;
+  font-weight:700;
+  cursor:pointer;
+  font-size:13.5px;
+  box-shadow:none!important;
+}
+#unifiedAdminSidebar .uitem:hover{border-color:var(--b5-gold)!important}
+#unifiedAdminSidebar .uitem.active{
+  background:linear-gradient(135deg,#042619,#0B4F35)!important;
+  color:#fff!important;
+  border-color:var(--b5-gold)!important;
+}
+.b5-lt-toggle{display:flex!important;align-items:center;justify-content:space-between}
+.b5-lt-toggle span{color:var(--b5-gold);font-size:16px;transition:.2s}
+.b5-lt-toggle.open span{transform:rotate(180deg)}
+.b5-lt-options{display:grid;gap:4px;max-height:0;overflow:hidden;opacity:0;transition:max-height .28s ease,opacity .2s ease;padding-left:8px}
+.b5-lt-options.open{max-height:520px;opacity:1;padding-bottom:8px}
+.b5-lt-options .b5-subitem{font-size:12.5px!important;padding:9px 12px!important;background:#fff!important;border-left:3px solid var(--b5-gold)!important}
+#unifiedAdminFrame{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147482997;background:#F6F4EE}
+#unifiedAdminFrame.show{display:block}
+@media(max-width:520px){
+  .grid,.pinbox,.detail-grid,.stats{grid-template-columns:1fr!important}
+  .mh,.lh,.search{flex-wrap:wrap}
+  .top,header{padding:8px 8px 8px 58px!important;gap:8px!important;height:auto!important;min-height:60px!important}
+  #unifiedAdminMenuBtn{top:10px!important;left:8px!important;width:40px!important;height:40px!important;font-size:18px!important;border-radius:10px!important}
+  .logo{width:36px!important;height:36px!important;border-radius:10px!important}
+  .brand{min-width:0;flex:1 1 auto;overflow:hidden}
+  .brand b{font-size:13px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand small{font-size:10px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top-actions{gap:5px!important;flex-shrink:0}
+  .top-actions button{padding:6px 8px!important;font-size:10.5px!important;min-height:34px!important}
+  #B5_ADMIN_GATE{padding:12px 8px}
+  #B5_ADMIN_GATE .gate{padding:18px 14px;border-radius:18px}
+}
+@media(max-width:390px){
+  .top,header{padding:8px 6px 8px 52px!important;gap:6px!important}
+  #unifiedAdminMenuBtn{left:6px!important;width:38px!important;height:38px!important}
+  .logo{width:32px!important;height:32px!important}
+  .brand b{font-size:12px!important}
+  .brand small{font-size:9.5px!important}
+  .top-actions button{padding:5px 7px!important;font-size:10px!important}
+  .wrap{padding:12px 8px 34px}
+  .card{padding:14px 11px!important}
+}
+</style>
+</head>
+<body>
+<div id="b5Splash" aria-label="BORNTOWIN5 loading">
+  <img class="b5SplashLogo" src="b5-logo.png" alt="BORNTOWIN5">
+  <div class="b5SplashName">BORNTOWIN5</div>
+  <div class="b5SplashLine"></div>
+</div>
+
+<div id="B5_ADMIN_GATE">
+  <div class="gate">
+    <div class="glogo"><img src="b5-logo.png" alt="BORNTOWIN5"></div>
+    <h2>BORNTOWIN5 Admin</h2>
+    <div class="b5sub" id="B5_ADMIN_GATE_SUB">Emerald Sovereign • Command Center Login</div>
+    <div id="B5_ADMIN_BOOTSTRAP_BOX" style="display:none">
+      <div class="msgbox" style="margin-bottom:10px;font-size:12px">
+        <b>First-Admin Bootstrap Setup</b><br>
+        Cloudflare D1 database (<code>b5-level-tracking</code>) is connected and empty. Set the initial Admin password to activate the Command Center.
+      </div>
+      <input id="B5_BOOTSTRAP_TOKEN" type="password" placeholder="Bootstrap Token (only if B5_ADMIN_BOOTSTRAP_TOKEN is set)" style="display:none">
+      <input id="B5_BOOTSTRAP_PASSWORD" type="password" placeholder="Create Initial Admin Password (min 4 chars)" autocomplete="new-password">
+      <input id="B5_BOOTSTRAP_CONFIRM" type="password" placeholder="Confirm Initial Admin Password" autocomplete="new-password">
+      <button onclick="b5AdminBootstrap()">COMPLETE FIRST-ADMIN SETUP</button>
+    </div>
+    <div id="B5_ADMIN_LOGIN_BOX">
+      <input id="B5_ADMIN_PASSWORD" type="password" placeholder="Enter Admin Password" autocomplete="off">
+      <button onclick="b5AdminLogin()">LOGIN TO ADMIN PORTAL</button>
+      <button class="secondary" onclick="b5ShowChange()">Change Password</button>
+    </div>
+    <div id="B5_ADMIN_ERR">Incorrect password</div>
+    <div id="B5_ADMIN_HINT"></div>
+    <div id="B5_CHANGE" style="display:none">
+      <input id="B5_OLD_PASSWORD" type="password" placeholder="Current Password">
+      <input id="B5_NEW_PASSWORD" type="password" placeholder="New Password">
+      <input id="B5_CONFIRM_PASSWORD" type="password" placeholder="Confirm New Password">
+      <button onclick="b5ChangePassword()">Save New Password</button>
+    </div>
+  </div>
+</div>
+
+<header class="top">
+  <div class="logo"><img src="b5-logo.png" alt="BORNTOWIN5"></div>
+  <div class="brand"><b>BORNTOWIN5 ADMIN</b><small>Emerald Sovereign • Enterprise Command Center</small></div>
+  <div class="top-actions">
+    <button type="button" onclick="adminRefresh()">↻ Refresh</button>
+    <button type="button" onclick="adminLogout()">Logout</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="pill whitepill">ADMIN COMMAND CENTER</span>
+    <h1>Welcome, Admin</h1>
+    <p>Member Verification • Joining PINs • Referral Tree • Sequential Level Tracking (L1–L7)</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <button type="button" style="width:auto;margin:0;padding:9px 14px" onclick="uAdminLevelTrack('requests')">◈ Open Upgrade Requests &amp; Approvals</button>
+      <button type="button" class="secondary" style="width:auto;margin:0;padding:9px 14px" onclick="uAdminLevelTrack('seniority')">♛ View Seniority Queue (L2–L7)</button>
+    </div>
+  </section>
+
+  <div class="card" id="adminMainStatsCard">
+    <div class="stats">
+      <div class="stat"><b id="total">0</b><span>Total Members</span></div>
+      <div class="stat"><b id="todayRegistrationsTop">0</b><span>Registered Today</span></div>
+      <div class="stat"><b id="dbHealthLabel" style="font-size:15px;padding-top:5px">Active</b><span>Database Persistence</span></div>
+    </div>
+  </div>
+
+  <section id="review" class="card panel">
+    <span class="pill">REGISTRATION REVIEW</span>
+    <h3>Today's &amp; All Registrations</h3>
+    <div class="stats" style="margin-bottom:12px">
+      <div class="stat"><b id="todayRegistrations">0</b><span>Registered Today</span><small>New registrations</small></div>
+    </div>
+    <div class="search"><input id="rq" placeholder="Search Mobile / Name / Member ID"></div>
+    <div id="reviewList"></div>
+  </section>
+
+  <section id="members" class="card panel hidden">
+    <span class="pill">MEMBERS</span>
+    <h3>Member Directory &amp; Profile Control</h3>
+    <div class="search">
+      <input id="mq" placeholder="Mobile Number / Member ID / Name">
+      <button class="btn send" style="width:auto;margin:0" onclick="memberSearch()">Search</button>
+    </div>
+    <div id="memberList"></div>
+    <div id="memberDetail"></div>
+  </section>
+
+  <section id="msg" class="card panel hidden">
+    <span class="pill">MESSAGE CENTER</span>
+    <h3>Broadcast or Direct Member Message</h3>
+    <label class="small">Send To</label>
+    <select id="msgTo" onchange="toggleMessageTarget()">
+      <option value="all">👥 All Members</option>
+      <option value="mobile">📱 Specific Mobile Number</option>
+    </select>
+    <div id="mobileSearch" class="hidden" style="margin-top:9px">
+      <input id="targetMobile" placeholder="10 digit Mobile Number">
+      <button class="btn send" onclick="findTarget()">Search Member</button>
+      <div id="target"></div>
+    </div>
+    <textarea id="message" rows="5" placeholder="Message எழுதுங்கள்..." style="margin-top:10px"></textarea>
+    <button class="btn send" onclick="sendMessage()">Send Message</button>
+    <div id="msgResult"></div>
+  </section>
+
+  <section id="pin" class="card panel hidden">
+    <span class="pill">PIN MANAGEMENT</span>
+    <h3>Generate &amp; Assign Joining PINs</h3>
+    <label class="small">Search Member / Leader</label>
+    <div class="search" style="margin:6px 0 8px">
+      <input id="pinMemberSearch" placeholder="Member ID / Mobile Number">
+      <button class="btn send" style="width:auto;margin:0" onclick="searchPinMember()">Search</button>
+    </div>
+    <div id="pinMemberResults"></div>
+    <label class="small">Leader</label>
+    <select id="leader"><option value="">Select Member / Leader</option></select>
+    <label class="small" style="display:block;margin-top:10px">Quantity</label>
+    <select id="qty"><option>10</option><option>20</option><option>50</option><option>100</option></select>
+    <button class="btn send" onclick="generatePins()">Generate &amp; Assign PINs</button>
+    <div id="pinResult"></div>
+  </section>
+
+  <section id="pinreport" class="card panel hidden">
+    <span class="pill">ADMIN PIN REPORT</span>
+    <h3>PIN Distribution &amp; Leader Report</h3>
+    <div class="card">
+      <h3 style="margin-top:0">PIN Distribution Summary</h3>
+      <div class="stats">
+        <div class="stat"><b id="totalSent">0</b><span>Total PINs Sent</span><small>All time</small></div>
+        <div class="stat"><b id="totalLeaders">0</b><span>Leaders</span><small>Received PINs</small></div>
+        <div class="stat"><b id="used">0</b><span>PINs Used</span><small>Activated</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Leader-wise PIN Distribution</h3>
+      <div id="leaders"></div>
+    </div>
+  </section>
+
+  <section id="tree" class="card panel hidden">
+    <span class="pill">FULL REFERRAL TREE</span>
+    <h3>All Members Downline</h3>
+    <div id="fullTree"><div class="small">இன்னும் உறுப்பினர்கள் பதிவு செய்யப்படவில்லை.</div></div>
+  </section>
+
+  <section id="pwreset" class="panel hidden">
+    <div class="card">
+      <span class="pill">PASSWORD SECURITY</span>
+      <h2>Password Reset Requests</h2>
+      <div id="pwResetList">Loading...</div>
+    </div>
+  </section>
+
+  <section id="settings" class="card panel hidden">
+    <span class="pill">ADMIN SETTINGS</span>
+    <h3>System Settings</h3>
+    <div class="msgbox">
+      <b>Admin Account</b>
+      <p class="small">Admin password-ஐ இங்கேயே மாற்றலாம்.</p>
+      <button class="btn send" onclick="openSettingsPassword()">Change Admin Password</button>
+      <div id="settingsPasswordBox" style="display:none;margin-top:10px">
+        <input id="SET_OLD_PASSWORD" type="password" placeholder="Current Password">
+        <input id="SET_NEW_PASSWORD" type="password" placeholder="New Password">
+        <input id="SET_CONFIRM_PASSWORD" type="password" placeholder="Confirm New Password">
+        <button class="btn send" onclick="saveSettingsPassword()">Save New Password</button>
+        <div id="settingsPasswordMsg" class="small" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="msgbox" style="margin-top:10px">
+      <b>Member Profile</b>
+      <p class="small">Member profile + bank details save ஆன பிறகு profile lock ஆகும். அடுத்த மாற்றங்கள் Admin side-ல் மட்டுமே செய்யப்படும்.</p>
+      <button class="btn send" onclick="tab('members')">Open Member Profile Management</button>
+    </div>
+    <div class="msgbox" style="margin-top:10px">
+      <b>Password Reset</b>
+      <p class="small">Member Forgot Password requests இங்கே Admin approval மூலம் process செய்யலாம்.</p>
+      <button class="btn send" onclick="tab('pwreset')">Open Password Reset Requests</button>
+    </div>
+    <div class="msgbox" style="margin-top:10px">
+      <b>Level Tracking</b>
+      <p class="small">Level Tracking, payment accounts மற்றும் seniority controls தனியாக Level Tracking menu-ல் உள்ளன.</p>
+      <button class="btn send" onclick="uAdminLevelTrack('accounts')">Open Level Tracking Payment Accounts</button>
+    </div>
+  </section>
+</main>
+
+<button id="unifiedAdminMenuBtn" onclick="uAdminToggle()" aria-label="Open Admin menu">☰</button>
+<div id="unifiedAdminOverlay" onclick="uAdminToggle()"></div>
+<aside id="unifiedAdminSidebar">
+  <div class="ustitle">Admin Menu</div>
+  <button class="uitem active" data-main="dashboard" onclick="uAdminMain('dashboard',this)">🏠 Dashboard</button>
+  <button class="uitem" data-main="review" onclick="uAdminMain('review',this)">📝 Registrations</button>
+  <button class="uitem" data-main="members" onclick="uAdminMain('members',this)">👥 Members</button>
+  <button class="uitem" data-main="msg" onclick="uAdminMain('msg',this)">📢 Messages</button>
+  <button class="uitem" data-main="pin" onclick="uAdminMain('pin',this)">🔐 PIN Management</button>
+  <button class="uitem" data-main="pwreset" onclick="uAdminMain('pwreset',this)">🔑 Password Reset</button>
+  <button class="uitem" data-main="pinreport" onclick="uAdminMain('pinreport',this)">📊 Admin PIN Report</button>
+  <button class="uitem" data-main="tree" onclick="uAdminMain('tree',this)">🌳 Referral Tree</button>
+  <button class="uitem" data-main="settings" onclick="uAdminMain('settings',this)">⚙️ Settings</button>
+  <div class="ustitle b5-lt-title" style="margin-top:14px">Level Tracking (L1–L7)</div>
+  <button class="uitem b5-lt-toggle open" type="button" onclick="uAdminLevelTrackToggle(this)">📊 Level Tracking <span>⌄</span></button>
+  <div id="b5AdminLTOptions" class="b5-lt-options open">
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('dashboard',this)">⌂ Command Overview</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('requests',this)">◈ Requests &amp; Approval</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('payments',this)">₹ Send Payment Details</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('accounts',this)">▣ Payment Accounts</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('seniority',this)">♛ Seniority Queue</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('reports',this)">▤ Reports / Schedule</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('history',this)">◷ Upgrade History</button>
+    <button class="uitem b5-subitem" onclick="uAdminLevelTrack('emaillogs',this)">✉ Email Logs</button>
+  </div>
+</aside>
+<iframe id="unifiedAdminFrame" title="LevelTrack Admin Portal"></iframe>
+
+<script>
+async function api(u,o={}){
+  const tok=localStorage.getItem('B5_ADMIN_TOKEN')||'';
+  const r=await fetch(u,{
+    cache:'no-store',
+    credentials:'same-origin',
+    ...o,
+    headers:{
+      'Content-Type':'application/json',
+      'Cache-Control':'no-cache',
+      ...(tok?{'x-admin-token':tok}:{}),
+      ...(o.headers||{})
+    }
+  });
+  const d=await r.json().catch(()=>({}));
+  if(r.status===401&&u!=='/api/admin/login'&&u!=='/api/admin/password'){
+    localStorage.removeItem('B5_ADMIN_LOGIN');
+    localStorage.removeItem('B5_ADMIN_TOKEN');
+    const gate=document.getElementById('B5_ADMIN_GATE');
+    if(gate)gate.style.display='flex';
+  }
+  if(!r.ok)throw Error(d.error||'Request failed');
+  return d;
+}
+
+function tab(id){
+  document.querySelectorAll('.panel').forEach(x=>x.classList.add('hidden'));
+  document.getElementById(id)?.classList.remove('hidden');
+  if(id==='pwreset')loadPwReset();
+}
+
+async function checkAdminBootstrapStatus(){
+  try{
+    const r=await fetch('/api/admin/bootstrap-status',{cache:'no-store'});
+    const d=await r.json().catch(()=>({}));
+    const bootBox=document.getElementById('B5_ADMIN_BOOTSTRAP_BOX');
+    const loginBox=document.getElementById('B5_ADMIN_LOGIN_BOX');
+    const tokInput=document.getElementById('B5_BOOTSTRAP_TOKEN');
+    if(d&&d.bootstrapRequired){
+      localStorage.removeItem('B5_ADMIN_LOGIN');
+      localStorage.removeItem('B5_ADMIN_TOKEN');
+      document.getElementById('B5_ADMIN_GATE').style.display='flex';
+      if(bootBox)bootBox.style.display='block';
+      if(loginBox)loginBox.style.display='none';
+      if(tokInput)tokInput.style.display=d.tokenRequired?'block':'none';
+      return true;
+    }else{
+      if(bootBox)bootBox.style.display='none';
+      if(loginBox)loginBox.style.display='block';
+      return false;
+    }
+  }catch(_){
+    return false;
+  }
+}
+
+async function b5AdminBootstrap(){
+  const newPassword=document.getElementById('B5_BOOTSTRAP_PASSWORD')?.value||'';
+  const confirmPassword=document.getElementById('B5_BOOTSTRAP_CONFIRM')?.value||'';
+  const bootstrapToken=document.getElementById('B5_BOOTSTRAP_TOKEN')?.value||'';
+  const errEl=document.getElementById('B5_ADMIN_ERR');
+  if(errEl)errEl.style.display='none';
+  try{
+    const d=await api('/api/admin/bootstrap',{method:'POST',body:JSON.stringify({newPassword,confirmPassword,bootstrapToken})});
+    localStorage.setItem('B5_ADMIN_LOGIN','1');
+    if(d.adminToken)localStorage.setItem('B5_ADMIN_TOKEN',d.adminToken);
+    document.getElementById('B5_ADMIN_GATE').style.display='none';
+    await checkAdminBootstrapStatus();
+    loadAdminData();
+  }catch(e){
+    if(errEl){errEl.textContent=e.message;errEl.style.display='block';}
+  }
+}
+
+async function b5AdminLogin(){
+  try{
+    const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({password:document.getElementById('B5_ADMIN_PASSWORD').value})});
+    localStorage.setItem('B5_ADMIN_LOGIN','1');
+    if(d.adminToken)localStorage.setItem('B5_ADMIN_TOKEN',d.adminToken);
+    document.getElementById('B5_ADMIN_GATE').style.display='none';
+    loadAdminData();
+  }catch(e){
+    if(e.message&&e.message.toLowerCase().includes('bootstrap')){
+      await checkAdminBootstrapStatus();
+    }
+    const x=document.getElementById('B5_ADMIN_ERR');
+    x.textContent=e.message;
+    x.style.display='block';
+  }
+}
+
+function adminLogout(){
+  localStorage.removeItem('B5_ADMIN_LOGIN');
+  localStorage.removeItem('B5_ADMIN_TOKEN');
+  fetch('/api/admin/logout',{method:'POST',credentials:'same-origin'}).finally(()=>location.reload());
+}
+async function adminRefresh(){await loadAdminData();}
+
+function b5ShowChange(){
+  const gate=document.getElementById('B5_ADMIN_GATE');
+  if(gate&&getComputedStyle(gate).display!=='none'){
+    document.getElementById('B5_CHANGE').style.display='block';
+    return;
+  }
+  openSettingsPassword();
+}
+
+function openSettingsPassword(){
+  const b=document.getElementById('settingsPasswordBox');
+  if(b)b.style.display='block';
+}
+
+async function saveSettingsPassword(){
+  const oldPassword=document.getElementById('SET_OLD_PASSWORD').value;
+  const newPassword=document.getElementById('SET_NEW_PASSWORD').value;
+  const confirm=document.getElementById('SET_CONFIRM_PASSWORD').value;
+  const msg=document.getElementById('settingsPasswordMsg');
+  if(!oldPassword||!newPassword||!confirm){if(msg)msg.textContent='All password fields are required.';return;}
+  if(newPassword!==confirm){if(msg)msg.textContent='New passwords do not match';return;}
+  try{
+    const d=await api('/api/admin/password',{method:'POST',body:JSON.stringify({oldPassword,newPassword})});
+    if(d.adminToken)localStorage.setItem('B5_ADMIN_TOKEN',d.adminToken);
+    if(msg)msg.textContent='✓ Password changed successfully.';
+    document.getElementById('SET_OLD_PASSWORD').value='';
+    document.getElementById('SET_NEW_PASSWORD').value='';
+    document.getElementById('SET_CONFIRM_PASSWORD').value='';
+  }catch(e){if(msg)msg.textContent=e.message;}
+}
+
+async function b5ChangePassword(){
+  const oldPassword=document.getElementById('B5_OLD_PASSWORD').value;
+  const newPassword=document.getElementById('B5_NEW_PASSWORD').value;
+  const confirm=document.getElementById('B5_CONFIRM_PASSWORD').value;
+  if(newPassword!==confirm)return alert('New passwords do not match');
+  try{
+    const d=await api('/api/admin/password',{method:'POST',body:JSON.stringify({oldPassword,newPassword})});
+    if(d.adminToken)localStorage.setItem('B5_ADMIN_TOKEN',d.adminToken);
+    alert('Password changed successfully');
+    document.getElementById('B5_CHANGE').style.display='none';
+  }catch(e){alert(e.message);}
+}
+
+async function loadAdminData(){
+  try{
+    const [d,st]=await Promise.all([
+      api('/api/admin/dashboard'),
+      api('/api/leveltrack/admin/status').catch(()=>null)
+    ]);
+    document.getElementById('total').textContent=d.total;
+    document.getElementById('todayRegistrations').textContent=d.todayRegistrations||0;
+    const topToday=document.getElementById('todayRegistrationsTop');
+    if(topToday)topToday.textContent=d.todayRegistrations||0;
+    const dbLbl=document.getElementById('dbHealthLabel');
+    if(dbLbl&&st){
+      dbLbl.textContent=(st.d1Enabled||(st.persistence&&st.persistence.mode==='cloudflare-d1'))
+        ?'Cloudflare D1 (DB)'
+        :(st.supabaseEnabled?'Supabase + Local':'Local Atomic');
+    }
+    document.getElementById('totalSent').textContent=d.pinSummary?.sent||0;
+    document.getElementById('used').textContent=d.pinSummary?.used||0;
+    const leaders=document.getElementById('totalLeaders');
+    if(leaders)leaders.textContent=d.pinSummary?.leaders||0;
+    window.__members=d.members||[];
+    drawReview();
+    const sel=document.getElementById('leader');
+    if(sel)sel.innerHTML='<option value="">Select Member / Leader</option>'+((d.members||[]).map(m=>`<option value="${m.memberId}">${m.name} — ${m.memberId}</option>`).join(''));
+    renderPinReport(d.pinReport||[]);
+    drawTree(d.members||[]);
+    loadPwReset();
+    if(!localStorage.getItem('B5_ADMIN_LOGIN'))document.getElementById('B5_ADMIN_GATE').style.display='flex';
+  }catch(e){
+    const el=document.getElementById('reviewList');
+    if(el)el.innerHTML='<div class="warn">Admin data load failed: '+String(e.message).replace(/</g,'&lt;')+'</div>';
+  }
+}
+
+function drawReview(){
+  const list=window.__members||[],q=(document.getElementById('rq')?.value||'').toLowerCase();
+  const a=list.filter(m=>(m.name+' '+m.mobile+' '+m.memberId).toLowerCase().includes(q));
+  document.getElementById('reviewList').innerHTML=a.map(m=>`<div class="member"><div class="mh"><div><b>${m.name}</b><span class="small">${m.memberId} • ${m.mobile} • Level L${m.level||1}</span></div><span class="pill">${m.status||'Verified'}</span></div><div class="small" style="margin-top:8px">Referral ID: ${m.referral||'FIRST MEMBER'}</div></div>`).join('')||'<p class="small">No registrations found.</p>';
+}
+
+async function dynamicStatus(id,status){
+  try{
+    await api('/api/admin/member-status',{method:'POST',body:JSON.stringify({memberId:id,status})});
+    await loadAdminData();
+  }catch(e){alert(e.message);}
+}
+
+async function memberSearch(){
+  try{
+    const d=await api('/api/admin/members?q='+encodeURIComponent(document.getElementById('mq').value));
+    document.getElementById('memberList').innerHTML=d.members.map(m=>`<div class="member" onclick="showMemberDetails('${m.memberId}')" style="cursor:pointer"><b>${m.name}</b><div class="small">${m.memberId} • Mobile: ${m.mobile} • Status: ${m.status} • Referral: ${m.referral||'FIRST MEMBER'}</div><div class="small" style="margin-top:6px;color:#C85A17;font-weight:700">Tap to view &amp; edit full details →</div></div>`).join('')||'<p class="small">Member not found.</p>';
+  }catch(e){alert(e.message);}
+}
+
+async function showMemberDetails(id){
+  try{
+    const d=await api('/api/admin/member-details/'+encodeURIComponent(id)),m=d.details||d.member;
+    const rows=Object.entries(m).filter(([k])=>!['pin','passwordHash','password','photo'].includes(k)).map(([k,v])=>`<div><small>${k}</small><b>${String(v??'').replace(/</g,'&lt;')}</b></div>`).join('');
+    const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    document.getElementById('memberDetail').innerHTML=`<div class="member-detail"><h3 style="margin-top:0">${esc(m.name)} — Full Details</h3><div class="detail-grid">${rows}</div><details style="margin-top:12px"><summary style="cursor:pointer;font-weight:800;color:#042619">Edit Member Profile &amp; Bank Details</summary><div class="detail-grid" style="margin-top:10px"><div><small>Name</small><input id="admName" value="${esc(m.name)}"></div><div><small>Place</small><input id="admPlace" value="${esc(m.place)}"></div><div><small>Account Holder</small><input id="admHolder" value="${esc(m.accountHolder)}"></div><div><small>Bank Name</small><input id="admBank" value="${esc(m.bank)}"></div><div><small>Account Number</small><input id="admAccount" value="${esc(m.account)}"></div><div><small>IFSC</small><input id="admIfsc" value="${esc(m.ifsc)}"></div><div><small>Branch</small><input id="admBranch" value="${esc(m.branch)}"></div><div><small>UPI ID</small><input id="admUpi" value="${esc(m.upi)}"></div></div><button class="btn send" onclick="saveAdminMemberProfile('${esc(m.memberId)}')">SAVE ADMIN CHANGES</button><div id="admProfileMsg" class="small" style="margin-top:8px"></div></details></div>`;
+  }catch(e){alert(e.message);}
+}
+
+async function saveAdminMemberProfile(id){
+  const b={
+    name:document.getElementById('admName').value.trim(),
+    place:document.getElementById('admPlace').value.trim(),
+    accountHolder:document.getElementById('admHolder').value.trim(),
+    bank:document.getElementById('admBank').value.trim(),
+    account:document.getElementById('admAccount').value.trim(),
+    ifsc:document.getElementById('admIfsc').value.trim(),
+    branch:document.getElementById('admBranch').value.trim(),
+    upi:document.getElementById('admUpi').value.trim()
+  };
+  try{
+    await api('/api/admin/member-profile/'+encodeURIComponent(id),{method:'POST',body:JSON.stringify(b)});
+    document.getElementById('admProfileMsg').textContent='✓ Admin changes saved.';
+    setTimeout(()=>showMemberDetails(id),250);
+  }catch(e){document.getElementById('admProfileMsg').textContent=e.message;}
+}
+
+function toggleMessageTarget(){
+  const v=document.getElementById('msgTo')?.value;
+  const box=document.getElementById('mobileSearch');
+  if(box)box.classList.toggle('hidden',v!=='mobile');
+  if(v!=='mobile'){
+    const t=document.getElementById('target');
+    if(t){t.innerHTML='';delete t.dataset.memberId;}
+  }
+}
+
+async function findTarget(){
+  try{
+    const d=await api('/api/admin/members?q='+encodeURIComponent(document.getElementById('targetMobile').value.trim())),m=d.members[0],el=document.getElementById('target');
+    if(m){el.dataset.memberId=m.memberId;el.innerHTML=`<div class="member"><b>✓ ${m.name}</b><div class="small">${m.memberId} • ${m.mobile}</div></div>`;}
+    else el.innerHTML='<div class="msgbox">Member not found.</div>';
+  }catch(e){alert(e.message);}
+}
+
+async function sendMessage(){
+  const msg=document.getElementById('message').value.trim(),to=document.getElementById('msgTo').value,memberId=document.getElementById('target')?.dataset?.memberId||'';
+  if(!msg)return alert('Message எழுதுங்கள்');
+  if(to==='mobile'&&!memberId)return alert('முதலில் Member search செய்யுங்கள்');
+  try{
+    await api('/api/admin/message',{method:'POST',body:JSON.stringify({to:to==='all'?'all':'mobile',memberId,message:msg})});
+    document.getElementById('msgResult').innerHTML='<div class="msgbox" style="margin-top:10px">✓ Message sent successfully.</div>';
+    document.getElementById('message').value='';
+  }catch(e){alert(e.message);}
+}
+
+async function searchPinMember(){
+  const q=document.getElementById('pinMemberSearch').value.trim();
+  if(!q)return alert('Enter Member ID or Mobile Number');
+  try{
+    const d=await api('/api/admin/members?q='+encodeURIComponent(q));
+    const el=document.getElementById('pinMemberResults');
+    el.innerHTML=(d.members||[]).map(m=>`<div class="member" style="cursor:pointer" onclick="selectPinMember('${m.memberId}')"><b>${m.name}</b><div class="small">${m.memberId} • ${m.mobile}</div></div>`).join('')||'<div class="small">Member not found.</div>';
+  }catch(e){alert(e.message);}
+}
+
+function selectPinMember(id){
+  const s=document.getElementById('leader');
+  if(s){
+    s.value=id;
+    if(!s.value){const o=document.createElement('option');o.value=id;o.textContent=id;s.appendChild(o);s.value=id;}
+  }
+  document.getElementById('pinMemberResults').innerHTML='<div class="success" style="margin-bottom:8px">✓ Member selected: '+id+'</div>';
+}
+
+async function generatePins(){
+  const quantity=Math.max(1,Number(document.getElementById('qty').value)||1),memberId=document.getElementById('leader').value;
+  if(!memberId)return alert('Select Member / Leader');
+  try{
+    const d=await api('/api/admin/pins/generate',{method:'POST',body:JSON.stringify({memberId,quantity})});
+    document.getElementById('pinResult').innerHTML=`<div class="msgbox" style="margin-top:10px"><b>✓ ${d.pins.length} PINs generated &amp; assigned</b><p class="small">${d.member.name} — ${d.member.memberId}<br>Available: ${d.available} • Used: ${d.used}</p><details><summary style="cursor:pointer;font-weight:700">Show PINs</summary><div class="pinbox">${d.pins.map(x=>`<div class="pin"><b>${x.pin}</b><span class="small">AVAILABLE</span></div>`).join('')}</div></details></div>`;
+    await loadAdminData();
+  }catch(e){alert(e.message);}
+}
+
+function renderPinReport(report){
+  const el=document.getElementById('leaders');
+  if(el)el.innerHTML=report.map(x=>`<div class="leader"><div class="lh"><div><b>${x.name}</b><div class="small">${x.memberId}</div></div><span class="pill">Assigned</span></div><div class="grid" style="margin-top:9px"><div class="box"><b>${x.received}</b><small>Total Received</small></div><div class="box"><b>${x.available}</b><small>Available</small></div><div class="box"><b>${x.used}</b><small>Used</small></div><div class="box"><b>${x.received?Math.round(x.used/x.received*100):0}%</b><small>Activated</small></div></div></div>`).join('')||'<div class="small">இன்னும் PIN data இல்லை.</div>';
+}
+
+function drawTree(list){
+  const el=document.getElementById('fullTree');
+  if(!el)return;
+  const children=id=>list.filter(m=>m.referral===id).map(m=>({name:m.name,id:m.memberId,referral:m.referral,children:children(m.memberId)}));
+  const roots=list.filter(m=>!m.referral||m.referral==='FIRST MEMBER');
+  el.innerHTML=roots.length?roots.map(r=>makeAdminTree({name:r.name,id:r.memberId,children:children(r.memberId)},0)).join(''):'<div class="small">இன்னும் உறுப்பினர்கள் பதிவு செய்யப்படவில்லை.</div>';
+}
+function makeAdminTree(n,l){
+  return `<div class="node"><b>L${l} — ${n.name}</b><div class="small">${n.id}</div>${n.children?.length?'<div class="children">'+n.children.map(x=>makeAdminTree(x,l+1)).join('')+'</div>':''}</div>`;
+}
+
+async function loadPwReset(){
+  const el=document.getElementById('pwResetList');
+  if(!el)return;
+  try{
+    const d=await api('/api/admin/password-reset-requests');
+    const requests=Array.isArray(d.requests)?d.requests:[];
+    if(!requests.length){el.innerHTML='<div class="small">No pending password reset requests.</div>';return;}
+    el.innerHTML=requests.map(x=>`<div class="card" style="margin-top:10px"><b>${String(x.name).replace(/</g,'&lt;')}</b><div class="small">${x.memberId} • ${x.mobile}<br>Requested: ${x.createdAt?new Date(x.createdAt).toLocaleString():''}</div><button class="primary" style="margin-top:10px" onclick="approvePwReset('${x.id}')">APPROVE &amp; RESET PASSWORD</button></div>`).join('');
+  }catch(e){
+    el.innerHTML='<div class="warn">Failed to load password reset requests: '+String(e.message).replace(/</g,'&lt;')+'</div>';
+  }
+}
+
+window.approvePwReset=async function(id){
+  let temp=prompt('Temporary password (minimum 6 characters). Leave blank for auto-generate:','');
+  if(temp!==null&&temp&&temp.length<6)return alert('Minimum 6 characters');
+  try{
+    const d=await api('/api/admin/password-reset/'+encodeURIComponent(id),{method:'POST',body:JSON.stringify({temporaryPassword:temp||''})});
+    alert('Temporary password: '+d.temporaryPassword);
+    loadPwReset();
+  }catch(e){alert(e.message);}
+};
+
+document.getElementById('rq')?.addEventListener('input',drawReview);
+window.addEventListener('load',async()=>{
+  setTimeout(()=>{document.getElementById('b5Splash')?.classList.add('hide');},650);
+  const needsBoot=await checkAdminBootstrapStatus();
+  if(!needsBoot&&localStorage.getItem('B5_ADMIN_LOGIN')==='1'){
+    document.getElementById('B5_ADMIN_GATE').style.display='none';
+  }
+  if(!needsBoot)loadAdminData();
+});
+
+(function(){
+  const btn=document.getElementById('unifiedAdminMenuBtn'),side=document.getElementById('unifiedAdminSidebar'),ov=document.getElementById('unifiedAdminOverlay'),frame=document.getElementById('unifiedAdminFrame');
+  const panels=['review','members','msg','pin','pinreport','tree','settings','pwreset'];
+  function logged(){return localStorage.getItem('B5_ADMIN_LOGIN')==='1'&&getComputedStyle(document.getElementById('B5_ADMIN_GATE')).display!=='flex';}
+  function ready(){
+    const ok=logged();
+    [btn,side].forEach(x=>x&&x.classList.toggle('ready',ok));
+    if(!ok){frame.classList.remove('show');side.classList.remove('open');ov.classList.remove('show');}
+  }
+  window.uAdminToggle=function(){if(!btn.classList.contains('ready'))return;side.classList.toggle('open');ov.classList.toggle('show');};
+  function close(){side.classList.remove('open');ov.classList.remove('show');}
+  const hero=document.querySelector('main.wrap > .hero');
+  const statsCard=document.getElementById('adminMainStatsCard');
+  function hideMainPanels(){panels.forEach(x=>document.getElementById(x)?.classList.add('hidden'));}
+
+  window.uAdminMain=function(id,b){
+    frame.classList.remove('show');
+    document.querySelectorAll('#unifiedAdminSidebar .uitem').forEach(x=>x.classList.remove('active'));
+    if(b)b.classList.add('active');
+    close();
+    hideMainPanels();
+    if(id==='dashboard'){
+      if(hero)hero.style.display='block';
+      if(statsCard)statsCard.style.display='block';
+      document.getElementById('review')?.classList.remove('hidden');
+      window.scrollTo({top:0,behavior:'smooth'});
+      return;
+    }
+    if(hero)hero.style.display='none';
+    if(statsCard)statsCard.style.display='none';
+    document.getElementById(id)?.classList.remove('hidden');
+    if(id==='pwreset')loadPwReset();
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+
+  window.uAdminLevelTrackToggle=function(b){
+    const box=document.getElementById('b5AdminLTOptions');
+    box.classList.toggle('open');
+    b.classList.toggle('open');
+  };
+
+  let adminLTLoaded=false;
+  window.uAdminLevelTrack=function(section,b){
+    document.querySelectorAll('#unifiedAdminSidebar .uitem').forEach(x=>x.classList.remove('active'));
+    if(b)b.classList.add('active');
+    close();
+    if(hero)hero.style.display='none';
+    if(statsCard)statsCard.style.display='none';
+    hideMainPanels();
+    frame.classList.add('show');
+    const target=section||'dashboard';
+    const send=()=>frame.contentWindow?.postMessage({type:'LEVELTRACK_NAV',section:target},location.origin);
+    if(!adminLTLoaded){
+      adminLTLoaded=true;
+      frame.addEventListener('load',send,{once:true});
+      frame.src='/leveltrack-admin.html?v=SOVEREIGN-1';
+    }else{
+      send();
+    }
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+
+  ready();
+  setInterval(ready,500);
+  setInterval(()=>{if(localStorage.getItem('B5_ADMIN_LOGIN')==='1')loadPwReset();},8000);
+})();
+</script>
+</body>
+</html>

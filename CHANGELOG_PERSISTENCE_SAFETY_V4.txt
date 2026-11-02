@@ -1,0 +1,16 @@
+B5 Persistence Safety V4
+
+Changes in server.js:
+- Local database writes use atomic temp-file replacement.
+- Previous local db.json is retained as db.json.previous before replacement.
+- A secondary JSON snapshot is written to B5_BACKUP_DIR (default: backups beside DB_FILE), and the previous secondary snapshot is retained as b5-state.json.previous.
+- Supabase PATCH writes are serialized and retried up to 3 attempts with backoff.
+- /api/db-status reports local backup and Supabase save status.
+
+Important limitations:
+- The default backup directory is on the same app filesystem. It is NOT an independent cloud backup and may be ephemeral on a hosting platform.
+- For persistent secondary storage, set B5_BACKUP_DIR to a confirmed persistent mounted path or implement S3-compatible object storage with credentials.
+- This patch does not split the large app_state JSON row; if Supabase continues to return statement_timeout for the ~13 MB state, the database architecture needs a separate migration to smaller rows/tables. Retries alone cannot guarantee that the timeout is fixed.
+- Startup still loads a non-empty Supabase state as the active state. Before it replaces local db.json, localSave preserves the prior local file as db.json.previous and in the secondary snapshot where available. Compare/recover these snapshots before making any manual data restoration.
+- Email delivery still depends on valid SMTP settings/certificate. This patch does not fix an expired SMTP certificate.
+- Do not deploy directly over production until tested in a separate deployment or after a verified backup.

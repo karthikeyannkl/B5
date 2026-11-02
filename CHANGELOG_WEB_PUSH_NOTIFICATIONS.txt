@@ -1,0 +1,7 @@
+B5 Web Push Notification integration (2026-10-30)
+
+Added Cloudflare-Workers-compatible Web Crypto VAPID-backed browser Push API routes, authenticated subscription storage in Cloudflare D1, a service worker, an opt-in client helper, and push hooks for payment assignment, proof submission, receiver confirmation, final approval, and rejection. Existing email notification calls and level/payment business rules were left in place.
+
+Deployment requirements: install dependencies (npm install), configure VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and VAPID_SUBJECT as Worker environment secrets/vars, then apply migrations/0002_b5_push_subscriptions.sql (the application also ensures the table exists on first API access). Test on HTTPS with a signed-in member/admin device.
+
+Important: this package was not tested against live Cloudflare credentials or a real mobile browser subscription in this environment.

@@ -1,0 +1,7 @@
+B5 targeted corrections (only two files)
+
+Files:
+- B5-main/b5-engine.js: actually invokes the configured SMTP sender, awaits the send result, and records SENT only after SMTP accepts the message; SMTP failures are recorded as FAILED with an error. Notification call sites now await the send attempt so the status is saved accurately.
+- B5-main/member.html: retains the latest requested dashboard changes: show only the 4 newest admin messages and show the incoming receiver-payment notification on the member dashboard.
+
+Safety: make a backup of both current files first. Replace only these two files in the matching project paths, then deploy to a staging/test app first. Test a new registration and inspect Email Notification Audit & Delivery Logs. A SENT status means SMTP accepted the message, not a guarantee of Gmail inbox delivery. If the test passes, deploy to live. Do not replace database files or environment variables.

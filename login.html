@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#042619">
+<title>BORNTOWIN5 — Member Sovereign Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="b5-design-system.css">
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  background:radial-gradient(circle at 18% 12%,#0B4F35 0%,#042619 52%,#02150E 100%)!important;
+  font-family:'Plus Jakarta Sans','Noto Sans Tamil',system-ui,-apple-system,sans-serif!important;
+  color:#111C17;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.wrap{width:100%;max-width:440px}
+.card{
+  width:100%;
+  background:#FCFBF8!important;
+  border:1px solid rgba(197,155,56,.38)!important;
+  border-radius:24px!important;
+  padding:32px 24px!important;
+  box-shadow:0 24px 60px rgba(2,21,14,.55)!important;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.card::before{
+  content:"";
+  position:absolute;
+  top:0;left:0;right:0;
+  height:4px;
+  background:linear-gradient(90deg,#042619,#C59B38,#C85A17);
+}
+.logo{
+  width:76px;
+  height:76px;
+  border-radius:20px;
+  background:#fff;
+  border:2px solid #C59B38;
+  box-shadow:0 10px 26px rgba(4,38,25,.16);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 16px;
+  padding:6px;
+}
+.logo img{width:100%;height:100%;object-fit:contain;border-radius:14px;display:block}
+.kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#FBF6E8;
+  color:#8A691B;
+  border:1px solid rgba(197,155,56,.42);
+  padding:4px 12px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.9px;
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+h1{
+  margin:0;
+  font-family:'Outfit','Plus Jakarta Sans',sans-serif;
+  font-size:28px;
+  font-weight:800;
+  color:#042619;
+  letter-spacing:-.3px;
+}
+.sub{
+  margin:8px 0 24px;
+  color:#4A5D53;
+  font-size:13.5px;
+  line-height:1.5;
+}
+.btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  width:100%;
+  min-height:48px;
+  border-radius:14px;
+  padding:14px 18px;
+  margin-top:12px;
+  font-size:15px;
+  font-weight:800;
+  cursor:pointer;
+  text-decoration:none;
+  transition:transform .15s ease,box-shadow .18s ease;
+}
+.btn:hover{transform:translateY(-1px)}
+.member{
+  background:linear-gradient(135deg,#C85A17 0%,#A9470D 100%)!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.14)!important;
+  box-shadow:0 8px 22px rgba(200,90,23,.28)!important;
+}
+.admin{
+  background:linear-gradient(135deg,#042619 0%,#083D28 100%)!important;
+  color:#fff!important;
+  border:1px solid rgba(197,155,56,.4)!important;
+  box-shadow:0 8px 20px rgba(4,38,25,.2)!important;
+}
+.note{
+  margin-top:22px;
+  padding-top:16px;
+  border-top:1px solid #DCE2DC;
+  font-size:12px;
+  color:#4A5D53;
+  line-height:1.5;
+}
+@media(max-width:430px){
+  body{padding:12px!important;overflow-x:hidden!important}
+  .card{padding:22px 16px!important;border-radius:18px!important}
+  h1{font-size:24px!important}
+  .btn{font-size:14px!important;padding:12px 14px!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="logo"><img src="b5-logo.png" alt="BORNTOWIN5"></div>
+    <div class="kicker">Emerald Sovereign • Member Portal</div>
+    <h1>BORNTOWIN5</h1>
+    <div class="sub">Member Financial Portal • Sequential Level Tracking (L1–L7)</div>
+    <a class="btn member" href="/member.html?tab=login">👤 Member Login</a>
+    <a class="btn" style="background:#fff!important;color:#042619!important;border:1.5px solid #042619!important;box-shadow:none!important" href="/member.html?tab=register">📝 New Member Registration</a>
+    <div class="note">Use your registered 10-digit Mobile Number &amp; Password to sign in, or register with a valid Referral ID and Joining PIN.</div>
+  </div>
+</div>
+</body>
+</html>

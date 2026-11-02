@@ -1,0 +1,11 @@
+Targeted corrections based on the working Admin Seniority Visibility Fix version
+
+1. Payment details start a persisted 24-hour deadline when sent.
+2. User payment page displays a live countdown. After expiry, the old details are hidden/locked and an Admin email contact link is shown. Server rejects proof submissions after expiry.
+3. Admin expired/review requests show EXTEND 24 HOURS, RESTORE & REASSIGN, RELEASE SLOT, and BLACKLIST MEMBER actions.
+4. Extension starts a fresh 24-hour window. Restore/reassign preserves old payment history and issues new receiver details with a new deadline. Release/blacklist locks access pending Admin review.
+5. Seniority queue counts active pending/reserved assignments toward the five-slot capacity separately from completed payments. Completed count still increments only after approved payments.
+6. L4/L5/L6/L7 A/B/C rotation counters remain independently stored per level.
+7. Existing Admin Seniority visibility fix and page layout were retained.
+
+Checks performed: server JavaScript syntax; inline JavaScript syntax for leveltrack-admin.html and leveltrack-member.html; ZIP integrity. No live AIC Cloud/Supabase end-to-end test was performed.

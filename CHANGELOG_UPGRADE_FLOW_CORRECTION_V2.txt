@@ -1,0 +1,8 @@
+B5 Upgrade Flow Correction v2
+
+1. Admin Payment Details send is now revalidated against the latest server request before POST.
+2. If the request is already Assigned, Admin shows PAYMENT DETAILS SENT instead of trying to send again.
+3. The assign response is validated: request must return status Assigned before UI confirms success.
+4. Selected request state is retained from the server response.
+5. Removed ONLY the unnecessary save(db) from GET /api/leveltrack/member/dashboard/:id. No other save(db) or localSave(db) calls were changed.
+6. Existing payment amount, receiver, seniority, approval, referral milestone, and level upgrade logic are unchanged.

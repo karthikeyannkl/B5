@@ -1,0 +1,34 @@
+BORNTOWIN5 — TARGETED CORRECTIONS + TWO-MOBILE TEST DATA
+
+Changes in this build:
+1. Admin A/B/C account rotation is independent for target Levels L4, L5, L6 and L7. Each level cycles A -> B -> C -> A and does not advance another level's counter. Existing L1-L3/global rotation behavior is preserved.
+2. Admin Seniority queue calculation is not changed. User-side earnings/completed count now follows the same payment-level classification: REFERRAL_UPGRADE always counts as L2; regular upgrades use the recorded seniorityLevel (fallback to upgrade target). Only receiver-confirmed and admin-approved records count.
+3. Admin Seniority accordion keeps the opened/closed state during live refresh so L3-L7 do not collapse unexpectedly.
+4. Admin approval is guarded against double-clicks; server validates member/upgrade state before mutating approval flags and returns success for an already-approved transaction.
+5. Advanced Referral Upgrade receiver selection is explicitly fixed to L2.
+
+TEST DATA (enabled only when B5_SENIORITY_TEST_MODE=1)
+Both test parents have 13 direct referrals. All test passwords: B5@123456
+
+Mobile Test Parent 1
+Member ID: B5-MOBTEST01
+Mobile/login: 7888888801
+Referral ID: REF-MOBTEST01
+Password: B5@123456
+Direct referrals: M1T01-M1T13, mobiles 7300000001-7300000013
+
+Mobile Test Parent 2
+Member ID: B5-MOBTEST02
+Mobile/login: 7888888802
+Referral ID: REF-MOBTEST02
+Password: B5@123456
+Direct referrals: M2T01-M2T13, mobiles 7300000101-7300000113
+
+To create these test records on the test deployment, set environment variable:
+B5_SENIORITY_TEST_MODE=1
+Then restart/redeploy the app. The seed is additive and does not delete existing member data. Keep this flag OFF on production after testing.
+
+Notes:
+- The two parent users are Level 1 with 13 direct referrals, suitable for separate mobile-device request tests.
+- Test referral accounts are dummy data and use dummy bank/UPI values only.
+- Run a full real payment/receiver/admin-approval cycle in the deployed environment before considering this production-verified.

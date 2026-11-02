@@ -1,0 +1,31 @@
+# =============================================================================
+# BORNTOWIN5 (B5) — Cloudflare Workers + D1 Configuration
+# Worker Name   : b5-level-tracking
+# D1 Database   : b5-level-tracking
+# D1 Binding    : DB (accessed in Worker via env.DB)
+# =============================================================================
+
+name = "b5-level-tracking"
+main = "src/worker.js"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Serve static Emerald Sovereign portal assets from ./public
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+# Connect Worker directly to the Cloudflare D1 database `b5-level-tracking`
+[[d1_databases]]
+binding = "DB"
+database_name = "b5-level-tracking"
+database_id = "66c93b0f-274f-44df-82f0-b310c7c2acdf"
+migrations_dir = "migrations"
+
+[vars]
+B5_ADMIN_CONTACT_EMAIL = "notifications@borntowin5.com"
+SMTP_HOST = "mail.aiccloud.in"
+SMTP_PORT = "587"
+SMTP_USER = "notifications@borntowin5.com"
+EMAIL_FROM = "notifications@borntowin5.com"

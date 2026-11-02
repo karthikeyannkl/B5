@@ -1,0 +1,5 @@
+V5 TARGETED FIXES
+- Added Seniority Test IDs 11-13 so the root can test all referral milestones through 13.
+- Seniority earnings/queue count now uses the explicit upgrade seniorityLevel field.
+- Admin approval is idempotent and protected from live-refresh races; each approval can be processed sequentially without logout/login.
+- Existing upgrade/payment/receiver/seniority business rules and amounts preserved.

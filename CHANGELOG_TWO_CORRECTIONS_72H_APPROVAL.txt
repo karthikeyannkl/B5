@@ -1,0 +1,19 @@
+BORNTOWIN5 — Two targeted corrections
+Base: user-provided B5-main (3)(1).zip
+
+1) 72-hour payment deadline and admin-controlled hold workflow
+- Payment details assignment stores a 72-hour deadline on request, upgrade, and payment.
+- Member dashboard displays remaining time.
+- When deadline passes without payment proof, the request is moved to ExpiredHold; account details are removed from the member-facing payment records and the member is shown an Admin contact message.
+- Admin can Restore & Reassign (member access restored, request returned to Requested so new receiver details can be assigned), Release Slot, or Blacklist Member.
+- Payment proof submissions are rejected after expiry/hold.
+- Contact email defaults to notifications@borntowin5.com; set B5_ADMIN_CONTACT_EMAIL in deployment environment to the actual support mailbox if different.
+
+2) Admin approval/session refresh stability
+- Approval validates member and current level before mutating approval flags.
+- Approval is idempotent and updates request, payment, upgrade, and member level in one endpoint execution.
+- Admin refresh skips while approval is in flight and only redraws when relevant dashboard state changes.
+- Dashboard responses use no-store cache headers.
+
+Checks performed: Node syntax check for server.js; syntax check for all inline scripts in leveltrack-admin.html and leveltrack-member.html; ZIP integrity check.
+Production payment flow was not executed against the live database in this environment.

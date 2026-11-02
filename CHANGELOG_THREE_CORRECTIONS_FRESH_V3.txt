@@ -1,0 +1,17 @@
+THREE CORRECTIONS - FRESH V3
+
+1) Seniority rule
+- Normal Level Upgrade uses the target/to level as its Seniority Level.
+- Advanced Referral Upgrade (₹1,000) ALWAYS uses Level 2 Seniority, regardless of the member current level.
+- Admin receiver selection for Advanced Referral Upgrade is forced to L2.
+
+2) Admin live refresh
+- Lightweight /api/leveltrack/admin/status polling every 2 seconds.
+- Full dashboard is fetched and rendered only when the lightweight signature changes.
+- Selected request state is preserved across live updates.
+- Admin approval is protected by the busy lock so live refresh cannot interfere.
+- No logout/login is required between successive approvals.
+
+3) Request/send/approval lock
+- Existing request/send/approval busy locks retained.
+- Advanced Referral Upgrade labels explicitly show L2 Seniority.
