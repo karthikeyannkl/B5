@@ -818,14 +818,44 @@ function selectPinMember(id){
   document.getElementById('pinMemberResults').innerHTML='<div class="success" style="margin-bottom:8px">✓ Member selected: '+id+'</div>';
 }
 
-async function generatePins(){
+let pendingPinTarget = null;
+function generatePins(){
   const quantity=Math.max(1,Number(document.getElementById('qty').value)||1),memberId=document.getElementById('leader').value;
   if(!memberId)return alert('Select Member / Leader');
+  const leaderSelect=document.getElementById('leader');
+  const selText=leaderSelect.options[leaderSelect.selectedIndex]?.text||memberId;
+
+  pendingPinTarget={memberId,quantity,selText};
+
+  document.getElementById('pinConfirmMember').textContent=selText;
+  document.getElementById('pinConfirmQty').textContent=quantity+' PINs';
+  document.getElementById('pinConfirmDetails').textContent=`Generate ${quantity} unique joining PIN(s) and assign directly to member ${memberId}`;
+
+  document.getElementById('b5PinConfirmModal').style.display='flex';
+}
+
+async function executeGeneratePins(){
+  if(!pendingPinTarget)return;
+  const {memberId,quantity}=pendingPinTarget;
+  const confirmBtn=document.getElementById('b5PinConfirmBtn');
+  if(confirmBtn){confirmBtn.disabled=true;confirmBtn.textContent='Generating PINs…';}
   try{
     const d=await api('/api/admin/pins/generate',{method:'POST',body:JSON.stringify({memberId,quantity})});
+    closePinConfirmModal();
     document.getElementById('pinResult').innerHTML=`<div class="msgbox" style="margin-top:10px"><b>✓ ${d.pins.length} PINs generated &amp; assigned</b><p class="small">${d.member.name} — ${d.member.memberId}<br>Available: ${d.available} • Used: ${d.used}</p><details><summary style="cursor:pointer;font-weight:700">Show PINs</summary><div class="pinbox">${d.pins.map(x=>`<div class="pin"><b>${x.pin}</b><span class="small">AVAILABLE</span></div>`).join('')}</div></details></div>`;
     await loadAdminData();
-  }catch(e){alert(e.message);}
+  }catch(e){
+    alert(e.message);
+  }finally{
+    if(confirmBtn){confirmBtn.disabled=false;confirmBtn.textContent='YES — Generate & Assign PINs';}
+    pendingPinTarget=null;
+  }
+}
+
+function closePinConfirmModal(){
+  const m=document.getElementById('b5PinConfirmModal');
+  if(m)m.style.display='none';
+  pendingPinTarget=null;
 }
 
 function renderPinReport(report){
@@ -944,5 +974,38 @@ window.addEventListener('load',async()=>{
   setInterval(()=>{if(localStorage.getItem('B5_ADMIN_LOGIN')==='1')loadPwReset();},8000);
 })();
 </script>
+<!-- PIN Generation Protected Confirmation Modal -->
+<style>
+.b5-modal-backdrop{display:none;position:fixed;inset:0;z-index:9998;background:rgba(2,21,14,.78);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px}
+.b5-modal-dialog{background:#fff;border:1px solid rgba(4,38,25,.18);box-shadow:0 20px 45px rgba(2,21,14,.35);border-radius:16px;width:100%;max-width:460px;padding:24px;box-sizing:border-box}
+.b5-modal-title{font-size:17px;font-weight:800;color:#042619;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.b5-modal-grid{display:grid;grid-template-columns:1fr;gap:8px;background:#F6F9F7;border:1px solid #E2EBE5;border-radius:10px;padding:12px;margin:12px 0}
+.b5-modal-grid div small{display:block;font-size:10px;font-weight:700;color:#5A7165;text-transform:uppercase}
+.b5-modal-grid div b{font-size:13px;color:#042619;font-family:'JetBrains Mono',monospace}
+.b5-modal-footer{display:flex;gap:10px;margin-top:18px}
+.b5-modal-footer button{flex:1;padding:10px 14px;font-size:13px;font-weight:700;border-radius:10px;cursor:pointer}
+</style>
+
+<div id="b5PinConfirmModal" class="b5-modal-backdrop" onclick="closePinConfirmModal()">
+  <div class="b5-modal-dialog" onclick="event.stopPropagation()">
+    <div class="b5-modal-title">
+      <span>Confirm PIN Generation &amp; Assignment</span>
+      <button type="button" class="secondary" style="width:auto;margin:0;padding:2px 8px;font-size:16px" onclick="closePinConfirmModal()">×</button>
+    </div>
+    <div style="font-size:13px;color:#2F3E37;line-height:1.5">
+      <p style="margin:0">Please confirm generation and assignment of the selected joining PINs:</p>
+      <div class="b5-modal-grid">
+        <div><small>Selected Member / Leader</small><b id="pinConfirmMember">—</b></div>
+        <div><small>Number of PINs (Quantity)</small><b id="pinConfirmQty" style="color:#0F6E43">0 PINs</b></div>
+        <div><small>Assignment Details</small><span id="pinConfirmDetails" style="font-size:12px;color:#333">—</span></div>
+      </div>
+      <p class="small" style="color:#5A7165;margin:8px 0 0">Click <b>YES</b> to generate and assign PINs, or <b>NO</b> to cancel without making changes.</p>
+    </div>
+    <div class="b5-modal-footer">
+      <button id="b5PinConfirmBtn" type="button" class="btn send" style="margin:0;width:auto;flex:1" onclick="executeGeneratePins()">YES — Generate &amp; Assign PINs</button>
+      <button type="button" class="secondary" style="margin:0;width:auto;flex:1" onclick="closePinConfirmModal()">NO — Cancel</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

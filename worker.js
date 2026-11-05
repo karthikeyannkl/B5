@@ -9,12 +9,10 @@ import b5Engine from './b5-engine.js';
 const { isBlockedInternalPath, handleApiRequest } = b5Engine;
 
 const ROUTE_ALIASES = {
-  '/': '/member.html',
-  '/user/dashboard': '/member.html',
-  '/user/login': '/login.html',
-  '/admin': '/admin.html',
-  '/admin/login': '/admin.html',
-  '/mobile-preview': '/mobile-preview.html'
+  '/user/dashboard': '/member',
+  '/user/login': '/login',
+  '/admin/login': '/admin',
+  '/mobile-preview': '/mobile-preview'
 };
 
 export default {

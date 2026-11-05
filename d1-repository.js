@@ -210,7 +210,25 @@ const SCHEMA_STATEMENTS = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_email_logs_created ON email_logs(created_at DESC)`
+  `CREATE INDEX IF NOT EXISTS idx_email_logs_created ON email_logs(created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS seniority_block_audit (
+    id TEXT PRIMARY KEY,
+    member_id TEXT NOT NULL,
+    level INTEGER NOT NULL,
+    original_position INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    admin_id TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    unblock_reason TEXT,
+    payment_ref TEXT,
+    approved_by_admin_id TEXT,
+    approved_timestamp TEXT,
+    new_position INTEGER,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_seniority_block_audit_member_level ON seniority_block_audit(member_id, level)`,
+  `CREATE INDEX IF NOT EXISTS idx_seniority_block_audit_level_time ON seniority_block_audit(level, timestamp DESC)`
 ];
 
 function defaultPaymentSettings() {
@@ -455,6 +473,34 @@ function mapEmailLogRow(r) {
   };
 }
 
+function mapSeniorityBlockAuditRow(r) {
+  return {
+    id: r.id,
+    memberId: r.member_id,
+    member_id: r.member_id,
+    level: Number(r.level),
+    originalPosition: Number(r.original_position),
+    original_position: Number(r.original_position),
+    action: r.action,
+    reason: r.reason,
+    adminId: r.admin_id,
+    admin_id: r.admin_id,
+    timestamp: r.timestamp,
+    unblockReason: r.unblock_reason || null,
+    unblock_reason: r.unblock_reason || null,
+    paymentRef: r.payment_ref || null,
+    payment_ref: r.payment_ref || null,
+    approvedByAdminId: r.approved_by_admin_id || null,
+    approved_by_admin_id: r.approved_by_admin_id || null,
+    approvedTimestamp: r.approved_timestamp || null,
+    approved_timestamp: r.approved_timestamp || null,
+    newPosition: r.new_position !== null && r.new_position !== undefined ? Number(r.new_position) : null,
+    new_position: r.new_position !== null && r.new_position !== undefined ? Number(r.new_position) : null,
+    createdAt: r.created_at,
+    created_at: r.created_at
+  };
+}
+
 async function loadStateFromD1(d1, configuredAdminPassword = null) {
   await ensureD1SchemaAndBootstrap(d1, configuredAdminPassword);
 
@@ -467,7 +513,8 @@ async function loadStateFromD1(d1, configuredAdminPassword = null) {
     requestsRes,
     upgradesRes,
     paymentsRes,
-    emailsRes
+    emailsRes,
+    seniorityAuditRes
   ] = await d1.batch([
     d1.prepare(`SELECT key, value_json FROM system_settings`),
     d1.prepare(`SELECT * FROM members ORDER BY registered_at ASC, member_id ASC`),
@@ -492,7 +539,8 @@ async function loadStateFromD1(d1, configuredAdminPassword = null) {
       FROM leveltrack_payments
       ORDER BY created_at ASC, id ASC
     `),
-    d1.prepare(`SELECT * FROM email_logs ORDER BY created_at ASC, id ASC`)
+    d1.prepare(`SELECT * FROM email_logs ORDER BY created_at ASC, id ASC`),
+    d1.prepare(`SELECT * FROM seniority_block_audit ORDER BY timestamp DESC`)
   ]);
 
   const settingsMap = {};
@@ -532,7 +580,8 @@ async function loadStateFromD1(d1, configuredAdminPassword = null) {
     leveltrackRequests: (requestsRes.results || []).map(mapLtRequestRow),
     leveltrackUpgrades: (upgradesRes.results || []).map(mapLtUpgradeRow),
     leveltrackPayments: (paymentsRes.results || []).map(mapLtPaymentRow),
-    emailNotificationLog: (emailsRes.results || []).map(mapEmailLogRow)
+    emailNotificationLog: (emailsRes.results || []).map(mapEmailLogRow),
+    seniorityBlockAudit: (seniorityAuditRes?.results || []).map(mapSeniorityBlockAuditRow)
   };
 }
 
@@ -547,6 +596,7 @@ function buildSnapshotMap(state) {
     leveltrackUpgrades: new Map(),
     leveltrackPayments: new Map(),
     emailNotificationLog: new Map(),
+    seniorityBlockAudit: new Map(),
     messagesCount: (state.messages || []).length,
     ltMessagesCount: (state.leveltrackMessages || []).length
   };
@@ -557,6 +607,7 @@ function buildSnapshotMap(state) {
   for (const u of (state.leveltrackUpgrades || [])) map.leveltrackUpgrades.set(u.id, JSON.stringify(u));
   for (const p of (state.leveltrackPayments || [])) map.leveltrackPayments.set(p.id, JSON.stringify(p));
   for (const e of (state.emailNotificationLog || [])) map.emailNotificationLog.set(e.eventKey || e.id, JSON.stringify(e));
+  for (const a of (state.seniorityBlockAudit || [])) map.seniorityBlockAudit.set(a.id, JSON.stringify(a));
   return map;
 }
 
@@ -1141,6 +1192,35 @@ async function commitStateToD1(d1, prevMap, nextState, extraProofs = []) {
     const ser = JSON.stringify(e);
     if (!prevMap || prevMap.emailNotificationLog.get(key) !== ser) {
       stmts.push(prepareUpsertEmailLog(d1, e));
+    }
+  }
+
+  for (const a of (nextState.seniorityBlockAudit || [])) {
+    if (!prevMap || !prevMap.seniorityBlockAudit.has(a.id)) {
+      stmts.push(
+        d1.prepare(`
+          INSERT INTO seniority_block_audit (
+            id, member_id, level, original_position, action, reason, admin_id,
+            timestamp, unblock_reason, payment_ref, approved_by_admin_id,
+            approved_timestamp, new_position, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          String(a.id),
+          String(a.member_id || a.memberId),
+          Number(a.level),
+          Number(a.original_position || a.originalPosition || 0),
+          String(a.action),
+          String(a.reason || ''),
+          String(a.admin_id || a.adminId || 'ADMIN'),
+          String(a.timestamp || now),
+          a.unblock_reason || a.unblockReason ? String(a.unblock_reason || a.unblockReason) : null,
+          a.payment_ref || a.paymentRef ? String(a.payment_ref || a.paymentRef) : null,
+          a.approved_by_admin_id || a.approvedByAdminId ? String(a.approved_by_admin_id || a.approvedByAdminId) : null,
+          a.approved_timestamp || a.approvedTimestamp ? String(a.approved_timestamp || a.approvedTimestamp) : null,
+          a.new_position !== undefined && a.new_position !== null ? Number(a.new_position) : (a.newPosition !== undefined && a.newPosition !== null ? Number(a.newPosition) : null),
+          String(a.created_at || a.createdAt || now)
+        )
+      );
     }
   }
 

@@ -982,8 +982,8 @@ function renderQueue(){
   if(!wrap)return;
   const existing=[...wrap.querySelectorAll('.b5-queue-card[data-level]')];
   const openLevels=new Set(existing.length?existing.filter(c=>!c.classList.contains('closed')).map(c=>Number(c.dataset.level)):[2]);
-  const levels=[2,3,4,5,6,7];
-  const levelCapMap={2:5,3:10,4:10,5:5,6:5,7:5};
+  const levels=[1,2,3,4,5,6,7];
+  const levelCapMap={1:3,2:5,3:10,4:10,5:5,6:5,7:5};
   const renderAllocations=arr=>{
     if(!Array.isArray(arr)||!arr.length)return '';
     return `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">`+arr.map(a=>{
@@ -992,34 +992,59 @@ function renderQueue(){
       return `<span style="display:inline-block;padding:2px 7px;border-radius:999px;background:${bg};color:${col};font-size:10px;font-weight:700;border:1px solid rgba(4,38,25,.12)">${esc(a.payerMemberId)} • ${esc(a.stage)}${a.requestId?' ('+esc(a.requestId)+')':''}</span>`;
     }).join('')+`</div>`;
   };
-  wrap.innerHTML=levels.map(level=>{
+  const queueCardsHtml = levels.map(level=>{
     const q=state.dashboard?.seniority?.[level]||[];
     const currentList=state.dashboard?.seniorityCurrent?.[level]||q.filter(x=>x.status!=='COMPLETED');
     const completedList=state.dashboard?.seniorityCompleted?.[level]||q.filter(x=>x.status==='COMPLETED');
     const cap=q[0]?.required||levelCapMap[level]||5;
-    const active=currentList.find(x=>x.availableSlots>0||x.status==='ACTIVE');
+    const active=currentList.find(x=>!x.isBlocked&&(x.availableSlots>0||x.status==='ACTIVE'));
     const next=active?`#${active.position} • ${esc(active.name)} • ${esc(active.memberId)} (${active.availableSlots??(cap-(active.completed||0)-(active.reserved||0))} slots open)`:'No open receiver slot';
     const currentRows=currentList.length?currentList.map(x=>{
       const left=x.availableSlots??Math.max(0,(x.required||cap)-(x.completed||0)-(x.reserved||0));
-      const statusBadge=x.status==='ACTIVE'
-        ?`<span class="b5-status-active">● ACTIVE (${left} open)</span>`
-        :`<span class="pill" style="background:#FEF3E2!important;color:#8C4A08!important">⏳ RESERVED (${x.reserved||0} pending)</span>`;
+      const isBlk=!!x.isBlocked;
+      const statusBadge=isBlk
+        ?`<span class="pill" style="background:#FFEBEB!important;color:#C5221F!important;border:1px solid #F5C2C7!important;font-weight:800">⛔ BLOCKED</span><div class="small" style="color:#C5221F;margin-top:3px">Reason: ${esc(x.blockedDetails?.reason||'—')}<br>Blocked: ${x.blockedDetails?.blockedAt?new Date(x.blockedDetails.blockedAt).toLocaleString():'—'}</div>`
+        :(x.status==='ACTIVE'
+          ?`<span class="b5-status-active">● ACTIVE (${left} open)</span>`
+          :`<span class="pill" style="background:#FEF3E2!important;color:#8C4A08!important">⏳ RESERVED (${x.reserved||0} pending)</span>`);
+
+      const actionButtons=isBlk
+        ?`<div style="display:flex;flex-wrap:wrap;gap:4px">
+            <button type="button" class="primary" style="padding:4px 8px;font-size:11px;background:#0F6E43" onclick="openUnblockModal('${esc(x.memberId)}','${esc(x.name)}',${level},${x.position})">✓ Unblock &amp; Reallocate</button>
+            <button type="button" class="secondary" style="padding:4px 8px;font-size:11px" onclick="openUndoBlockModal('${esc(x.memberId)}','${esc(x.name)}',${level},${x.position})">⎌ Undo Block</button>
+          </div>`
+        :`<button type="button" class="secondary" style="padding:4px 8px;font-size:11px;color:#C5221F;border-color:#F5C2C7" onclick="openBlockModal('${esc(x.memberId)}','${esc(x.name)}',${level},${x.position})">⛔ Block</button>`;
+
       return `<tr>
-        <td class="b5-pos" data-label="Position">#${x.position}</td>
+        <td class="b5-pos" data-label="Position">${isBlk?`<span style="color:#C5221F;font-weight:800">#${x.position}</span>`:`#${x.position}`}</td>
         <td data-label="Member & Allocations"><b>${esc(x.name)}</b><br><span class="small">${esc(x.memberId)} • ${esc(x.mobile)}</span>${renderAllocations(x.allocatedRequests)}</td>
         <td data-label="Timestamp">${esc(x.reachedAt?new Date(x.reachedAt).toLocaleString():'—')}</td>
         <td data-label="Slot Capacity"><b>${x.completed}/${x.required}</b> approved<br><span class="small">${x.reserved||0} active / reserved • ${left} available</span></td>
         <td data-label="Status">${statusBadge}</td>
+        <td data-label="Actions">${actionButtons}</td>
       </tr>`;
-    }).join(''):`<tr><td colspan="5" class="small">No active or reserved seniorities in L${level} current queue.</td></tr>`;
+    }).join(''):`<tr><td colspan="6" class="small">No active or reserved seniorities in L${level} current queue.</td></tr>`;
 
-    const completedRows=completedList.length?completedList.map(x=>`<tr>
-      <td class="b5-pos" data-label="Position">#${x.position}</td>
-      <td data-label="Member & Approved Payments"><b>${esc(x.name)}</b><br><span class="small">${esc(x.memberId)} • ${esc(x.mobile)}</span>${renderAllocations(x.allocatedRequests)}</td>
-      <td data-label="Timestamp">${esc(x.reachedAt?new Date(x.reachedAt).toLocaleString():'—')}</td>
-      <td data-label="Completed Slots"><b>${x.completed}/${x.required}</b> approved</td>
-      <td class="b5-status-completed" data-label="Status">✓ COMPLETED</td>
-    </tr>`).join(''):`<tr><td colspan="5" class="small">No L${level} seniorities have completed all ${cap} approved payments yet.</td></tr>`;
+    const completedRows=completedList.length?completedList.map(x=>{
+      const isBlk=!!x.isBlocked;
+      const statusBadge=isBlk
+        ?`<span class="pill" style="background:#FFEBEB!important;color:#C5221F!important;border:1px solid #F5C2C7!important;font-weight:800">⛔ BLOCKED</span>`
+        :`<span class="b5-status-completed">✓ COMPLETED</span>`;
+      const actionButtons=isBlk
+        ?`<div style="display:flex;flex-wrap:wrap;gap:4px">
+            <button type="button" class="primary" style="padding:4px 8px;font-size:11px;background:#0F6E43" onclick="openUnblockModal('${esc(x.memberId)}','${esc(x.name)}',${level},${x.position})">✓ Unblock &amp; Reallocate</button>
+            <button type="button" class="secondary" style="padding:4px 8px;font-size:11px" onclick="openUndoBlockModal('${esc(x.memberId)}','${esc(x.name)}',${level},${x.position})">⎌ Undo Block</button>
+          </div>`
+        :`<button type="button" class="secondary" style="padding:4px 8px;font-size:11px;color:#C5221F;border-color:#F5C2C7" onclick="openBlockModal('${esc(x.memberId)}','${esc(x.name)}',${level},${x.position})">⛔ Block</button>`;
+      return `<tr>
+        <td class="b5-pos" data-label="Position">${isBlk?`<span style="color:#C5221F;font-weight:800">#${x.position}</span>`:`#${x.position}`}</td>
+        <td data-label="Member & Approved Payments"><b>${esc(x.name)}</b><br><span class="small">${esc(x.memberId)} • ${esc(x.mobile)}</span>${renderAllocations(x.allocatedRequests)}</td>
+        <td data-label="Timestamp">${esc(x.reachedAt?new Date(x.reachedAt).toLocaleString():'—')}</td>
+        <td data-label="Completed Slots"><b>${x.completed}/${x.required}</b> approved</td>
+        <td data-label="Status">${statusBadge}</td>
+        <td data-label="Actions">${actionButtons}</td>
+      </tr>`;
+    }).join(''):`<tr><td colspan="6" class="small">No L${level} seniorities have completed all ${cap} approved payments yet.</td></tr>`;
 
     return `<div data-level="${level}" class="b5-queue-card ${openLevels.has(level)?'':'closed'}">
       <div class="b5-queue-head" onclick="this.parentElement.classList.toggle('closed')">
@@ -1031,20 +1056,62 @@ function renderQueue(){
         <div class="small" style="font-weight:800;color:#042619;margin:6px 0 4px;text-transform:uppercase;letter-spacing:.4px">Current Queue — Active, Pending &amp; Reserved Seniorities (${currentList.length})</div>
         <div class="tableWrap">
           <table class="b5-queue-table" data-queue-section="current" data-level="${level}">
-            <thead><tr><th>Pos</th><th>Member &amp; Allocated Requests</th><th>Timestamp</th><th>Slot Capacity (${cap} Max)</th><th>Status</th></tr></thead>
+            <thead><tr><th>Pos</th><th>Member &amp; Allocated Requests</th><th>Timestamp</th><th>Slot Capacity (${cap} Max)</th><th>Status</th><th>Seniority Actions</th></tr></thead>
             <tbody>${currentRows}</tbody>
           </table>
         </div>
         <div class="small" style="font-weight:800;color:#4A5D53;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.4px">Completed Seniorities List — All ${cap}/${cap} Payments Approved (${completedList.length})</div>
         <div class="tableWrap">
           <table class="b5-queue-table" data-queue-section="completed" data-level="${level}">
-            <thead><tr><th>Pos</th><th>Member &amp; Approved Payments</th><th>Timestamp</th><th>Completed Slots (${cap}/${cap})</th><th>Status</th></tr></thead>
+            <thead><tr><th>Pos</th><th>Member &amp; Approved Payments</th><th>Timestamp</th><th>Completed Slots (${cap}/${cap})</th><th>Status</th><th>Seniority Actions</th></tr></thead>
             <tbody>${completedRows}</tbody>
           </table>
         </div>
       </div>
     </div>`;
   }).join('');
+
+  const auditList = state.dashboard?.seniorityBlockAudit || [];
+  const auditRows = auditList.length ? auditList.map(a => {
+    const actBadge = a.action === 'BLOCK'
+      ? `<span class="pill" style="background:#FFEBEB!important;color:#C5221F!important;border:1px solid #F5C2C7!important;font-weight:800">⛔ BLOCK</span>`
+      : (a.action === 'UNBLOCK'
+        ? `<span class="pill" style="background:#E8F5EE!important;color:#0F6E43!important;border:1px solid #C1E7D0!important;font-weight:800">✓ UNBLOCK</span>`
+        : `<span class="pill" style="background:#EEF4FF!important;color:#1D4ED8!important;border:1px solid #C7D8F9!important;font-weight:800">⎌ UNDO_BLOCK</span>`);
+    const dateStr = a.timestamp ? new Date(a.timestamp).toLocaleString() : '—';
+    const originalPos = a.original_position || a.originalPosition || '—';
+    const newPos = a.new_position || a.newPosition || '—';
+    return `<tr>
+      <td data-label="Timestamp" class="small">${esc(dateStr)}</td>
+      <td data-label="Member ID"><b style="font-family:'JetBrains Mono',monospace">${esc(a.member_id || a.memberId)}</b></td>
+      <td data-label="Level"><b>L${a.level}</b></td>
+      <td data-label="Action">${actBadge}</td>
+      <td data-label="Original Pos"><b>#${originalPos}</b></td>
+      <td data-label="New Pos">${newPos !== '—' ? `<b>#${newPos}</b>` : '<span class="small">—</span>'}</td>
+      <td data-label="Reason" class="small">${esc(a.unblock_reason || a.reason || '—')}</td>
+      <td data-label="Payment Ref" class="small" style="font-family:'JetBrains Mono',monospace">${esc(a.payment_ref || a.paymentRef || '—')}</td>
+      <td data-label="Admin" class="small">${esc(a.approved_by_admin_id || a.admin_id || 'ADMIN')}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="9" class="small">No Seniority Block/Unblock events recorded yet.</td></tr>`;
+
+  const auditCard = `
+    <div class="b5-queue-card" style="margin-top:20px">
+      <div class="b5-queue-head" onclick="this.parentElement.classList.toggle('closed')">
+        <span>SENIORITY AUDIT HISTORY (LEVELS 1–7) <span class="pill" style="margin-left:6px">${auditList.length} Events</span></span>
+        <span style="font-size:11px;font-weight:800">Click to expand / collapse</span>
+      </div>
+      <div class="b5-queue-body">
+        <div class="small" style="color:#5A7165;margin-bottom:8px">Immutable audit records for all Block, Unblock and Undo-Block actions across Levels 1–7.</div>
+        <div class="tableWrap">
+          <table class="b5-queue-table">
+            <thead><tr><th>Timestamp</th><th>Member ID</th><th>Level</th><th>Action</th><th>Orig Pos</th><th>New Pos</th><th>Reason / Notes</th><th>Payment Ref</th><th>Admin</th></tr></thead>
+            <tbody>${auditRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+
+  wrap.innerHTML = queueCardsHtml + auditCard;
 }
 
 async function selectRequest(id){
@@ -1234,9 +1301,34 @@ async function sendDetails(){
   }
 }
 
-async function approvePayment(id,paymentId='',requestId=''){
+let pendingApprovalTarget = null;
+function approvePayment(id, paymentId='', requestId=''){
   if(state.busy)return;
-  if(!confirm('Approve all confirmed payment parts for '+(paymentId||id)+' and complete this upgrade?'))return;
+  const u=(state.dashboard?.upgrades||[]).find(x=>x.id===id);
+  const pay=(state.dashboard?.payments||[]).find(x=>x.id===paymentId)||(u?(state.dashboard?.payments||[]).find(x=>x.upgradeId===u.id):null);
+  const req=(state.dashboard?.requests||[]).find(x=>x.id===(requestId||u?.requestId||pay?.requestId));
+
+  const memberId=u?.memberId||pay?.fromMemberId||req?.memberId||'—';
+  const level=u?.kind==='REFERRAL_UPGRADE'?'L2 (Additional Upgrade)':('L'+(u?.to||pay?.seniorityLevel||req?.to||'2'));
+  const amount=pay?.amount||u?.amount||(u?.kind==='REFERRAL_UPGRADE'?1000:0);
+  const payRef=paymentId||id;
+  const utr=pay?.utr||'—';
+
+  pendingApprovalTarget={id, paymentId, requestId};
+
+  $('confirmPayMemberId').textContent=memberId;
+  $('confirmPayLevel').textContent=level;
+  $('confirmPayAmount').textContent='₹'+Number(amount).toLocaleString('en-IN');
+  $('confirmPayRef').textContent=payRef;
+  $('confirmPayUtr').textContent=utr;
+
+  $('b5PaymentConfirmModal').style.display='flex';
+}
+
+async function executeApprovedPayment(){
+  if(!pendingApprovalTarget||state.busy)return;
+  const {id, paymentId, requestId}=pendingApprovalTarget;
+  closeAllSovereignModals();
   state.busy=true;
   const btn=document.querySelector(`button[data-approve-btn="${id}"]`)||document.querySelector(`button[onclick*="approvePayment('${id}'"]`);
   if(btn){btn.disabled=true;btn.textContent='APPROVING & SAVING…';btn.style.opacity='.68';}
@@ -1264,7 +1356,132 @@ async function approvePayment(id,paymentId='',requestId=''){
     alert(e.message);
   }finally{
     state.busy=false;
+    pendingApprovalTarget=null;
   }
+}
+
+let pendingSeniorityTarget = null;
+
+function openBlockModal(memberId, name, level, position){
+  pendingSeniorityTarget = { memberId, name, level, position };
+  $('blockModalMember').textContent = `${name} (${memberId})`;
+  $('blockModalLevel').textContent = `Level ${level}`;
+  $('blockModalPos').textContent = `#${position}`;
+  $('blockReasonInput').value = '';
+  $('blockAdminPasswordInput').value = '';
+  $('b5SeniorityBlockModal').style.display = 'flex';
+  setTimeout(() => $('blockReasonInput').focus(), 50);
+}
+
+async function submitBlockSeniority(){
+  if(!pendingSeniorityTarget || state.busy) return;
+  const reason = $('blockReasonInput').value.trim();
+  const adminPassword = $('blockAdminPasswordInput').value.trim();
+  if(!reason) return alert('A reason is required to block seniority.');
+  if(!adminPassword) return alert('Admin Password is required.');
+
+  const { memberId, level } = pendingSeniorityTarget;
+  state.busy = true;
+  try {
+    const res = await api('/api/leveltrack/admin/seniority/block', {
+      method: 'POST',
+      body: JSON.stringify({ memberId, level, reason, adminPassword })
+    });
+    if(!res?.ok) throw new Error(res?.error || 'Failed to block seniority');
+    closeAllSovereignModals();
+    showToast(`✓ Member ${memberId} blocked in Level ${level}`);
+    await load();
+  } catch(e) {
+    alert(e.message);
+  } finally {
+    state.busy = false;
+  }
+}
+
+function openUnblockModal(memberId, name, level, position){
+  const q = state.dashboard?.seniority?.[level] || [];
+  let maxPos = 15;
+  for (const x of q) {
+    if (x.position && Number(x.position) > maxPos) maxPos = Number(x.position);
+  }
+  const nextPos = maxPos + 1;
+  pendingSeniorityTarget = { memberId, name, level, position, nextPos };
+
+  $('unblockModalMember').textContent = `${name} (${memberId})`;
+  $('unblockModalLevel').textContent = `Level ${level}`;
+  $('unblockModalOldPos').textContent = `#${position}`;
+  $('unblockModalNextPos').textContent = `#${nextPos}`;
+  $('unblockPayRefInput').value = '';
+  $('unblockReasonInput').value = '';
+  $('unblockAdminPasswordInput').value = '';
+  $('b5SeniorityUnblockModal').style.display = 'flex';
+  setTimeout(() => $('unblockPayRefInput').focus(), 50);
+}
+
+async function submitUnblockSeniority(){
+  if(!pendingSeniorityTarget || state.busy) return;
+  const paymentRef = $('unblockPayRefInput').value.trim();
+  const reason = $('unblockReasonInput').value.trim();
+  const adminPassword = $('unblockAdminPasswordInput').value.trim();
+  if(!paymentRef) return alert('Payment Verification / Reference is required.');
+  if(!reason) return alert('An unblock reason is required.');
+  if(!adminPassword) return alert('Admin Password is required.');
+
+  const { memberId, level } = pendingSeniorityTarget;
+  state.busy = true;
+  try {
+    const res = await api('/api/leveltrack/admin/seniority/unblock', {
+      method: 'POST',
+      body: JSON.stringify({ memberId, level, reason, paymentRef, adminPassword })
+    });
+    if(!res?.ok) throw new Error(res?.error || 'Failed to unblock seniority');
+    closeAllSovereignModals();
+    showToast(`✓ Member ${memberId} unblocked and allocated Position #${res.newPosition} in Level ${level}`);
+    await load();
+  } catch(e) {
+    alert(e.message);
+  } finally {
+    state.busy = false;
+  }
+}
+
+function openUndoBlockModal(memberId, name, level, position){
+  pendingSeniorityTarget = { memberId, name, level, position };
+  $('undoBlockModalMember').textContent = `${name} (${memberId})`;
+  $('undoBlockModalLevel').textContent = `Level ${level}`;
+  $('undoBlockModalOrigPos').textContent = `#${position}`;
+  $('undoBlockAdminPasswordInput').value = '';
+  $('b5SeniorityUndoBlockModal').style.display = 'flex';
+  setTimeout(() => $('undoBlockAdminPasswordInput').focus(), 50);
+}
+
+async function submitUndoBlockSeniority(){
+  if(!pendingSeniorityTarget || state.busy) return;
+  const adminPassword = $('undoBlockAdminPasswordInput').value.trim();
+  if(!adminPassword) return alert('Admin Password is required.');
+
+  const { memberId, level } = pendingSeniorityTarget;
+  state.busy = true;
+  try {
+    const res = await api('/api/leveltrack/admin/seniority/undo-block', {
+      method: 'POST',
+      body: JSON.stringify({ memberId, level, adminPassword })
+    });
+    if(!res?.ok) throw new Error(res?.error || 'Failed to undo block');
+    closeAllSovereignModals();
+    showToast(`✓ Block undone. Member ${memberId} restored to Position #${res.position} in Level ${level}`);
+    await load();
+  } catch(e) {
+    alert(e.message);
+  } finally {
+    state.busy = false;
+  }
+}
+
+function closeAllSovereignModals(){
+  document.querySelectorAll('.b5-modal-backdrop').forEach(m => m.style.display = 'none');
+  pendingApprovalTarget = null;
+  pendingSeniorityTarget = null;
 }
 
 async function rejectAdminPayment(paymentId,requestId=''){
@@ -1466,6 +1683,130 @@ function closePaymentImage(){
   if(i)i.src='';
 }
 </script>
+<!-- ========================================================================= -->
+<!-- B5 Sovereign Protected Action Confirmation Modals                         -->
+<!-- ========================================================================= -->
+<style>
+.b5-modal-backdrop{display:none;position:fixed;inset:0;z-index:9998;background:rgba(2,21,14,.78);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px}
+.b5-modal-dialog{background:#fff;border:1px solid rgba(4,38,25,.18);box-shadow:0 20px 45px rgba(2,21,14,.35);border-radius:16px;width:100%;max-width:480px;padding:24px;box-sizing:border-box}
+.b5-modal-title{font-size:17px;font-weight:800;color:#042619;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.b5-modal-body{font-size:13px;color:#2F3E37;line-height:1.5}
+.b5-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#F6F9F7;border:1px solid #E2EBE5;border-radius:10px;padding:12px;margin:12px 0}
+.b5-modal-grid div small{display:block;font-size:10px;font-weight:700;color:#5A7165;text-transform:uppercase}
+.b5-modal-grid div b{font-size:13px;color:#042619;font-family:'JetBrains Mono',monospace}
+.b5-modal-footer{display:flex;gap:10px;margin-top:18px}
+.b5-modal-footer button{flex:1;padding:10px 14px;font-size:13px;font-weight:700;border-radius:10px;cursor:pointer}
+.b5-btn-danger{background:#C5221F!important;color:#fff!important;border:none!important}
+.b5-btn-danger:hover{background:#A51B18!important}
+</style>
+
+<!-- 1. Payment Received Approval Confirmation Modal -->
+<div id="b5PaymentConfirmModal" class="b5-modal-backdrop" onclick="closeAllSovereignModals()">
+  <div class="b5-modal-dialog" onclick="event.stopPropagation()">
+    <div class="b5-modal-title">
+      <span>Confirm Payment Approval</span>
+      <button type="button" class="secondary" style="width:auto;margin:0;padding:2px 8px;font-size:16px" onclick="closeAllSovereignModals()">×</button>
+    </div>
+    <div class="b5-modal-body">
+      <p style="margin:0">Verify actual receipt of funds in the bank/UPI account before approving.</p>
+      <div class="b5-modal-grid">
+        <div><small>Member ID</small><b id="confirmPayMemberId">—</b></div>
+        <div><small>Upgrade Level</small><b id="confirmPayLevel">—</b></div>
+        <div><small>Amount</small><b id="confirmPayAmount" style="color:#0F6E43">₹0</b></div>
+        <div><small>Payment ID</small><b id="confirmPayRef">—</b></div>
+        <div style="grid-column:span 2"><small>UTR / Transaction Ref</small><b id="confirmPayUtr">—</b></div>
+      </div>
+      <p class="small" style="color:#5A7165;margin:8px 0 0">Click <b>YES</b> to approve this payment and upgrade the member, or <b>NO</b> to cancel without changes.</p>
+    </div>
+    <div class="b5-modal-footer">
+      <button type="button" class="primary" style="background:#0F6E43" onclick="executeApprovedPayment()">YES — Approve Payment</button>
+      <button type="button" class="secondary" onclick="closeAllSovereignModals()">NO — Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Seniority Block Modal -->
+<div id="b5SeniorityBlockModal" class="b5-modal-backdrop" onclick="closeAllSovereignModals()">
+  <div class="b5-modal-dialog" onclick="event.stopPropagation()">
+    <div class="b5-modal-title">
+      <span style="color:#C5221F">⛔ Block Seniority Position</span>
+      <button type="button" class="secondary" style="width:auto;margin:0;padding:2px 8px;font-size:16px" onclick="closeAllSovereignModals()">×</button>
+    </div>
+    <div class="b5-modal-body">
+      <div class="b5-modal-grid">
+        <div><small>Member</small><b id="blockModalMember">—</b></div>
+        <div><small>Level</small><b id="blockModalLevel">—</b></div>
+        <div><small>Current Seniority Position</small><b id="blockModalPos" style="color:#C5221F">#—</b></div>
+        <div><small>Target Level</small><b>Level Independent</b></div>
+      </div>
+      <p class="small" style="color:#C5221F;font-weight:700;margin:6px 0">The member will be excluded from receiving upgrade payments in this Level. Original position remains in history.</p>
+      <label class="small" style="display:block;margin-top:10px;font-weight:700">Reason for Block <span style="color:#C5221F">*</span></label>
+      <input id="blockReasonInput" placeholder="Enter reason (e.g. payment discrepancy, audit hold)" style="margin-top:4px;box-sizing:border-box">
+      <label class="small" style="display:block;margin-top:10px;font-weight:700">Admin Password Verification <span style="color:#C5221F">*</span></label>
+      <input id="blockAdminPasswordInput" type="password" placeholder="Enter Admin Password" style="margin-top:4px;box-sizing:border-box">
+    </div>
+    <div class="b5-modal-footer">
+      <button type="button" class="b5-btn-danger" onclick="submitBlockSeniority()">Confirm Block</button>
+      <button type="button" class="secondary" onclick="closeAllSovereignModals()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Seniority Unblock & Reallocate Modal -->
+<div id="b5SeniorityUnblockModal" class="b5-modal-backdrop" onclick="closeAllSovereignModals()">
+  <div class="b5-modal-dialog" onclick="event.stopPropagation()">
+    <div class="b5-modal-title">
+      <span style="color:#0F6E43">✓ Unblock Seniority &amp; Allocate Position</span>
+      <button type="button" class="secondary" style="width:auto;margin:0;padding:2px 8px;font-size:16px" onclick="closeAllSovereignModals()">×</button>
+    </div>
+    <div class="b5-modal-body">
+      <div class="b5-modal-grid">
+        <div><small>Member</small><b id="unblockModalMember">—</b></div>
+        <div><small>Level</small><b id="unblockModalLevel">—</b></div>
+        <div><small>Old Position (Preserved in History)</small><b id="unblockModalOldPos" style="color:#C5221F">#—</b></div>
+        <div><small>Next Allocated Position</small><b id="unblockModalNextPos" style="color:#0F6E43">#—</b></div>
+      </div>
+      <div class="small" style="background:#E8F5EE;border:1px solid #C1E7D0;border-radius:8px;padding:8px 10px;color:#0F6E43;margin:6px 0;line-height:1.4">
+        <b>Rules:</b> The old blocked position is permanently preserved in historical records and never reused. The reactivated member receives the next sequential position (Current Max + 1). Existing members <b>never shift</b>.
+      </div>
+      <label class="small" style="display:block;margin-top:10px;font-weight:700">Payment Verification Reference / UTR <span style="color:#C5221F">*</span></label>
+      <input id="unblockPayRefInput" placeholder="Enter verified payment reference or UTR" style="margin-top:4px;box-sizing:border-box">
+      <label class="small" style="display:block;margin-top:10px;font-weight:700">Unblock Reason <span style="color:#C5221F">*</span></label>
+      <input id="unblockReasonInput" placeholder="Enter reason (e.g. verified bank credit, dispute resolved)" style="margin-top:4px;box-sizing:border-box">
+      <label class="small" style="display:block;margin-top:10px;font-weight:700">Admin Password Verification <span style="color:#C5221F">*</span></label>
+      <input id="unblockAdminPasswordInput" type="password" placeholder="Enter Admin Password" style="margin-top:4px;box-sizing:border-box">
+    </div>
+    <div class="b5-modal-footer">
+      <button type="button" class="primary" style="background:#0F6E43" onclick="submitUnblockSeniority()">Confirm Unblock &amp; Allocate</button>
+      <button type="button" class="secondary" onclick="closeAllSovereignModals()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Seniority Undo Block Modal -->
+<div id="b5SeniorityUndoBlockModal" class="b5-modal-backdrop" onclick="closeAllSovereignModals()">
+  <div class="b5-modal-dialog" onclick="event.stopPropagation()">
+    <div class="b5-modal-title">
+      <span style="color:#1D4ED8">⎌ Undo Accidental Seniority Block</span>
+      <button type="button" class="secondary" style="width:auto;margin:0;padding:2px 8px;font-size:16px" onclick="closeAllSovereignModals()">×</button>
+    </div>
+    <div class="b5-modal-body">
+      <div class="b5-modal-grid">
+        <div><small>Member</small><b id="undoBlockModalMember">—</b></div>
+        <div><small>Level</small><b id="undoBlockModalLevel">—</b></div>
+        <div style="grid-column:span 2"><small>Position to Restore</small><b id="undoBlockModalOrigPos" style="color:#1D4ED8">#—</b></div>
+      </div>
+      <p class="small" style="color:#5A7165;margin:6px 0">Use this to revert an accidental block. The member will be restored to their original seniority position if no conflicting position allocation exists.</p>
+      <label class="small" style="display:block;margin-top:10px;font-weight:700">Admin Password Verification <span style="color:#C5221F">*</span></label>
+      <input id="undoBlockAdminPasswordInput" type="password" placeholder="Enter Admin Password" style="margin-top:4px;box-sizing:border-box">
+    </div>
+    <div class="b5-modal-footer">
+      <button type="button" class="primary" style="background:#1D4ED8" onclick="submitUndoBlockSeniority()">Confirm Undo Block</button>
+      <button type="button" class="secondary" onclick="closeAllSovereignModals()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div id="b5ImageModal" onclick="closePaymentImage()" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(2,21,14,.88);flex-direction:column;align-items:center;justify-content:center;padding:18px;gap:10px">
   <button type="button" onclick="event.stopPropagation();closePaymentImage()" style="position:absolute;right:16px;top:16px;width:44px;height:44px;border-radius:50%;background:#fff!important;color:#042619!important;font-size:22px;z-index:2">×</button>
   <div id="b5ImageModalCaption" onclick="event.stopPropagation()" style="background:rgba(4,38,25,.92);color:#F6F4EE;border:1px solid rgba(197,155,56,.45);border-radius:999px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;max-width:92vw;text-align:center">Payment Proof Verification</div>

@@ -40,8 +40,17 @@ function nextMonotonicIso() {
   return new Date(now).toISOString();
 }
 
-function makeMemberId() {
-  return 'B5-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+function makeMemberId(existingMembers = []) {
+  const existingSet = new Set((existingMembers || []).map(m => String(m.memberId || m).toUpperCase()));
+  let candidate = '';
+  do {
+    // Exactly 5 numeric digits (10000 to 99999) - non-sequential, random
+    const n = crypto.randomInt(10000, 100000);
+    const s = String(n);
+    if (/(\d)\1{3,}/.test(s) || '0123456789'.includes(s) || '9876543210'.includes(s)) continue;
+    candidate = `B5-${s}`;
+  } while (existingSet.has(candidate));
+  return candidate;
 }
 function referralCode(memberId) {
   return 'REF-' + String(memberId || '').replace(/^B5-/, '').toUpperCase();
@@ -164,6 +173,76 @@ function withAllocationLock(fn) {
 
 let lastD1SaveAt = new Date().toISOString();
 let lastD1SaveError = null;
+
+function getMemberSeniorityPosition(m, level) {
+  if (!m) return null;
+  const lvl = Number(level);
+  if (m.seniorityPositions && m.seniorityPositions[lvl] !== undefined && m.seniorityPositions[lvl] !== null) {
+    return Number(m.seniorityPositions[lvl]);
+  }
+  if (m.initialSeniority && m.initialSeniority[lvl] !== undefined && m.initialSeniority[lvl] !== null) {
+    return Number(m.initialSeniority[lvl]);
+  }
+  if (m.b5Id && Number(m.b5Id) >= 1 && Number(m.b5Id) <= 15) {
+    return Number(m.b5Id);
+  }
+  return null;
+}
+
+function isSeniorityBlocked(m, level) {
+  if (!m) return false;
+  const lvl = Number(level);
+  return Boolean(m.seniorityBlocked && m.seniorityBlocked[lvl] && m.seniorityBlocked[lvl].blocked === true);
+}
+
+function getMaxAllocatedPosition(level, membersList = [], auditList = []) {
+  const lvl = Number(level);
+  let maxPos = 15;
+  const mList = Array.isArray(membersList) ? membersList : [];
+  const aList = Array.isArray(auditList) ? auditList : [];
+  for (const m of mList) {
+    const pos = getMemberSeniorityPosition(m, lvl);
+    if (pos !== null && pos > maxPos) maxPos = pos;
+    if (m.seniorityHistory && Array.isArray(m.seniorityHistory[lvl])) {
+      for (const h of m.seniorityHistory[lvl]) {
+        if (h.position && Number(h.position) > maxPos) maxPos = Number(h.position);
+        if (h.oldPosition && Number(h.oldPosition) > maxPos) maxPos = Number(h.oldPosition);
+        if (h.newPosition && Number(h.newPosition) > maxPos) maxPos = Number(h.newPosition);
+      }
+    }
+    if (m.seniorityBlocked && m.seniorityBlocked[lvl]?.position) {
+      const bp = Number(m.seniorityBlocked[lvl].position);
+      if (bp > maxPos) maxPos = bp;
+    }
+  }
+  for (const a of aList) {
+    if (Number(a.level) === lvl) {
+      if (a.original_position && Number(a.original_position) > maxPos) maxPos = Number(a.original_position);
+      if (a.originalPosition && Number(a.originalPosition) > maxPos) maxPos = Number(a.originalPosition);
+      if (a.new_position && Number(a.new_position) > maxPos) maxPos = Number(a.new_position);
+      if (a.newPosition && Number(a.newPosition) > maxPos) maxPos = Number(a.newPosition);
+    }
+  }
+  return maxPos;
+}
+
+function allocateNextSeniorityPosition(m, level, dbObj = {}) {
+  const lvl = Number(level);
+  const existing = getMemberSeniorityPosition(m, lvl);
+  if (existing !== null) return existing;
+
+  const maxPos = getMaxAllocatedPosition(lvl, dbObj?.members, dbObj?.seniorityBlockAudit);
+  const nextPos = maxPos + 1;
+
+  const configuredCap = dbObj?.paymentSettings?.senioritySlotCaps?.[lvl] || Infinity;
+  if (nextPos > configuredCap) {
+    throw new Error(`Cannot allocate seniority position ${nextPos}. Configured slot cap for Level ${lvl} is ${configuredCap}.`);
+  }
+
+  m.seniorityPositions = m.seniorityPositions || {};
+  m.seniorityPositions[lvl] = nextPos;
+  return nextPos;
+}
 
 function createSessionContext(db, env = {}, smtpSender = null) {
   const adminContactEmail = env.B5_ADMIN_CONTACT_EMAIL || env.ADMIN_EMAIL || env.SMTP_USER || 'notifications@borntowin5.com';
@@ -596,18 +675,17 @@ function createSessionContext(db, env = {}, smtpSender = null) {
       seenIds.add(firstMember.memberId);
       eligible.push(firstMember);
     }
-    eligible.sort((a, b) => {
-      const aInit = (a.initialSeniority && a.initialSeniority[target] !== undefined)
-        ? Number(a.initialSeniority[target])
-        : ((a.b5Id && a.b5Id >= 1 && a.b5Id <= 15) ? Number(a.b5Id) : null);
-      const bInit = (b.initialSeniority && b.initialSeniority[target] !== undefined)
-        ? Number(b.initialSeniority[target])
-        : ((b.b5Id && b.b5Id >= 1 && b.b5Id <= 15) ? Number(b.b5Id) : null);
-      if (aInit !== null || bInit !== null) {
-        const ao = aInit !== null ? aInit : 999999;
-        const bo = bInit !== null ? bInit : 999999;
-        if (ao !== bo) return ao - bo;
+
+    for (const m of eligible) {
+      if (getMemberSeniorityPosition(m, target) === null) {
+        allocateNextSeniorityPosition(m, target, db);
       }
+    }
+
+    eligible.sort((a, b) => {
+      const pa = getMemberSeniorityPosition(a, target) ?? 999999;
+      const pb = getMemberSeniorityPosition(b, target) ?? 999999;
+      if (pa !== pb) return pa - pb;
 
       const aLvl = a._seniorityTestOrderByLevel && a._seniorityTestOrderByLevel[target] !== undefined
         ? Number(a._seniorityTestOrderByLevel[target])
@@ -620,14 +698,14 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         const bo = bLvl !== null ? bLvl : 999999;
         if (ao !== bo) return ao - bo;
       }
-      if (firstMember && a.memberId === firstMember.memberId && b.memberId !== firstMember.memberId && aLvl === null && bLvl === null && aInit === null && bInit === null) return -1;
-      if (firstMember && b.memberId === firstMember.memberId && a.memberId !== firstMember.memberId && aLvl === null && bLvl === null && aInit === null && bInit === null) return 1;
+      if (firstMember && a.memberId === firstMember.memberId && b.memberId !== firstMember.memberId && aLvl === null && bLvl === null) return -1;
+      if (firstMember && b.memberId === firstMember.memberId && a.memberId !== firstMember.memberId && aLvl === null && bLvl === null) return 1;
       const at = (m) => String((m.levelReachedAt && m.levelReachedAt[target]) || m.upgradeDate || m.joinedAt || m.registeredAt || m.createdAt || '');
       const cmp = at(a).localeCompare(at(b));
       return cmp !== 0 ? cmp : String(a.memberId || '').localeCompare(String(b.memberId || ''));
     });
 
-    return eligible.map((m, i) => {
+    return eligible.map(m => {
       const countedUpgradeIds = new Set();
       const allocatedRequests = [];
       const completedPayments = db.leveltrackPayments.filter(p => {
@@ -699,10 +777,14 @@ function createSessionContext(db, env = {}, smtpSender = null) {
       }).length;
       const reserved = activeAssignedPayments + preReservedRequests;
       const occupied = completed + reserved;
-      const availableSlots = Math.max(0, required - occupied);
       const isCompleted = completed >= required;
+      const blocked = isSeniorityBlocked(m, target);
+      const blockedDetails = blocked ? (m.seniorityBlocked && m.seniorityBlocked[target]) : null;
+      const availableSlots = blocked ? 0 : Math.max(0, required - occupied);
+      const status = blocked ? 'BLOCKED' : (isCompleted ? 'COMPLETED' : (occupied >= required ? 'RESERVED' : 'ACTIVE'));
+      const pos = getMemberSeniorityPosition(m, target);
       return {
-        position: i + 1,
+        position: pos,
         memberId: m.memberId,
         name: m.name,
         mobile: m.mobile,
@@ -714,8 +796,11 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         required,
         availableSlots,
         isCompleted,
+        isBlocked: blocked,
+        blockedDetails,
+        seniorityHistory: m.seniorityHistory?.[target] || [],
         queueSection: isCompleted ? 'COMPLETED' : 'CURRENT',
-        status: isCompleted ? 'COMPLETED' : (occupied >= required ? 'RESERVED' : 'ACTIVE'),
+        status,
         allocatedRequests
       };
     });
@@ -732,11 +817,11 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     if (reqId) {
       const reqObj = db.leveltrackRequests.find(x => x.id === reqId);
       if (reqObj && reqObj.reservedReceiverId && !excluded.has(reqObj.reservedReceiverId)) {
-        const reservedRow = queue.find(x => x.memberId === reqObj.reservedReceiverId && x.availableSlots > 0);
+        const reservedRow = queue.find(x => x.memberId === reqObj.reservedReceiverId && x.availableSlots > 0 && !x.isBlocked);
         if (reservedRow) return reservedRow;
       }
     }
-    return queue.find(x => x.availableSlots > 0 && !excluded.has(x.memberId)) || null;
+    return queue.find(x => x.availableSlots > 0 && !x.isBlocked && !excluded.has(x.memberId)) || null;
   }
 
   function completedReferralUpgrades(memberId) {
@@ -1039,6 +1124,7 @@ function createSessionContext(db, env = {}, smtpSender = null) {
       seniority,
       seniorityCurrent,
       seniorityCompleted,
+      seniorityBlockAudit: (db.seniorityBlockAudit || []).slice().sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp))),
       emailNotifications: {
         smtpConfigured,
         count: (db.emailNotificationLog || []).length,
@@ -1336,26 +1422,26 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     };
 
     const initial15 = [
-      { b5Id: 1,  name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
-      { b5Id: 2,  name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-      { b5Id: 3,  name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
-      { b5Id: 4,  name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-      { b5Id: 5,  name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' },
-      { b5Id: 6,  name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
-      { b5Id: 7,  name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-      { b5Id: 8,  name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
-      { b5Id: 9,  name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-      { b5Id: 10, name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' },
-      { b5Id: 11, name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
-      { b5Id: 12, name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-      { b5Id: 13, name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
-      { b5Id: 14, name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-      { b5Id: 15, name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' }
+      { b5Id: 1,  memberId: 'B5-64847', name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
+      { b5Id: 2,  memberId: 'B5-39246', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 3,  memberId: 'B5-88384', name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
+      { b5Id: 4,  memberId: 'B5-12971', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 5,  memberId: 'B5-90143', name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' },
+      { b5Id: 6,  memberId: 'B5-54017', name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
+      { b5Id: 7,  memberId: 'B5-96920', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 8,  memberId: 'B5-37039', name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
+      { b5Id: 9,  memberId: 'B5-17004', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 10, memberId: 'B5-35655', name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' },
+      { b5Id: 11, memberId: 'B5-71226', name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
+      { b5Id: 12, memberId: 'B5-31508', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 13, memberId: 'B5-82715', name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
+      { b5Id: 14, memberId: 'B5-40331', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
+      { b5Id: 15, memberId: 'B5-75949', name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' }
     ];
 
     const memberAccounts = initial15.map(item => {
-      const pad = String(item.b5Id).padStart(3, '0');
-      const mId = `B5-${pad}`;
+      const mId = item.memberId;
+      const refCode = `REF-${mId.replace(/^B5-/, '')}`;
       const iso = `2026-01-01T00:00:${String(item.b5Id).padStart(2, '0')}.000Z`;
       const reachMap = { 1: iso };
       const senMap = {};
@@ -1365,14 +1451,14 @@ function createSessionContext(db, env = {}, smtpSender = null) {
       const explicitPwd = explicitPasswords[mId] || explicitPasswords[String(item.b5Id)];
       return {
         memberId: mId,
-        referralId: `REF-${pad}`,
+        referralId: refCode,
         name: item.name,
         place: '',
         mobile: item.mobile,
         email: item.email,
         referral: 'B5-COMPANY',
         level: 1,
-        levelMemberId: `L1-${pad}`,
+        levelMemberId: `L1-${String(item.b5Id).padStart(3, '0')}`,
         status: 'Verified',
         joinedAt: iso,
         registeredAt: iso,
@@ -1394,7 +1480,10 @@ function createSessionContext(db, env = {}, smtpSender = null) {
         b5Id: item.b5Id,
         numericId: item.b5Id,
         initialSeniority: senMap,
-        aliases: [String(item.b5Id), `B5-${item.b5Id}`, mId, `REF-${pad}`]
+        seniorityPositions: { ...senMap },
+        seniorityBlocked: {},
+        seniorityHistory: {},
+        aliases: [String(item.b5Id), mId, refCode]
       };
     });
 
@@ -1404,6 +1493,7 @@ function createSessionContext(db, env = {}, smtpSender = null) {
     db.leveltrackPayments = [];
     db.paymentProofs = [];
     db.passwordResetRequests = [];
+    db.seniorityBlockAudit = [];
     db.messages = [{ to: 'ALL', message: 'Welcome to BORNTOWIN5 Emerald Sovereign Official Launch.', at: new Date().toISOString() }];
     db.pins = [{ pin: 'PIN-START1', assignedTo: null, status: 'AVAILABLE', usedBy: null, createdAt: new Date().toISOString(), system: true }];
     db.emailNotificationLog = [];
@@ -1892,20 +1982,31 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
   }
 
   if (method === 'POST' && pathname === '/api/admin/pins/generate') {
-    const m = state.members.find(x => x.memberId === body.memberId);
-    if (!m) return json(404, { error: 'Member not found' });
-    const n = Math.min(500, Math.max(1, Number(body.quantity) || 1));
-    const out = [];
-    for (let i = 0; i < n; i++) {
-      let p = makePin();
-      while (state.pins.some(x => x.pin === p)) p = makePin();
-      const row = { pin: p, assignedTo: m.memberId, status: 'AVAILABLE', usedBy: null, createdAt: new Date().toISOString() };
-      state.pins.push(row);
-      out.push(row);
+    const targetMemberId = String(body.memberId || '').trim();
+    if (!targetMemberId) return json(400, { error: 'Member ID is required' });
+    const pinLockKey = `PIN_GEN:${targetMemberId}`;
+    if (activeMutationLocks.has(pinLockKey)) {
+      return json(409, { error: 'PIN generation already in progress for this member. Please wait a moment.' });
     }
-    await saveChanges();
-    const w = ctx.wallet(m.memberId);
-    return json(200, { pins: out, member: memberPublic(m), available: w.available, used: w.used });
+    activeMutationLocks.add(pinLockKey);
+    try {
+      const m = state.members.find(x => x.memberId === targetMemberId);
+      if (!m) return json(404, { error: 'Member not found' });
+      const n = Math.min(500, Math.max(1, Number(body.quantity) || 1));
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        let p = makePin();
+        while (state.pins.some(x => x.pin === p)) p = makePin();
+        const row = { pin: p, assignedTo: m.memberId, status: 'AVAILABLE', usedBy: null, createdAt: new Date().toISOString() };
+        state.pins.push(row);
+        out.push(row);
+      }
+      await saveChanges();
+      const w = ctx.wallet(m.memberId);
+      return json(200, { pins: out, member: memberPublic(m), available: w.available, used: w.used });
+    } finally {
+      activeMutationLocks.delete(pinLockKey);
+    }
   }
 
   const adminMemberProfileParams = method === 'POST' && matchRoute('/api/admin/member-profile/:id', pathname);
@@ -1972,16 +2073,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     let m = null;
     for (const cand of matchingMembers) {
       if (!cand.passwordHash) continue;
-      const isDefaultTestAccount =
-        Boolean(cand.isTestAccount) &&
-        String(cand.memberId || '').startsWith('B5-TEST-') &&
-        verifyPassword('B5@123456', cand.passwordHash);
-
-      const pwdMatches =
-        verifyPassword(supplied, cand.passwordHash) ||
-        (isDefaultTestAccount && supplied === 'Test@12345');
-
-      if (pwdMatches) {
+      if (verifyPassword(supplied, cand.passwordHash)) {
         m = cand;
         break;
       }
@@ -2147,12 +2239,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       parentId = parent.memberId;
     }
 
-    const reqTestId = String(b.testMemberId || '').trim().toUpperCase();
-    const canUseTestId =
-      /^B5-TEST-[A-Z0-9-]+$/.test(reqTestId) &&
-      (String(env.B5_LOCAL_TEST_ONLY || '') === '1' || String(env.B5_SENIORITY_TEST_MODE || '') === '1') &&
-      !state.members.some(x => x.memberId === reqTestId);
-    const memberId = canUseTestId ? reqTestId : makeMemberId();
+    const memberId = makeMemberId(state.members);
     const nowIso = nextMonotonicIso();
     // Strictly sanitize user input so callers can never inject level, status, seniority, or payment fields
     const m = {
@@ -2181,8 +2268,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       paymentAccessLocked: false,
       paymentReviewStatus: '',
       passwordHash: hashPassword(suppliedPwd),
-      mustChangePassword: false,
-      ...(canUseTestId ? { isTestAccount: true, testTag: 'B5_TEST_DATASET_43' } : {})
+      mustChangePassword: false
     };
     state.members.push(m);
     pr.status = 'USED';
@@ -3025,6 +3111,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     if (u.kind === 'REFERRAL_UPGRADE') {
       u.seniorityLevel = 2;
       p.seniorityLevel = 2;
+      allocateNextSeniorityPosition(m, 2, state);
       state.leveltrackMessages.push({ to: m.memberId, message: 'Upgrade completed. Your next Level Upgrade is now available when unlocked.', at: approvedAt });
       ctx.notifyMemberEmail(
         m,
@@ -3054,6 +3141,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     m.levelReachedAt = { ...(m.levelReachedAt || {}), [String(u.to)]: approvedAt };
     m.upgradeDate = approvedAt;
     m.status = 'Verified';
+    allocateNextSeniorityPosition(m, Number(u.to), state);
     state.leveltrackMessages.push({ to: m.memberId, message: `Admin approved payment. Level upgrade completed. You are now Level ${m.level}.`, at: approvedAt });
     ctx.notifyMemberEmail(
       m,
@@ -3185,6 +3273,7 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
       r.completedAt = approvedAt;
     }
     if (u.kind === 'REFERRAL_UPGRADE') {
+      allocateNextSeniorityPosition(m, 2, state);
       state.leveltrackMessages.push({ to: m.memberId, message: 'Upgrade completed. Your next Level Upgrade is now available when unlocked.', at: approvedAt });
       await saveChanges();
       return json(200, { ok: true, newLevel: Number(m.level || 1), member: memberPublic(m), upgrade: u });
@@ -3194,9 +3283,314 @@ async function handleApiRequest({ method, pathname, query = {}, headers = {}, bo
     m.levelReachedAt = { ...(m.levelReachedAt || {}), [String(u.to)]: approvedAt };
     m.upgradeDate = approvedAt;
     m.status = 'Verified';
+    allocateNextSeniorityPosition(m, Number(u.to), state);
     state.leveltrackMessages.push({ to: m.memberId, message: `Level upgrade completed. You are now Level ${m.level}.`, at: approvedAt });
     await saveChanges();
     return json(200, { ok: true, newLevel: Number(m.level || 1), member: memberPublic(m), upgrade: u });
+  }
+
+  // --- Seniority Block / Unblock / Undo Block & Audit APIs ---
+  if (method === 'POST' && pathname === '/api/leveltrack/admin/seniority/block') {
+    const suppliedPwd = String(body.adminPassword || '').trim();
+    if (!state.adminPassword || suppliedPwd !== state.adminPassword) {
+      return json(401, { error: 'Incorrect Admin password. Action cancelled.' });
+    }
+    const memberId = String(body.memberId || '').trim();
+    const level = Number(body.level || 0);
+    const reason = String(body.reason || '').trim();
+    if (!memberId) return json(400, { error: 'Member ID is required' });
+    if (!level || level < 1 || level > 7) return json(400, { error: 'Valid Level (1–7) is required' });
+    if (!reason) return json(400, { error: 'A reason is required to block seniority' });
+
+    const m = state.members.find(x => x.memberId === memberId);
+    if (!m) return json(404, { error: 'Member not found' });
+
+    const lockKey = `SENIORITY:${level}`;
+    if (activeMutationLocks.has(lockKey)) {
+      return json(409, { error: `Seniority mutation already in progress for Level ${level}. Please retry.` });
+    }
+    activeMutationLocks.add(lockKey);
+
+    try {
+      if (isSeniorityBlocked(m, level)) {
+        return json(400, { error: `Member ${memberId} is already blocked in Level ${level}` });
+      }
+
+      let pos = getMemberSeniorityPosition(m, level);
+      if (pos === null) {
+        pos = allocateNextSeniorityPosition(m, level, state);
+      }
+
+      const now = nextMonotonicIso();
+      const adminId = auth.adminId || 'ADMIN';
+
+      m.seniorityBlocked = m.seniorityBlocked || {};
+      m.seniorityBlocked[level] = {
+        blocked: true,
+        position: pos,
+        reason,
+        blockedAt: now,
+        blockedBy: adminId
+      };
+
+      m.seniorityHistory = m.seniorityHistory || {};
+      m.seniorityHistory[level] = m.seniorityHistory[level] || [];
+      m.seniorityHistory[level].push({
+        action: 'BLOCK',
+        position: pos,
+        reason,
+        timestamp: now,
+        adminId
+      });
+
+      state.seniorityBlockAudit = state.seniorityBlockAudit || [];
+      state.seniorityBlockAudit.unshift({
+        id: `SBA-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,
+        member_id: m.memberId,
+        memberId: m.memberId,
+        level,
+        original_position: pos,
+        originalPosition: pos,
+        action: 'BLOCK',
+        reason,
+        admin_id: adminId,
+        adminId,
+        timestamp: now,
+        unblock_reason: null,
+        unblockReason: null,
+        payment_ref: null,
+        paymentRef: null,
+        approved_by_admin_id: null,
+        approvedByAdminId: null,
+        approved_timestamp: null,
+        approvedTimestamp: null,
+        new_position: null,
+        newPosition: null,
+        created_at: now
+      });
+
+      await saveChanges();
+      return json(200, {
+        ok: true,
+        message: `Member ${m.memberId} (${m.name}) blocked in Level ${level} Seniority Position #${pos}`,
+        memberId: m.memberId,
+        level,
+        position: pos,
+        status: 'BLOCKED'
+      });
+    } finally {
+      activeMutationLocks.delete(lockKey);
+    }
+  }
+
+  if (method === 'POST' && pathname === '/api/leveltrack/admin/seniority/unblock') {
+    const suppliedPwd = String(body.adminPassword || '').trim();
+    if (!state.adminPassword || suppliedPwd !== state.adminPassword) {
+      return json(401, { error: 'Incorrect Admin password. Action cancelled.' });
+    }
+    const memberId = String(body.memberId || '').trim();
+    const level = Number(body.level || 0);
+    const reason = String(body.reason || '').trim();
+    const paymentRef = String(body.paymentRef || body.paymentReference || '').trim();
+    if (!memberId) return json(400, { error: 'Member ID is required' });
+    if (!level || level < 1 || level > 7) return json(400, { error: 'Valid Level (1–7) is required' });
+    if (!reason) return json(400, { error: 'An unblock reason is required' });
+    if (!paymentRef) return json(400, { error: 'Payment verification / reference is required for unblocking' });
+
+    const m = state.members.find(x => x.memberId === memberId);
+    if (!m) return json(404, { error: 'Member not found' });
+
+    const lockKey = `SENIORITY:${level}`;
+    if (activeMutationLocks.has(lockKey)) {
+      return json(409, { error: `Seniority mutation already in progress for Level ${level}. Please retry.` });
+    }
+    activeMutationLocks.add(lockKey);
+
+    try {
+      if (!isSeniorityBlocked(m, level)) {
+        return json(400, { error: `Member ${memberId} is not currently blocked in Level ${level}` });
+      }
+
+      const blockInfo = m.seniorityBlocked[level];
+      const oldPos = Number(blockInfo.position || getMemberSeniorityPosition(m, level));
+      const maxPos = getMaxAllocatedPosition(level, state.members, state.seniorityBlockAudit);
+      const newPos = maxPos + 1;
+
+      const configuredCap = state.paymentSettings?.senioritySlotCaps?.[level] || Infinity;
+      if (newPos > configuredCap) {
+        return json(400, { error: `Cannot allocate seniority position ${newPos}. Configured slot cap for Level ${level} is ${configuredCap}.` });
+      }
+
+      const now = nextMonotonicIso();
+      const adminId = auth.adminId || 'ADMIN';
+
+      m.seniorityHistory = m.seniorityHistory || {};
+      m.seniorityHistory[level] = m.seniorityHistory[level] || [];
+      m.seniorityHistory[level].push({
+        action: 'UNBLOCK',
+        oldPosition: oldPos,
+        newPosition: newPos,
+        reason,
+        paymentRef,
+        timestamp: now,
+        adminId
+      });
+
+      m.seniorityPositions = m.seniorityPositions || {};
+      m.seniorityPositions[level] = newPos;
+      m.seniorityBlocked[level] = {
+        blocked: false,
+        unblockedAt: now,
+        unblockReason: reason,
+        paymentRef,
+        unblockedBy: adminId
+      };
+
+      state.seniorityBlockAudit = state.seniorityBlockAudit || [];
+      state.seniorityBlockAudit.unshift({
+        id: `SBA-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,
+        member_id: m.memberId,
+        memberId: m.memberId,
+        level,
+        original_position: oldPos,
+        originalPosition: oldPos,
+        action: 'UNBLOCK',
+        reason: blockInfo.reason || 'Admin block',
+        admin_id: blockInfo.blockedBy || adminId,
+        adminId: blockInfo.blockedBy || adminId,
+        timestamp: blockInfo.blockedAt || now,
+        unblock_reason: reason,
+        unblockReason: reason,
+        payment_ref: paymentRef,
+        paymentRef,
+        approved_by_admin_id: adminId,
+        approvedByAdminId: adminId,
+        approved_timestamp: now,
+        approvedTimestamp: now,
+        new_position: newPos,
+        newPosition: newPos,
+        created_at: now
+      });
+
+      await saveChanges();
+      return json(200, {
+        ok: true,
+        message: `Member ${m.memberId} (${m.name}) unblocked in Level ${level}. Old position #${oldPos} preserved in history. Allocated new Position #${newPos}.`,
+        memberId: m.memberId,
+        level,
+        oldPosition: oldPos,
+        newPosition: newPos,
+        status: 'ACTIVE'
+      });
+    } finally {
+      activeMutationLocks.delete(lockKey);
+    }
+  }
+
+  if (method === 'POST' && pathname === '/api/leveltrack/admin/seniority/undo-block') {
+    const suppliedPwd = String(body.adminPassword || '').trim();
+    if (!state.adminPassword || suppliedPwd !== state.adminPassword) {
+      return json(401, { error: 'Incorrect Admin password. Action cancelled.' });
+    }
+    const memberId = String(body.memberId || '').trim();
+    const level = Number(body.level || 0);
+    const reason = String(body.reason || 'Accidental block reverted').trim();
+    if (!memberId) return json(400, { error: 'Member ID is required' });
+    if (!level || level < 1 || level > 7) return json(400, { error: 'Valid Level (1–7) is required' });
+
+    const m = state.members.find(x => x.memberId === memberId);
+    if (!m) return json(404, { error: 'Member not found' });
+
+    const lockKey = `SENIORITY:${level}`;
+    if (activeMutationLocks.has(lockKey)) {
+      return json(409, { error: `Seniority mutation already in progress for Level ${level}. Please retry.` });
+    }
+    activeMutationLocks.add(lockKey);
+
+    try {
+      if (!isSeniorityBlocked(m, level)) {
+        return json(400, { error: `Member ${memberId} is not currently blocked in Level ${level}` });
+      }
+
+      const origPos = Number(m.seniorityBlocked[level].position || getMemberSeniorityPosition(m, level));
+      // Conflict check: verify no other ACTIVE member is currently assigned origPos in this level
+      const conflict = state.members.find(other => {
+        if (other.memberId === m.memberId) return false;
+        if (isSeniorityBlocked(other, level)) return false;
+        return getMemberSeniorityPosition(other, level) === origPos;
+      });
+      if (conflict) {
+        return json(409, {
+          error: `Cannot undo block: Position #${origPos} is currently occupied by active member ${conflict.memberId} (${conflict.name}). Please use Unblock & Reallocate instead.`
+        });
+      }
+
+      const now = nextMonotonicIso();
+      const adminId = auth.adminId || 'ADMIN';
+
+      m.seniorityBlocked[level] = {
+        blocked: false,
+        revertedAt: now,
+        revertedBy: adminId,
+        revertReason: reason
+      };
+
+      m.seniorityPositions = m.seniorityPositions || {};
+      m.seniorityPositions[level] = origPos;
+
+      m.seniorityHistory = m.seniorityHistory || {};
+      m.seniorityHistory[level] = m.seniorityHistory[level] || [];
+      m.seniorityHistory[level].push({
+        action: 'UNDO_BLOCK',
+        position: origPos,
+        reason,
+        timestamp: now,
+        adminId
+      });
+
+      state.seniorityBlockAudit = state.seniorityBlockAudit || [];
+      state.seniorityBlockAudit.unshift({
+        id: `SBA-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,
+        member_id: m.memberId,
+        memberId: m.memberId,
+        level,
+        original_position: origPos,
+        originalPosition: origPos,
+        action: 'UNDO_BLOCK',
+        reason,
+        admin_id: adminId,
+        adminId,
+        timestamp: now,
+        unblock_reason: reason,
+        unblockReason: reason,
+        payment_ref: null,
+        paymentRef: null,
+        approved_by_admin_id: adminId,
+        approvedByAdminId: adminId,
+        approved_timestamp: now,
+        approvedTimestamp: now,
+        new_position: origPos,
+        newPosition: origPos,
+        created_at: now
+      });
+
+      await saveChanges();
+      return json(200, {
+        ok: true,
+        message: `Block undone. Member ${m.memberId} restored to original Position #${origPos} in Level ${level}.`,
+        memberId: m.memberId,
+        level,
+        position: origPos,
+        status: 'ACTIVE'
+      });
+    } finally {
+      activeMutationLocks.delete(lockKey);
+    }
+  }
+
+  if (method === 'GET' && pathname === '/api/leveltrack/admin/seniority/audit') {
+    const list = (state.seniorityBlockAudit || []).slice().sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+    return json(200, { ok: true, audit: list });
   }
 
   if (method === 'GET' && pathname === '/api/leveltrack/admin/payment-settings') {
@@ -3602,7 +3996,12 @@ module.exports = {
   hashPassword,
   verifyPassword,
   sha256,
+  makeMemberId,
   createSessionContext,
+  getMemberSeniorityPosition,
+  getMaxAllocatedPosition,
+  allocateNextSeniorityPosition,
+  isSeniorityBlocked,
   isBlockedInternalPath,
   handleApiRequest
 };
