@@ -46,21 +46,23 @@ function createMockD1(initialState = {}) {
 
   const initialMembers = [
     { b5Id: 0, memberId: 'B5-COMPANY', name: 'BORN TO WIN', mobile: '9345151709', email: 'notifications@borntowin5.com', level: 7, isCompanyAccount: true, excludeFromSeniorityQueue: true },
-    { b5Id: 1,  memberId: 'B5-64847', name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com', level: 1 },
-    { b5Id: 2,  memberId: 'B5-39246', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com', level: 1 },
-    { b5Id: 3,  memberId: 'B5-88384', name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com', level: 1 },
-    { b5Id: 4,  memberId: 'B5-12971', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com', level: 1 },
-    { b5Id: 5,  memberId: 'B5-90143', name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com', level: 1 },
-    { b5Id: 6,  memberId: 'B5-54017', name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com', level: 1 },
-    { b5Id: 7,  memberId: 'B5-96920', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com', level: 1 },
-    { b5Id: 8,  memberId: 'B5-37039', name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com', level: 1 },
-    { b5Id: 9,  memberId: 'B5-17004', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com', level: 1 },
-    { b5Id: 10, memberId: 'B5-35655', name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com', level: 1 },
-    { b5Id: 11, memberId: 'B5-71226', name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com', level: 1 },
-    { b5Id: 12, memberId: 'B5-31508', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com', level: 1 },
-    { b5Id: 13, memberId: 'B5-82715', name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com', level: 1 },
-    { b5Id: 14, memberId: 'B5-40331', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com', level: 1 },
-    { b5Id: 15, memberId: 'B5-75949', name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com', level: 1 }
+    { b5Id: 1,  memberId: 'B5-46188', name: 'sathya',      mobile: '9600680468', email: 'sweetsathya62@gmail.com', level: 1 },
+    { b5Id: 2,  memberId: 'B5-80575', name: 'Karthikeyan', mobile: '9790151709', email: 'dorakarthi51@gmail.com', level: 1 },
+    { b5Id: 3,  memberId: 'B5-62065', name: 'Rajesh',      mobile: '9443248652', email: 'Saravanastudionkl@gmail.com', level: 1 },
+    { b5Id: 4,  memberId: 'B5-84638', name: 'Pranev',      mobile: '9345151709', email: 'borntowin5b5@gmail.com', level: 1 },
+    { b5Id: 5,  memberId: 'B5-86831', name: 'Thanya',      mobile: '9489730468', email: 'ksp.nkl@gmail.com', level: 1 },
+    { b5Id: 6,  memberId: 'B5-89433', name: 'Karthikeyan', mobile: '9600680468', email: 'sweetsathya62@gmail.com', level: 1 },
+    { b5Id: 7,  memberId: 'B5-88695', name: 'Pranev',      mobile: '9790151709', email: 'dorakarthi51@gmail.com', level: 1 },
+    { b5Id: 8,  memberId: 'B5-88857', name: 'Thanya',      mobile: '9345151709', email: 'borntowin5b5@gmail.com', level: 1 },
+    { b5Id: 9,  memberId: 'B5-86695', name: 'Karthikeyan', mobile: '9489730468', email: 'ksp.nkl@gmail.com', level: 1 },
+    { b5Id: 10, memberId: 'B5-63456', name: 'Pranev',      mobile: '9600680468', email: 'sweetsathya62@gmail.com', level: 1 },
+    { b5Id: 11, memberId: 'B5-64464', name: 'Thanya',      mobile: '9790151709', email: 'dorakarthi51@gmail.com', level: 1 },
+    { b5Id: 12, memberId: 'B5-22158', name: 'sathya',      mobile: '9345151709', email: 'borntowin5b5@gmail.com', level: 1 },
+    { b5Id: 13, memberId: 'B5-37029', name: 'Pranev',      mobile: '9489730468', email: 'ksp.nkl@gmail.com', level: 1 },
+    { b5Id: 14, memberId: 'B5-18937', name: 'Thanya',      mobile: '9600680468', email: 'sweetsathya62@gmail.com', level: 1 },
+    { b5Id: 15, memberId: 'B5-79020', name: 'sathya',      mobile: '9790151709', email: 'dorakarthi51@gmail.com', level: 1 },
+    { b5Id: 16, memberId: 'B5-71866', name: 'Karthikeyan', mobile: '9345151709', email: 'borntowin5b5@gmail.com', level: 1 },
+    { b5Id: 17, memberId: 'B5-83922', name: 'sathya',      mobile: '9489730468', email: 'ksp.nkl@gmail.com', level: 1 }
   ];
 
   for (const m of initialMembers) {
@@ -222,56 +224,56 @@ async function runTests() {
   const adminToken = adminLoginResp.body.adminToken;
   const headers = { 'x-admin-token': adminToken };
 
-  console.log('--- TEST 1: Initial 15 Members Occupy Positions 1–15 in Level 2 ---');
+  console.log('--- TEST 1: Initial 17 Members Occupy Positions 1–17 in Level 2 ---');
   let dashResp = await handleApiRequest({ method: 'GET', pathname: '/api/leveltrack/admin/dashboard', headers, env });
   assert.strictEqual(dashResp.status, 200);
   let l2Queue = dashResp.body.seniority[2];
-  assert.strictEqual(l2Queue.length, 15, 'Level 2 queue must start with exactly 15 initial members');
-  for (let i = 1; i <= 15; i++) {
+  assert.strictEqual(l2Queue.length, 17, 'Level 2 queue must start with exactly 17 initial members');
+  for (let i = 1; i <= 17; i++) {
     assert.strictEqual(l2Queue[i - 1].position, i, `Initial member ${i} must have Seniority Position ${i}`);
   }
-  console.log('✓ Initial 15 members verified at positions 1–15.');
+  console.log('✓ Initial 17 members verified at positions 1–17.');
 
-  console.log('\n--- TEST 2: Add Qualifying Member 16 and verify Position 16 allocated ---');
-  // Add member 16 to Level 2
-  const member16 = {
-    memberId: 'B5-M16',
-    name: 'NEW MEMBER 16',
+  console.log('\n--- TEST 2: Add Qualifying Member 18 and verify Position 18 allocated ---');
+  // Add member 18 to Level 2
+  const member18 = {
+    memberId: 'B5-M18',
+    name: 'NEW MEMBER 18',
     mobile: '9876543210',
-    email: 'm16@test.com',
+    email: 'm18@test.com',
     level: 2,
     levelReachedAt: { 1: '2026-01-01T00:00:00.000Z', 2: '2026-01-02T00:00:00.000Z' },
     status: 'Verified'
   };
-  mockD1._store.members.set('B5-M16', {
-    member_id: 'B5-M16',
-    referral_id: 'REF-M16',
-    name: 'NEW MEMBER 16',
+  mockD1._store.members.set('B5-M18', {
+    member_id: 'B5-M18',
+    referral_id: 'REF-M18',
+    name: 'NEW MEMBER 18',
     mobile: '9876543210',
-    email: 'm16@test.com',
+    email: 'm18@test.com',
     referral: 'B5-COMPANY',
     level: 2,
     status: 'Verified',
     registered_at: '2026-01-02T00:00:00.000Z',
     level_reached_at_json: JSON.stringify({ 1: '2026-01-01T00:00:00.000Z', 2: '2026-01-02T00:00:00.000Z' }),
-    extra_json: JSON.stringify({ seniorityPositions: { 2: 16 } })
+    extra_json: JSON.stringify({ seniorityPositions: { 2: 18 } })
   });
 
   dashResp = await handleApiRequest({ method: 'GET', pathname: '/api/leveltrack/admin/dashboard', headers, env });
   l2Queue = dashResp.body.seniority[2];
-  const row16 = l2Queue.find(x => x.memberId === 'B5-M16');
-  assert.ok(row16, 'Member 16 must appear in Level 2 seniority queue');
-  assert.strictEqual(row16.position, 16, 'Member 16 must occupy Position 16');
-  assert.strictEqual(row16.status, 'ACTIVE', 'Member 16 must be ACTIVE initially');
-  console.log('✓ Member 16 allocated Position 16 as ACTIVE.');
+  const row18 = l2Queue.find(x => x.memberId === 'B5-M18');
+  assert.ok(row18, 'Member 18 must appear in Level 2 seniority queue');
+  assert.strictEqual(row18.position, 18, 'Member 18 must occupy Position 18');
+  assert.strictEqual(row18.status, 'ACTIVE', 'Member 18 must be ACTIVE initially');
+  console.log('✓ Member 18 allocated Position 18 as ACTIVE.');
 
-  console.log('\n--- TEST 3: Block Position 16 with Reason & Admin Password ---');
+  console.log('\n--- TEST 3: Block Position 18 with Reason & Admin Password ---');
   // First test wrong password: must fail with HTTP 401 and no changes
   const wrongPwdResp = await handleApiRequest({
     method: 'POST',
     pathname: '/api/leveltrack/admin/seniority/block',
     headers,
-    body: { memberId: 'B5-M16', level: 2, reason: 'Payment incomplete', adminPassword: 'WRONG_PASSWORD' },
+    body: { memberId: 'B5-M18', level: 2, reason: 'Payment incomplete', adminPassword: 'WRONG_PASSWORD' },
     env
   });
   assert.strictEqual(wrongPwdResp.status, 401, 'Wrong admin password must be rejected with HTTP 401');
@@ -281,24 +283,24 @@ async function runTests() {
     method: 'POST',
     pathname: '/api/leveltrack/admin/seniority/block',
     headers,
-    body: { memberId: 'B5-M16', level: 2, reason: 'Payment verification failed', adminPassword: 'ADMIN@2026!' },
+    body: { memberId: 'B5-M18', level: 2, reason: 'Payment verification failed', adminPassword: 'ADMIN@2026!' },
     env
   });
   assert.strictEqual(blockResp.status, 200, 'Block with valid password must succeed');
   assert.strictEqual(blockResp.body.status, 'BLOCKED');
-  assert.strictEqual(blockResp.body.position, 16);
+  assert.strictEqual(blockResp.body.position, 18);
 
-  // Verify dashboard reflects Position 16 as BLOCKED and availableSlots === 0
+  // Verify dashboard reflects Position 18 as BLOCKED and availableSlots === 0
   dashResp = await handleApiRequest({ method: 'GET', pathname: '/api/leveltrack/admin/dashboard', headers, env });
-  const blockedRow16 = dashResp.body.seniority[2].find(x => x.memberId === 'B5-M16');
-  assert.strictEqual(blockedRow16.position, 16, 'Blocked member must remain visible at original Position 16');
-  assert.strictEqual(blockedRow16.status, 'BLOCKED', 'Member 16 status must be BLOCKED');
-  assert.strictEqual(blockedRow16.availableSlots, 0, 'Blocked member must have 0 available slots');
-  assert.ok(blockedRow16.isBlocked, 'isBlocked must be true');
-  console.log('✓ Position 16 successfully blocked with reason and Admin password.');
+  const blockedRow18 = dashResp.body.seniority[2].find(x => x.memberId === 'B5-M18');
+  assert.strictEqual(blockedRow18.position, 18, 'Blocked member must remain visible at original Position 18');
+  assert.strictEqual(blockedRow18.status, 'BLOCKED', 'Member 18 status must be BLOCKED');
+  assert.strictEqual(blockedRow18.availableSlots, 0, 'Blocked member must have 0 available slots');
+  assert.ok(blockedRow18.isBlocked, 'isBlocked must be true');
+  console.log('✓ Position 18 successfully blocked with reason and Admin password.');
 
-  console.log('\n--- TEST 4: Allocate Positions 17–20 to other qualifying members ---');
-  for (let p = 17; p <= 20; p++) {
+  console.log('\n--- TEST 4: Allocate Positions 19–22 to other qualifying members ---');
+  for (let p = 19; p <= 22; p++) {
     const mId = `B5-M${p}`;
     mockD1._store.members.set(mId, {
       member_id: mId,
@@ -317,25 +319,25 @@ async function runTests() {
 
   dashResp = await handleApiRequest({ method: 'GET', pathname: '/api/leveltrack/admin/dashboard', headers, env });
   l2Queue = dashResp.body.seniority[2];
-  for (let p = 17; p <= 20; p++) {
+  for (let p = 19; p <= 22; p++) {
     const row = l2Queue.find(x => x.memberId === `B5-M${p}`);
     assert.ok(row, `Member ${p} must exist in queue`);
     assert.strictEqual(row.position, p, `Member ${p} must have Position ${p}`);
     assert.strictEqual(row.status, 'ACTIVE');
   }
-  // Confirm Position 16 is still at 16 (never shifted or overwritten)
-  const check16 = l2Queue.find(x => x.memberId === 'B5-M16');
-  assert.strictEqual(check16.position, 16, 'Position 16 must not shift when 17–20 are allocated');
-  assert.strictEqual(check16.status, 'BLOCKED');
-  console.log('✓ Positions 17–20 allocated sequentially. Position 16 remains at 16 (Blocked).');
+  // Confirm Position 18 is still at 18 (never shifted or overwritten)
+  const check18 = l2Queue.find(x => x.memberId === 'B5-M18');
+  assert.strictEqual(check18.position, 18, 'Position 18 must not shift when 19–22 are allocated');
+  assert.strictEqual(check18.status, 'BLOCKED');
+  console.log('✓ Positions 19–22 allocated sequentially. Position 18 remains at 18 (Blocked).');
 
-  console.log('\n--- TEST 5: Unblock original Position 16 member after verified payment ---');
+  console.log('\n--- TEST 5: Unblock original Position 18 member after verified payment ---');
   // First test wrong password rejection
   const wrongUnblockPwd = await handleApiRequest({
     method: 'POST',
     pathname: '/api/leveltrack/admin/seniority/unblock',
     headers,
-    body: { memberId: 'B5-M16', level: 2, reason: 'Payment verified', paymentRef: 'UPI-99887766', adminPassword: 'WRONG' },
+    body: { memberId: 'B5-M18', level: 2, reason: 'Payment verified', paymentRef: 'UPI-99887766', adminPassword: 'WRONG' },
     env
   });
   assert.strictEqual(wrongUnblockPwd.status, 401, 'Unblock with wrong password must be rejected');
@@ -346,7 +348,7 @@ async function runTests() {
     pathname: '/api/leveltrack/admin/seniority/unblock',
     headers,
     body: {
-      memberId: 'B5-M16',
+      memberId: 'B5-M18',
       level: 2,
       reason: 'Bank credit verified in account A',
       paymentRef: 'UPI-998877665544',
@@ -355,30 +357,30 @@ async function runTests() {
     env
   });
   assert.strictEqual(unblockResp.status, 200, 'Unblock with valid password must succeed');
-  assert.strictEqual(unblockResp.body.oldPosition, 16, 'Old position must be 16');
-  assert.strictEqual(unblockResp.body.newPosition, 21, 'Reactivated member must receive Position 21 (Max 20 + 1)');
+  assert.strictEqual(unblockResp.body.oldPosition, 18, 'Old position must be 18');
+  assert.strictEqual(unblockResp.body.newPosition, 23, 'Reactivated member must receive Position 23 (Max 22 + 1)');
   assert.strictEqual(unblockResp.body.status, 'ACTIVE');
-  console.log('✓ Member 16 unblocked and allocated Position 21.');
+  console.log('✓ Member 18 unblocked and allocated Position 23.');
 
-  console.log('\n--- TEST 6: Confirm Positions 17–20 remain unchanged & Reactivated is Position 21 ---');
+  console.log('\n--- TEST 6: Confirm Positions 19–22 remain unchanged & Reactivated is Position 23 ---');
   dashResp = await handleApiRequest({ method: 'GET', pathname: '/api/leveltrack/admin/dashboard', headers, env });
   l2Queue = dashResp.body.seniority[2];
-  for (let p = 17; p <= 20; p++) {
+  for (let p = 19; p <= 22; p++) {
     const row = l2Queue.find(x => x.memberId === `B5-M${p}`);
     assert.strictEqual(row.position, p, `Position ${p} must remain strictly ${p}`);
   }
-  const reactivatedRow = l2Queue.find(x => x.memberId === 'B5-M16');
-  assert.strictEqual(reactivatedRow.position, 21, 'Reactivated member must now occupy Position 21');
+  const reactivatedRow = l2Queue.find(x => x.memberId === 'B5-M18');
+  assert.strictEqual(reactivatedRow.position, 23, 'Reactivated member must now occupy Position 23');
   assert.strictEqual(reactivatedRow.status, 'ACTIVE');
   assert.strictEqual(reactivatedRow.seniorityHistory.length, 2, 'Seniority history must track BLOCK and UNBLOCK events');
   assert.strictEqual(reactivatedRow.seniorityHistory[0].action, 'BLOCK');
-  assert.strictEqual(reactivatedRow.seniorityHistory[0].position, 16);
+  assert.strictEqual(reactivatedRow.seniorityHistory[0].position, 18);
   assert.strictEqual(reactivatedRow.seniorityHistory[1].action, 'UNBLOCK');
-  assert.strictEqual(reactivatedRow.seniorityHistory[1].oldPosition, 16);
-  assert.strictEqual(reactivatedRow.seniorityHistory[1].newPosition, 21);
-  console.log('✓ Positions 17–20 remain unchanged. Reactivated member is Position 21 with full history.');
+  assert.strictEqual(reactivatedRow.seniorityHistory[1].oldPosition, 18);
+  assert.strictEqual(reactivatedRow.seniorityHistory[1].newPosition, 23);
+  console.log('✓ Positions 19–22 remain unchanged. Reactivated member is Position 23 with full history.');
 
-  console.log('\n--- TEST 7: Confirm Old Position 16 is Preserved in Audit Records ---');
+  console.log('\n--- TEST 7: Confirm Old Position 18 is Preserved in Audit Records ---');
   const auditResp = await handleApiRequest({
     method: 'GET',
     pathname: '/api/leveltrack/admin/seniority/audit',
@@ -388,41 +390,41 @@ async function runTests() {
   assert.strictEqual(auditResp.status, 200);
   const auditRecords = auditResp.body.audit;
   assert.ok(auditRecords.length >= 2, 'Audit must have at least 2 records (block + unblock)');
-  const unblockAudit = auditRecords.find(a => a.action === 'UNBLOCK' && a.member_id === 'B5-M16');
+  const unblockAudit = auditRecords.find(a => a.action === 'UNBLOCK' && a.member_id === 'B5-M18');
   assert.ok(unblockAudit, 'Unblock audit record must exist');
-  assert.strictEqual(unblockAudit.original_position, 16);
-  assert.strictEqual(unblockAudit.new_position, 21);
+  assert.strictEqual(unblockAudit.original_position, 18);
+  assert.strictEqual(unblockAudit.new_position, 23);
   assert.strictEqual(unblockAudit.payment_ref, 'UPI-998877665544');
-  console.log('✓ Old Position 16 permanently recorded in Audit Table with payment ref.');
+  console.log('✓ Old Position 18 permanently recorded in Audit Table with payment ref.');
 
   console.log('\n--- TEST 8: Test Undo Block Feature ---');
-  // Temporarily block member 17
-  const block17 = await handleApiRequest({
+  // Temporarily block member 19
+  const block19 = await handleApiRequest({
     method: 'POST',
     pathname: '/api/leveltrack/admin/seniority/block',
     headers,
-    body: { memberId: 'B5-M17', level: 2, reason: 'Accidental block test', adminPassword: 'ADMIN@2026!' },
+    body: { memberId: 'B5-M19', level: 2, reason: 'Accidental block test', adminPassword: 'ADMIN@2026!' },
     env
   });
-  assert.strictEqual(block17.status, 200);
+  assert.strictEqual(block19.status, 200);
 
   // Undo block with valid admin password
   const undoResp = await handleApiRequest({
     method: 'POST',
     pathname: '/api/leveltrack/admin/seniority/undo-block',
     headers,
-    body: { memberId: 'B5-M17', level: 2, adminPassword: 'ADMIN@2026!' },
+    body: { memberId: 'B5-M19', level: 2, adminPassword: 'ADMIN@2026!' },
     env
   });
   assert.strictEqual(undoResp.status, 200);
-  assert.strictEqual(undoResp.body.position, 17, 'Undo block must restore member back to original Position 17');
+  assert.strictEqual(undoResp.body.position, 19, 'Undo block must restore member back to original Position 19');
   assert.strictEqual(undoResp.body.status, 'ACTIVE');
 
   dashResp = await handleApiRequest({ method: 'GET', pathname: '/api/leveltrack/admin/dashboard', headers, env });
-  const row17 = dashResp.body.seniority[2].find(x => x.memberId === 'B5-M17');
-  assert.strictEqual(row17.position, 17);
-  assert.strictEqual(row17.status, 'ACTIVE');
-  console.log('✓ Undo Block successfully restored member to Position 17 without shifting.');
+  const row19 = dashResp.body.seniority[2].find(x => x.memberId === 'B5-M19');
+  assert.strictEqual(row19.position, 19);
+  assert.strictEqual(row19.status, 'ACTIVE');
+  console.log('✓ Undo Block successfully restored member to Position 19 without shifting.');
 
   console.log('\n--- TEST 9: Test Level Independence (Level 3 unaffected by Level 2 block) ---');
   // Block member 18 in Level 2
@@ -451,7 +453,7 @@ async function runTests() {
     method: 'POST',
     pathname: '/api/admin/pins/generate',
     headers,
-    body: { memberId: 'B5-64847', quantity: 5 },
+    body: { memberId: 'B5-46188', quantity: 5 },
     env
   });
   assert.strictEqual(pinResp.status, 200, 'PIN generation must succeed');

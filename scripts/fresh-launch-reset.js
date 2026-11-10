@@ -34,24 +34,27 @@ if (!fs.existsSync(BACKUP_DIR)) {
   fs.mkdirSync(BACKUP_DIR, { recursive: true });
 }
 
-// 1. Initial 15 Approved Members Definition (Mandatory B5-XXXXX random 5 numeric digits)
-const APPROVED_15_MEMBERS = [
-  { b5Id: 1,  memberId: 'B5-64847', name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
-  { b5Id: 2,  memberId: 'B5-39246', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-  { b5Id: 3,  memberId: 'B5-88384', name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
-  { b5Id: 4,  memberId: 'B5-12971', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-  { b5Id: 5,  memberId: 'B5-90143', name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' },
-  { b5Id: 6,  memberId: 'B5-54017', name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
-  { b5Id: 7,  memberId: 'B5-96920', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-  { b5Id: 8,  memberId: 'B5-37039', name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
-  { b5Id: 9,  memberId: 'B5-17004', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-  { b5Id: 10, memberId: 'B5-35655', name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' },
-  { b5Id: 11, memberId: 'B5-71226', name: 'SATHYA',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
-  { b5Id: 12, memberId: 'B5-31508', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-  { b5Id: 13, memberId: 'B5-82715', name: 'KARTHIKEYAN', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
-  { b5Id: 14, memberId: 'B5-40331', name: 'ELANGO',      mobile: '7867014621', email: 'kalaikalaielango@gmail.com' },
-  { b5Id: 15, memberId: 'B5-75949', name: 'RK',          mobile: '9345151709', email: 'ksp.nkl@gmail.com' }
+// 1. Initial 17 Approved Members Definition (Mandatory B5-XXXXX random 5 numeric digits)
+const APPROVED_17_MEMBERS = [
+  { b5Id: 1,  memberId: 'B5-46188', name: 'sathya',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
+  { b5Id: 2,  memberId: 'B5-80575', name: 'Karthikeyan', mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
+  { b5Id: 3,  memberId: 'B5-62065', name: 'Rajesh',      mobile: '9443248652', email: 'Saravanastudionkl@gmail.com' },
+  { b5Id: 4,  memberId: 'B5-84638', name: 'Pranev',      mobile: '9345151709', email: 'borntowin5b5@gmail.com' },
+  { b5Id: 5,  memberId: 'B5-86831', name: 'Thanya',      mobile: '9489730468', email: 'ksp.nkl@gmail.com' },
+  { b5Id: 6,  memberId: 'B5-89433', name: 'Karthikeyan', mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
+  { b5Id: 7,  memberId: 'B5-88695', name: 'Pranev',      mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
+  { b5Id: 8,  memberId: 'B5-88857', name: 'Thanya',      mobile: '9345151709', email: 'borntowin5b5@gmail.com' },
+  { b5Id: 9,  memberId: 'B5-86695', name: 'Karthikeyan', mobile: '9489730468', email: 'ksp.nkl@gmail.com' },
+  { b5Id: 10, memberId: 'B5-63456', name: 'Pranev',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
+  { b5Id: 11, memberId: 'B5-64464', name: 'Thanya',      mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
+  { b5Id: 12, memberId: 'B5-22158', name: 'sathya',      mobile: '9345151709', email: 'borntowin5b5@gmail.com' },
+  { b5Id: 13, memberId: 'B5-37029', name: 'Pranev',      mobile: '9489730468', email: 'ksp.nkl@gmail.com' },
+  { b5Id: 14, memberId: 'B5-18937', name: 'Thanya',      mobile: '9600680468', email: 'sweetsathya62@gmail.com' },
+  { b5Id: 15, memberId: 'B5-79020', name: 'sathya',      mobile: '9790151709', email: 'dorakarthi51@gmail.com' },
+  { b5Id: 16, memberId: 'B5-71866', name: 'Karthikeyan', mobile: '9345151709', email: 'borntowin5b5@gmail.com' },
+  { b5Id: 17, memberId: 'B5-83922', name: 'sathya',      mobile: '9489730468', email: 'ksp.nkl@gmail.com' }
 ];
+const APPROVED_15_MEMBERS = APPROVED_17_MEMBERS;
 
 function buildLaunchState(options = {}) {
   const explicitPasswords = (options && options.passwords) || {};
@@ -90,7 +93,7 @@ function buildLaunchState(options = {}) {
     aliases: ['COMPANY', 'BORN TO WIN', '0', 'REF-COMPANY']
   };
 
-  const memberAccounts = APPROVED_15_MEMBERS.map(item => {
+  const memberAccounts = APPROVED_17_MEMBERS.map(item => {
     const mId = item.memberId;
     const refCode = `REF-${mId.replace(/^B5-/, '')}`;
     const iso = `2026-01-01T00:00:${String(item.b5Id).padStart(2, '0')}.000Z`;
@@ -226,6 +229,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  APPROVED_17_MEMBERS,
   APPROVED_15_MEMBERS,
   buildLaunchState,
   runReset

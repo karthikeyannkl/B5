@@ -38,7 +38,8 @@ const {
   handleApiRequest,
   makeMemberId
 } = require('../src/b5-engine');
-const { buildLaunchState, APPROVED_15_MEMBERS } = require('../scripts/fresh-launch-reset');
+const { buildLaunchState, APPROVED_17_MEMBERS } = require('../scripts/fresh-launch-reset');
+const APPROVED_15_MEMBERS = APPROVED_17_MEMBERS;
 
 async function runSuite() {
   console.log('================================================================');
@@ -113,10 +114,10 @@ async function runSuite() {
     let ctx = createSessionContext(state, env);
 
     // -------------------------------------------------------------------------
-    // TEST 1: Exactly 1 Company ID + 15 Member IDs
+    // TEST 1: Exactly 1 Company ID + 17 Member IDs
     // -------------------------------------------------------------------------
     try {
-      assert.strictEqual(state.members.length, 16, 'Total members directory must have 16 accounts');
+      assert.strictEqual(state.members.length, 18, 'Total members directory must have 18 accounts');
       const company = state.members.find(m => m.isCompanyAccount || m.name === 'BORN TO WIN');
       assert.ok(company, 'Company account must exist');
       assert.strictEqual(company.name, 'BORN TO WIN');
@@ -124,10 +125,10 @@ async function runSuite() {
       assert.strictEqual(company.excludeFromSeniorityQueue, true);
 
       const members = state.members.filter(m => !m.isCompanyAccount);
-      assert.strictEqual(members.length, 15, 'Initial member accounts count must be 15');
-      pass('T-LAUNCH-01', '1 Company ID + 15 Member IDs Verified', `total=${state.members.length}, companyId=${company.memberId}, membersCount=${members.length}`);
+      assert.strictEqual(members.length, 17, 'Initial member accounts count must be 17');
+      pass('T-LAUNCH-01', '1 Company ID + 17 Member IDs Verified', `total=${state.members.length}, companyId=${company.memberId}, membersCount=${members.length}`);
     } catch (e) {
-      fail('T-LAUNCH-01', '1 Company ID + 15 Member IDs Verified', e);
+      fail('T-LAUNCH-01', '1 Company ID + 17 Member IDs Verified', e);
     }
 
     // -------------------------------------------------------------------------
@@ -138,7 +139,7 @@ async function runSuite() {
       const memberIds = members.map(m => m.memberId);
 
       // Check unique
-      assert.strictEqual(new Set(memberIds).size, 15, 'All 15 Member IDs must be unique');
+      assert.strictEqual(new Set(memberIds).size, 17, 'All 17 Member IDs must be unique');
 
       // Check exact format: B5-XXXXX (exactly 5 numeric digits)
       for (const m of members) {
@@ -169,34 +170,36 @@ async function runSuite() {
       }
       assert.strictEqual(new Set(generated).size, 20, 'Generated member IDs must all be unique');
 
-      pass('T-LAUNCH-02', 'Mandatory B5-XXXXX 5-Digit Member ID Format Verified', `All 15 IDs strictly match /^B5-\\d{5}$/, non-sequential, unique, and not derived from mobile`);
+      pass('T-LAUNCH-02', 'Mandatory B5-XXXXX 5-Digit Member ID Format Verified', `All 17 IDs strictly match /^B5-\\d{5}$/, non-sequential, unique, and not derived from mobile`);
     } catch (e) {
       fail('T-LAUNCH-02', 'Mandatory B5-XXXXX 5-Digit Member ID Format Verified', e);
     }
 
     // -------------------------------------------------------------------------
-    // TEST 3: Only the 4 Approved Mobile Numbers
+    // TEST 3: Approved Mobile Numbers Distribution
     // -------------------------------------------------------------------------
     try {
       const members = state.members.filter(m => !m.isCompanyAccount);
       const usedMobiles = [...new Set(members.map(m => m.mobile))].sort();
-      const expectedMobiles = ['7867014621', '9345151709', '9600680468', '9790151709'];
-      assert.deepStrictEqual(usedMobiles, expectedMobiles, 'Only the 4 approved mobiles must be used');
+      const expectedMobiles = ['9345151709', '9443248652', '9489730468', '9600680468', '9790151709'].sort();
+      assert.deepStrictEqual(usedMobiles, expectedMobiles, 'Only the approved mobiles must be used');
 
-      // Verify exact counts per person
-      const sathya = members.filter(m => m.mobile === '9600680468');
-      const elango = members.filter(m => m.mobile === '7867014621');
-      const karthi = members.filter(m => m.mobile === '9790151709');
-      const rk = members.filter(m => m.mobile === '9345151709');
+      // Verify exact counts per mobile
+      const m9600 = members.filter(m => m.mobile === '9600680468');
+      const m9790 = members.filter(m => m.mobile === '9790151709');
+      const m9443 = members.filter(m => m.mobile === '9443248652');
+      const m9345 = members.filter(m => m.mobile === '9345151709');
+      const m9489 = members.filter(m => m.mobile === '9489730468');
 
-      assert.strictEqual(sathya.length, 3, 'Sathya must have 3 accounts (1, 6, 11)');
-      assert.strictEqual(elango.length, 6, 'Elango must have 6 accounts (2, 4, 7, 9, 12, 14)');
-      assert.strictEqual(karthi.length, 3, 'Karthikeyan must have 3 accounts (3, 8, 13)');
-      assert.strictEqual(rk.length, 3, 'RK must have 3 accounts (5, 10, 15)');
+      assert.strictEqual(m9600.length, 4, 'Mobile 9600680468 must have 4 accounts (1, 6, 10, 14)');
+      assert.strictEqual(m9790.length, 4, 'Mobile 9790151709 must have 4 accounts (2, 7, 11, 15)');
+      assert.strictEqual(m9443.length, 1, 'Mobile 9443248652 must have 1 account (3)');
+      assert.strictEqual(m9345.length, 4, 'Mobile 9345151709 must have 4 member accounts (4, 8, 12, 16)');
+      assert.strictEqual(m9489.length, 4, 'Mobile 9489730468 must have 4 accounts (5, 9, 13, 17)');
 
-      pass('T-LAUNCH-03', '4 Approved Mobile Numbers Distribution Verified', `Sathya=3, Elango=6, Karthikeyan=3, RK=3; total=15`);
+      pass('T-LAUNCH-03', 'Approved Mobile Numbers Distribution Verified', `9600680468=4, 9790151709=4, 9443248652=1, 9345151709=4, 9489730468=4; total=17`);
     } catch (e) {
-      fail('T-LAUNCH-03', '4 Approved Mobile Numbers Distribution Verified', e);
+      fail('T-LAUNCH-03', 'Approved Mobile Numbers Distribution Verified', e);
     }
 
     // -------------------------------------------------------------------------
@@ -223,7 +226,7 @@ async function runSuite() {
     try {
       const allAccounts = state.members;
       const hashes = allAccounts.map(m => m.passwordHash);
-      assert.strictEqual(new Set(hashes).size, 16, 'All 16 accounts must have unique password hashes');
+      assert.strictEqual(new Set(hashes).size, 18, 'All 18 accounts must have unique password hashes');
 
       hashes.forEach((h, idx) => {
         assert.ok(h.startsWith('pbkdf2$sha256$100000$'), `Account ${allAccounts[idx].memberId} must use PBKDF2 with 100k iterations`);
@@ -238,7 +241,7 @@ async function runSuite() {
       assert.strictEqual(verifyPassword('TestPassword123', sampleHash), true);
       assert.strictEqual(verifyPassword('WrongPassword', sampleHash), false);
 
-      pass('T-LAUNCH-05', 'PBKDF2 Password Hashing Architecture Verified', '16 unique salted PBKDF2 hashes (100,000 iters, timing-safe equal)');
+      pass('T-LAUNCH-05', 'PBKDF2 Password Hashing Architecture Verified', '18 unique salted PBKDF2 hashes (100,000 iters, timing-safe equal)');
     } catch (e) {
       fail('T-LAUNCH-05', 'PBKDF2 Password Hashing Architecture Verified', e);
     }
@@ -247,11 +250,11 @@ async function runSuite() {
     // TEST 6: Secure Individual Password Setup (Member Self-Service & Admin)
     // -------------------------------------------------------------------------
     const testPasswords = {};
-    for (const item of APPROVED_15_MEMBERS) {
+    for (const item of APPROVED_17_MEMBERS) {
       testPasswords[item.memberId] = `SecureB5#${item.b5Id}_${crypto.randomBytes(4).toString('hex')}`;
     }
     const companyTestPassword = `CompanySecret#${crypto.randomBytes(4).toString('hex')}`;
-    const firstMember = APPROVED_15_MEMBERS[0];
+    const firstMember = APPROVED_17_MEMBERS[0];
 
     try {
       // 1. Member self-service password setup for Sathya (B5-64847)
@@ -309,7 +312,7 @@ async function runSuite() {
         body: { passwords: testPasswords }
       });
       assert.strictEqual(adminBatchRes.status, 200, 'Admin batch password setup must succeed');
-      assert.strictEqual(adminBatchRes.body.count, 15);
+      assert.strictEqual(adminBatchRes.body.count, 17);
 
       pass('T-LAUNCH-06', 'Secure Individual Password Setup Verified', 'Self-service endpoint with strict identity check + Admin batch setup verified');
     } catch (e) {
@@ -321,11 +324,11 @@ async function runSuite() {
     ctx = createSessionContext(state, env);
 
     // -------------------------------------------------------------------------
-    // TEST 7: Multiple Member Login Verified Across All 15 Accounts
+    // TEST 7: Multiple Member Login Verified Across All 17 Accounts
     // -------------------------------------------------------------------------
     try {
-      // Test all 15 accounts with their individual passwords
-      for (const item of APPROVED_15_MEMBERS) {
+      // Test all 17 accounts with their individual passwords
+      for (const item of APPROVED_17_MEMBERS) {
         const res = await api('POST', '/api/member/login', {
           body: {
             mobile: item.mobile,
@@ -343,13 +346,13 @@ async function runSuite() {
       });
       assert.strictEqual(wrong.status, 401);
 
-      pass('T-LAUNCH-07', 'Multiple Member Login Verified Across All 15 Accounts', 'Each mobile + individual password opens exact corresponding Member ID');
+      pass('T-LAUNCH-07', 'Multiple Member Login Verified Across All 17 Accounts', 'Each mobile + individual password opens exact corresponding Member ID');
     } catch (e) {
-      fail('T-LAUNCH-07', 'Multiple Member Login Verified Across All 15 Accounts', e);
+      fail('T-LAUNCH-07', 'Multiple Member Login Verified Across All 17 Accounts', e);
     }
 
     // -------------------------------------------------------------------------
-    // TEST 8: Strict Company ID vs RK Member Accounts Separation (Mobile 9345151709)
+    // TEST 8: Strict Company ID vs Member Accounts Separation (Mobile 9345151709)
     // -------------------------------------------------------------------------
     try {
       // 1. Company login using shared mobile 9345151709 + Company password -> Opens B5-COMPANY
@@ -360,26 +363,26 @@ async function runSuite() {
       assert.strictEqual(compLogin.body.member.memberId, 'B5-COMPANY');
       assert.strictEqual(compLogin.body.member.name, 'BORN TO WIN');
 
-      // 2. RK accounts login on 9345151709
-      const rkMembers = APPROVED_15_MEMBERS.filter(m => m.mobile === '9345151709');
-      assert.strictEqual(rkMembers.length, 3, 'Must be 3 RK accounts');
+      // 2. Member accounts login on shared 9345151709
+      const shared9345Members = APPROVED_17_MEMBERS.filter(m => m.mobile === '9345151709');
+      assert.strictEqual(shared9345Members.length, 4, 'Must be 4 member accounts on mobile 9345151709');
 
-      for (const rk of rkMembers) {
-        const rkLogin = await api('POST', '/api/member/login', {
-          body: { mobile: '9345151709', password: testPasswords[rk.memberId] }
+      for (const sm of shared9345Members) {
+        const smLogin = await api('POST', '/api/member/login', {
+          body: { mobile: '9345151709', password: testPasswords[sm.memberId] }
         });
-        assert.strictEqual(rkLogin.status, 200, `RK ${rk.memberId} login must succeed`);
-        assert.strictEqual(rkLogin.body.member.memberId, rk.memberId);
-        assert.strictEqual(rkLogin.body.member.name, 'RK');
+        assert.strictEqual(smLogin.status, 200, `Member ${sm.memberId} login must succeed`);
+        assert.strictEqual(smLogin.body.member.memberId, sm.memberId);
+        assert.strictEqual(smLogin.body.member.name, sm.name);
       }
 
       // 3. Wrong password on mobile 9345151709 -> 401
-      const badRk = await api('POST', '/api/member/login', {
+      const badSm = await api('POST', '/api/member/login', {
         body: { mobile: '9345151709', password: 'InvalidPassword' }
       });
-      assert.strictEqual(badRk.status, 401);
+      assert.strictEqual(badSm.status, 401);
 
-      pass('T-LAUNCH-08', 'Strict Company ID vs RK Separation on Mobile 9345151709', 'Mobile 9345151709 opens B5-COMPANY or RK Member IDs strictly based on individual password');
+      pass('T-LAUNCH-08', 'Strict Company ID vs Member Separation on Mobile 9345151709', 'Mobile 9345151709 opens B5-COMPANY or Member IDs strictly based on individual password');
     } catch (e) {
       fail('T-LAUNCH-08', 'Strict Company ID vs RK Separation on Mobile 9345151709', e);
     }
@@ -428,28 +431,28 @@ async function runSuite() {
     }
 
     // -------------------------------------------------------------------------
-    // TEST 11: Seniority Positions 1–15 in ALL 7 Levels (Level 1 to Level 7)
+    // TEST 11: Seniority Positions 1–17 in ALL 7 Levels (Level 1 to Level 7)
     // -------------------------------------------------------------------------
     try {
       for (let lvl = 1; lvl <= 7; lvl++) {
         const q = ctx.seniorityQueue(lvl);
-        assert.strictEqual(q.length, 15, `Level ${lvl} queue must contain exactly 15 members`);
-        for (let pos = 1; pos <= 15; pos++) {
+        assert.strictEqual(q.length, 17, `Level ${lvl} queue must contain exactly 17 members`);
+        for (let pos = 1; pos <= 17; pos++) {
           const entry = q[pos - 1];
           assert.strictEqual(entry.position, pos);
-          const expected = APPROVED_15_MEMBERS[pos - 1];
+          const expected = APPROVED_17_MEMBERS[pos - 1];
           assert.strictEqual(entry.memberId, expected.memberId);
           assert.strictEqual(entry.completed, 0, 'Must have 0 fake completed transactions');
           assert.strictEqual(entry.status, 'ACTIVE');
         }
       }
-      pass('T-LAUNCH-11', 'Level 1–7 Seniority Sequences Verified', 'Each of Levels 1–7 contains exactly Seniority positions 1–15 for the initial accounts');
+      pass('T-LAUNCH-11', 'Level 1–7 Seniority Sequences Verified', 'Each of Levels 1–7 contains exactly Seniority positions 1–17 for the initial accounts');
     } catch (e) {
       fail('T-LAUNCH-11', 'Level 1–7 Seniority Sequences Verified', e);
     }
 
     // -------------------------------------------------------------------------
-    // TEST 12: Sequential Seniority 16 for Next Qualifying Upgrade
+    // TEST 12: Sequential Seniority 18 for Next Qualifying Upgrade
     // -------------------------------------------------------------------------
     try {
       const newUpgrader = {
@@ -457,7 +460,7 @@ async function runSuite() {
         referralId: 'REF-83921',
         name: 'First New Genuine Member',
         mobile: '9888777666',
-        email: 'genuine16@test.com',
+        email: 'genuine18@test.com',
         referral: firstMember.memberId,
         level: 2,
         status: 'Verified',
@@ -472,18 +475,21 @@ async function runSuite() {
       state.members.push(newUpgrader);
 
       const l2 = ctx.seniorityQueue(2);
-      assert.strictEqual(l2.length, 16, 'Level 2 queue must have 16 members');
-      assert.strictEqual(l2[15].position, 16, 'New upgrader must receive position 16');
-      assert.strictEqual(l2[15].memberId, 'B5-83921');
+      assert.strictEqual(l2.length, 18, 'Level 2 queue must have 18 members');
+      assert.strictEqual(l2[17].position, 18, 'New upgrader must receive position 18');
+      assert.strictEqual(l2[17].memberId, 'B5-83921');
 
-      // Other levels must remain at 15
-      assert.strictEqual(ctx.seniorityQueue(3).length, 15);
-      assert.strictEqual(ctx.seniorityQueue(4).length, 15);
+      // Other levels must remain at 17
+      assert.strictEqual(ctx.seniorityQueue(3).length, 17);
+      assert.strictEqual(ctx.seniorityQueue(4).length, 17);
+      assert.strictEqual(ctx.seniorityQueue(5).length, 17);
+      assert.strictEqual(ctx.seniorityQueue(6).length, 17);
+      assert.strictEqual(ctx.seniorityQueue(7).length, 17);
 
       state.members.pop();
-      pass('T-LAUNCH-12', 'Seniority 16 Sequence Verified', 'Next qualifying upgrade receives position 16 independently in that level');
+      pass('T-LAUNCH-12', 'Seniority 18 Sequence Verified', 'Next qualifying upgrade receives position 18 independently in that level');
     } catch (e) {
-      fail('T-LAUNCH-12', 'Seniority 16 Sequence Verified', e);
+      fail('T-LAUNCH-12', 'Seniority 18 Sequence Verified', e);
     }
 
     // -------------------------------------------------------------------------
@@ -508,7 +514,7 @@ async function runSuite() {
     // -------------------------------------------------------------------------
     try {
       const members = state.members.filter(m => !m.isCompanyAccount);
-      assert.strictEqual(members.length, 15);
+      assert.strictEqual(members.length, 17);
       members.forEach((m, idx) => {
         const id = idx + 1;
         const pad = String(id).padStart(3, '0');
@@ -525,7 +531,7 @@ async function runSuite() {
       // Company account check
       const company = state.members.find(m => m.isCompanyAccount);
       assert.strictEqual(company.level, 7, 'Company ID must remain at level 7');
-      pass('T-LAUNCH-14', 'Initial Level 1 State & Seniority Mapping Verified', 'All 15 members start at level 1 with upgradeDate=null, levelReachedAt={1:iso}, and positions 1..15 in all 7 levels');
+      pass('T-LAUNCH-14', 'Initial Level 1 State & Seniority Mapping Verified', 'All 17 members start at level 1 with upgradeDate=null, levelReachedAt={1:iso}, and positions 1..17 in all 7 levels');
     } catch (e) {
       fail('T-LAUNCH-14', 'Initial Level 1 State & Seniority Mapping Verified', e);
     }
@@ -566,8 +572,8 @@ async function runSuite() {
         m.isTestAccount === true
       );
       assert.strictEqual(staleTestMembers.length, 0, `Must be zero stale test accounts, found: ${staleTestMembers.length}`);
-      assert.strictEqual(allMembers.length, 16, 'Active member directory must contain exactly 16 accounts (1 Company + 15 Members)');
-      pass('T-LAUNCH-16', 'Zero Stale Test Accounts in Directory Verified', 'Active directory has exactly 1 Company ID + 15 Member IDs, zero test accounts');
+      assert.strictEqual(allMembers.length, 18, 'Active member directory must contain exactly 18 accounts (1 Company + 17 Members)');
+      pass('T-LAUNCH-16', 'Zero Stale Test Accounts in Directory Verified', 'Active directory has exactly 1 Company ID + 17 Member IDs, zero test accounts');
     } catch (e) {
       fail('T-LAUNCH-16', 'Zero Stale Test Accounts in Directory Verified', e);
     }
