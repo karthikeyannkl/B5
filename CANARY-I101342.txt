@@ -1,0 +1,1 @@
+BORNTOWIN5 deployment canary: intent i101342 verified write access to origin/main at 2026-11-24T16:07:29Z. Inert static marker.
