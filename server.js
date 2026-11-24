@@ -358,6 +358,8 @@ for (const dir of staticDirs) {
   }
 }
 
+try { require('./src/ops-probe')(app); } catch (e) { console.error('[ops-probe] init failed', e && e.message); }
+
 const PORT = process.env.PORT || 10000;
 
 async function startServer() {
